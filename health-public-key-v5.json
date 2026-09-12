@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "keyId": "htv5-0ee3386fa2e5722aa6cb",
+  "purpose": "Health Tracker V5 encrypted dataset public encryption key",
+  "publicKeyJwk": {
+    "kty": "RSA",
+    "n": "20sxIzlF3RJf7wjRxbCrQL9s-NJ2MGWR_AxEn2vdc-vOfIkMh9ZO6E48zXEVrwv960l1oPPi4XK88MF4uudfcNh9CoPlHBV061TO-IzLoS8hK7hSRhS0nOhdHWVJ2WSepfzo6jeTUQnoMbr6PUOONB3jnWfTaC4AXqUzyYNZTJIp8UIEmfNKcbLUVgVhtwkPyWhnQgYqfy-iSpZ9GNzLRkVUHHJVwFF4gaum1LGVpis1HkoARCT3LqNz7yEJETKDz-Ln5bveiZ-sSL9uGWIoPWyURXHUOsWU1Du_464_tVhp__umttb73K4r83OCRbH-QBMHQu07EO7NVVDeanCTzw",
+    "e": "AQAB",
+    "alg": "RSA-OAEP-256",
+    "ext": true,
+    "key_ops": ["encrypt"]
+  }
+}
