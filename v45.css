@@ -1,0 +1,42 @@
+/* V4.5 — mobile app shell fixes */
+.fab{display:none!important}
+.page-actions:empty{display:none}
+
+@media (max-width:780px){
+  .app-shell{padding-bottom:calc(92px + env(safe-area-inset-bottom));}
+  .bottom-nav{
+    left:0;
+    transform:none;
+    bottom:0;
+    width:100%;
+    max-width:none;
+    padding:7px 10px calc(7px + env(safe-area-inset-bottom));
+    border-left:none;
+    border-right:none;
+    border-bottom:none;
+    border-radius:24px 24px 0 0;
+    background:rgba(7,12,18,.97);
+    box-shadow:0 -12px 32px rgba(0,0,0,.28);
+  }
+  .bottom-nav button{padding:7px 4px;gap:3px;border-radius:16px;min-width:0}
+  .bottom-nav button span{font-size:22px}
+  .bottom-nav button small{font-size:11px;line-height:1.1}
+  .bottom-nav button.active{background:rgba(255,74,100,.11)}
+}
+
+@media (max-width:560px){
+  .metric-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px}
+  .metric-grid.three .metric{min-width:0;min-height:92px;padding:12px 9px;border-radius:18px}
+  .metric-grid.three .metric span{font-size:11px;line-height:1.2}
+  .metric-grid.three .metric strong{font-size:24px;letter-spacing:-.03em}
+  .metric-grid.three .metric em{font-size:11px}
+  .hero-card{padding:20px}
+  .hero-head{gap:10px}
+  .delta{padding:11px 12px;border-radius:17px;font-size:13px}
+  .delta small{font-size:10px}
+  .segmented{padding:7px;border-radius:22px}
+  .segmented button{padding:12px 13px;font-size:14px}
+  .topbar{padding-top:max(8px,env(safe-area-inset-top))}
+}
+
+body.standalone .bottom-nav{bottom:0}
