@@ -19,6 +19,22 @@ const REPORT_CATEGORIES={
   outros:'Outros'
 };
 
+function cloneBundled(){
+  const src=(typeof BUNDLED_HEALTH_DATA!=='undefined'&&BUNDLED_HEALTH_DATA)?BUNDLED_HEALTH_DATA:{profile:{},measurements:[],labs:[],reports:[]};
+  return JSON.parse(JSON.stringify(src));
+}
+
+function loadState(){
+  const bundled=cloneBundled();
+  return {
+    schemaVersion:SCHEMA_VERSION,
+    profile:bundled.profile||{},
+    measurements:normalizeMeasurements(bundled.measurements||[]),
+    labs:normalizeLabs(bundled.labs||[]),
+    reports:normalizeReports(bundled.reports||[])
+  };
+}
+
 let state=loadState();
 let measurements=state.measurements;
 let labs=state.labs;
@@ -27,67 +43,30 @@ let profile=state.profile;
 let currentMetric='weight';
 let currentLabMetric='glucose';
 
-function loadState(){
-  try{
-    const raw=localStorage.getItem(STORAGE_KEY) || LEGACY_STORAGE_KEYS.map(k=>localStorage.getItem(k)).find(Boolean);
-    if(raw){
-      const parsed=JSON.parse(raw);
-      if(parsed && typeof parsed==='object' && Array.isArray(parsed.measurements)){
-        return {
-          schemaVersion:SCHEMA_VERSION,
-          profile:parsed.profile||{},
-          measurements:normalizeMeasurements(parsed.measurements),
-          labs:normalizeLabs(parsed.labs||[]),
-          reports:normalizeReports(parsed.reports||[])
-        };
-      }
-    }
-  }catch(e){console.warn('Falha ao ler dados locais',e)}
-  return {schemaVersion:SCHEMA_VERSION,profile:{},measurements:[],labs:[],reports:[]};
-}
-
 function normalizeMeasurements(items){return (Array.isArray(items)?items:[]).slice().sort(byDate)}
 function normalizeLabs(items){return (Array.isArray(items)?items:[]).slice().sort(byLabDate)}
 function normalizeReports(items){return (Array.isArray(items)?items:[]).slice().sort(byReportDate)}
 
 function saveData(){
   state={schemaVersion:SCHEMA_VERSION,profile:profile||{},measurements,labs,reports};
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(e){}
 }
 
 function importPayload(data){
   if(Array.isArray(data)) return {schemaVersion:SCHEMA_VERSION,profile:{},measurements:data,labs:[],reports:[]};
-  if(data && typeof data==='object' && Array.isArray(data.measurements)){
-    return {
-      schemaVersion:SCHEMA_VERSION,
-      profile:data.profile||{},
-      measurements:data.measurements,
-      labs:Array.isArray(data.labs)?data.labs:[],
-      reports:Array.isArray(data.reports)?data.reports:[]
-    };
+  if(data&&typeof data==='object'&&Array.isArray(data.measurements)){
+    return {schemaVersion:SCHEMA_VERSION,profile:data.profile||{},measurements:data.measurements,labs:Array.isArray(data.labs)?data.labs:[],reports:Array.isArray(data.reports)?data.reports:[]};
   }
   throw new Error('Formato inválido');
 }
 
-function validateMeasurements(items){
-  return Array.isArray(items)&&items.every(m=>m&&/^\d{4}-\d{2}-\d{2}$/.test(m.date||'')&&Number.isFinite(Number(m.weight))&&Number.isFinite(Number(m.muscle))&&Number.isFinite(Number(m.fatPct)));
-}
-function validateLabs(items){
-  return Array.isArray(items)&&items.every(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')&&LAB_DEFS[x.key]&&Number.isFinite(Number(x.value)));
-}
-function validateReports(items){
-  return Array.isArray(items)&&items.every(r=>{
-    const hasDate=!r.date || /^\d{4}-\d{2}-\d{2}$/.test(r.date);
-    const hasTitle=typeof r.title==='string' && r.title.trim().length>0;
-    const hasSummary=typeof r.summary==='string' && r.summary.trim().length>0;
-    const hasCategory=!!REPORT_CATEGORIES[r.category||'outros'] || !!r.category;
-    return hasDate && hasTitle && hasSummary && hasCategory;
-  });
-}
+function validateMeasurements(items){return Array.isArray(items)&&items.every(m=>m&&/^\d{4}-\d{2}-\d{2}$/.test(m.date||'')&&Number.isFinite(Number(m.weight))&&Number.isFinite(Number(m.muscle))&&Number.isFinite(Number(m.fatPct)))}
+function validateLabs(items){return Array.isArray(items)&&items.every(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')&&LAB_DEFS[x.key]&&Number.isFinite(Number(x.value)))}
+function validateReports(items){return Array.isArray(items)&&items.every(r=>{const hasDate=!r.date||/^\d{4}-\d{2}-\d{2}$/.test(r.date);const hasTitle=typeof r.title==='string'&&r.title.trim().length>0;const hasSummary=typeof r.summary==='string'&&r.summary.trim().length>0;const hasCategory=!!REPORT_CATEGORIES[r.category||'outros']||!!r.category;return hasDate&&hasTitle&&hasSummary&&hasCategory})}
 
 function byDate(a,b){return (a.date+(a.time||''))>(b.date+(b.time||''))?1:-1}
 function byLabDate(a,b){return a.date>b.date?1:a.date<b.date?-1:0}
-function reportSortKey(r){return r.date || ''}
+function reportSortKey(r){return r.date||''}
 function byReportDate(a,b){return reportSortKey(a)>reportSortKey(b)?1:reportSortKey(a)<reportSortKey(b)?-1:0}
 
 function fmt(n,d=1){return n==null?'—':Number(n).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})}
@@ -108,12 +87,7 @@ function rangeStatus(value,range){if(value==null)return'—';if(!Array.isArray(r
 function hasData(){return measurements.length>0}
 function latestLab(key){const arr=labs.filter(x=>x.key===key).sort(byLabDate);return arr.at(-1)||null}
 function labSeries(key){return labs.filter(x=>x.key===key).sort(byLabDate)}
-function visibleReports(){return [...reports].sort((a,b)=>{
-  if(a.date && b.date) return a.date>b.date?-1:a.date<b.date?1:0;
-  if(a.date && !b.date) return -1;
-  if(!a.date && b.date) return 1;
-  return 0;
-})}
+function visibleReports(){return [...reports].sort((a,b)=>{if(a.date&&b.date)return a.date>b.date?-1:a.date<b.date?1:0;if(a.date&&!b.date)return-1;if(!a.date&&b.date)return 1;return 0})}
 function reportBadge(category){return REPORT_CATEGORIES[category]||category||'Laudo'}
 function reportDateLabel(r){return r.date?brDate(r.date):(r.dateText||'Sem data exata')}
 function firstNonEmptyLine(text){return String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean)}
