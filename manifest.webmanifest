@@ -1,11 +1,18 @@
 {
+  "id": "./",
   "name": "Health Tracker",
-  "short_name": "Health",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#0b0f14",
-  "theme_color": "#0b0f14",
+  "short_name": "Health Tracker",
   "description": "Dashboard pessoal de bioimpedância, exames e laudos.",
+  "lang": "pt-BR",
+  "start_url": "./?source=pwa&v=4.3",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#090d13",
+  "theme_color": "#090d13",
+  "categories": ["health", "fitness", "lifestyle"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "./icon.svg",
