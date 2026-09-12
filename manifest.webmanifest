@@ -1,0 +1,10 @@
+{
+  "name":"InBody Tracker • Anderson",
+  "short_name":"InBody Tracker",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#080b10",
+  "theme_color":"#0b0f14",
+  "description":"Dashboard pessoal de bioimpedância e composição corporal.",
+  "icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
