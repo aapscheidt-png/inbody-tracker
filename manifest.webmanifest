@@ -1,10 +1,10 @@
 {
-  "name":"InBody Tracker",
-  "short_name":"InBody Tracker",
+  "name":"Health Tracker",
+  "short_name":"Health Tracker",
   "start_url":"./",
   "display":"standalone",
   "background_color":"#080b10",
   "theme_color":"#0b0f14",
-  "description":"Dashboard pessoal de bioimpedância e composição corporal.",
+  "description":"Dashboard pessoal de bioimpedância, exames e tendências de saúde.",
   "icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }
