@@ -6,6 +6,7 @@ function loadRecoveryKeyV5(){try{const s=localStorage.getItem(HT_RECOVERY_KEY_ST
 function hasRecoveryKeyV5(){const k=loadRecoveryKeyV5();return !!(k?.privateKeyJwk&&k?.keyId);}
 function saveRecoveryKeyV5(doc){if(!doc?.privateKeyJwk||doc.privateKeyJwk.kty!=='RSA'||!doc.keyId)throw new Error('Chave de recuperação inválida.');localStorage.setItem(HT_RECOVERY_KEY_STORAGE,JSON.stringify(doc));}
 function clearRecoveryKeyV5(){localStorage.removeItem(HT_RECOVERY_KEY_STORAGE);}
+async function gunzipBytesV5(bytes){if(typeof DecompressionStream==='undefined')throw new Error('Este navegador não suporta a descompactação segura da base.');const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));return new Uint8Array(await new Response(stream).arrayBuffer());}
 async function decryptHealthPayloadV5(payload,recovery){
   if(!payload?.wrappedKey||!payload?.iv||!payload?.ciphertext)throw new Error('Pacote criptografado inválido.');
   if(payload.keyId!==recovery?.keyId)throw new Error('A chave de recuperação não corresponde a esta base.');
@@ -13,7 +14,8 @@ async function decryptHealthPayloadV5(payload,recovery){
   const privateKey=await crypto.subtle.importKey('jwk',recovery.privateKeyJwk,{name:'RSA-OAEP',hash:'SHA-256'},false,['decrypt']);
   const aesRaw=await crypto.subtle.decrypt({name:'RSA-OAEP'},privateKey,htB64uToBytes(payload.wrappedKey));
   const aesKey=await crypto.subtle.importKey('raw',aesRaw,{name:'AES-GCM'},false,['decrypt']);
-  const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:htB64uToBytes(payload.iv)},aesKey,htB64uToBytes(payload.ciphertext));
+  let plain=new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:htB64uToBytes(payload.iv)},aesKey,htB64uToBytes(payload.ciphertext)));
+  if(payload.compression==='gzip')plain=await gunzipBytesV5(plain);
   return normalizeCanonical(JSON.parse(new TextDecoder().decode(plain)));
 }
 async function syncEncryptedHealthV5(){
