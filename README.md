@@ -1,25 +1,31 @@
-# Health Tracker
+# Health Tracker V4
 
-PWA responsivo, mobile-first, para acompanhar bioimpedância, composição corporal e exames laboratoriais.
+Versão V4 do app pessoal de saúde, com foco em:
 
-## V3
+- bioimpedância;
+- gráficos com valores em todos os pontos;
+- exames laboratoriais;
+- área de laudos e achados clínicos;
+- importação e exportação de backup JSON;
+- armazenamento local no navegador;
+- PWA para uso no iPhone.
 
-- Dashboard corporal com histórico de bioimpedância.
-- Composição corporal e análise segmentar.
-- Gráficos de peso, massa muscular, gordura corporal e IMC.
-- Novo módulo **Saúde** para resultados laboratoriais.
-- Gráficos individuais por marcador laboratorial.
-- Histórico de exames e cadastro manual de novos resultados.
-- Importação/exportação de backup JSON.
-- Dados persistidos no `localStorage` do navegador.
-- Compatível com instalação como PWA no iPhone.
+## Estrutura
 
-## Dados
+- `index.html`
+- `styles.css`
+- `core.js`
+- `charts.js`
+- `render.js`
+- `ui.js`
+- `sw.js`
+- `manifest.webmanifest`
+- `icon.svg`
 
-O código atual não precisa conter dados pessoais. O histórico pode ser carregado por um arquivo JSON privado e permanece salvo no dispositivo. O schema V3 suporta:
+## Novidades da V4
 
-- `profile`
-- `measurements`
-- `labs`
-
-Backups V2 continuam aceitos; nesse caso o app importa as bioimpedâncias e inicia o módulo de exames vazio.
+1. Rótulos numéricos em todos os gráficos.
+2. Nova área **Laudos e achados clínicos** dentro da seção **Saúde**.
+3. Novo cadastro manual de laudos.
+4. Suporte a `reports` no JSON de backup.
+5. Migração automática de dados locais da V3.
