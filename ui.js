@@ -136,5 +136,19 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
   }
 });
 
+function applyVersionUi(){
+  const greeting=document.getElementById('greeting');
+  const targetGreeting=profile.displayName?`Olá, ${profile.displayName}`:'Olá';
+  if(greeting&&greeting.textContent!==targetGreeting)greeting.textContent=targetGreeting;
+  const versionLabel=document.querySelector('.topbar .eyebrow');
+  if(versionLabel)versionLabel.textContent='HEALTH TRACKER · V4.1';
+}
+
 render();
+applyVersionUi();
+const greetingNode=document.getElementById('greeting');
+if(greetingNode){
+  const greetingObserver=new MutationObserver(()=>applyVersionUi());
+  greetingObserver.observe(greetingNode,{childList:true,subtree:true,characterData:true});
+}
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
