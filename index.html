@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="InBody Tracker" />
+  <meta name="description" content="Dashboard pessoal de evolução de composição corporal." />
+  <title>InBody Tracker • Anderson</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">INBODY TRACKER</p>
+        <h1 id="greeting">Olá, Anderson 👋</h1>
+        <p class="subtle">Seu corpo em números. Sua evolução em contexto.</p>
+      </div>
+      <button class="icon-btn" id="settingsBtn" aria-label="Dados e configurações">⋯</button>
+    </header>
+
+    <main id="appMain" class="content">
+      <section class="view active" data-view="home">
+        <div class="segmented" id="homeSegments">
+          <button class="active" data-home-tab="resumo">Resumo</button>
+          <button data-home-tab="composicao">Composição</button>
+          <button data-home-tab="segmentar">Segmentar</button>
+        </div>
+
+        <div id="homeResumo" class="home-panel active">
+          <article class="hero-card">
+            <div class="hero-head">
+              <div>
+                <span class="label">Peso atual</span>
+                <div class="hero-value"><strong id="heroWeight">76,3</strong><span>kg</span></div>
+                <div class="meta" id="heroDate">12/09/2026 • 11:39</div>
+              </div>
+              <div class="delta good" id="weightDelta">↓ 17,5 kg <small>vs. início/2026</small></div>
+            </div>
+            <div class="metric-grid three">
+              <div class="metric"><span>IMC</span><strong id="heroBmi">22,8</strong><em class="ok">Normal</em></div>
+              <div class="metric"><span>% Gordura</span><strong id="heroFatPct">18,5%</strong><em class="ok">Normal</em></div>
+              <div class="metric"><span>Massa muscular</span><strong id="heroMuscle">35,0 kg</strong><em class="ok">Normal</em></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="section-title-row">
+              <div><h2>Minha evolução</h2><p class="subtle">Bioimpedâncias registradas em 2026</p></div>
+              <button class="pill-btn" id="openEvolutionBtn">Ver tudo</button>
+            </div>
+            <div class="legend compact">
+              <span><i class="dot red"></i>Peso</span>
+              <span><i class="dot blue"></i>Músculo</span>
+              <span><i class="dot amber"></i>% gordura</span>
+            </div>
+            <div class="chart-wrap"><svg id="overviewChart" class="chart" viewBox="0 0 720 330" role="img" aria-label="Gráfico de evolução"></svg></div>
+          </article>
+
+          <div class="summary-strip">
+            <div><span>Desde 03/02</span><strong id="summaryWeightChange">−14,5 kg</strong><small>Peso</small></div>
+            <div><span>Desde 03/02</span><strong id="summaryFatChange">−9,6 p.p.</strong><small>Gordura</small></div>
+            <div><span>Desde 03/02</span><strong id="summaryMuscleChange">−1,8 kg</strong><small>Músculo</small></div>
+          </div>
+
+          <article class="card insight-card">
+            <div class="insight-icon">✦</div>
+            <div><span class="label">Leitura rápida</span><h2>Você reduziu gordura mantendo boa parte da massa muscular.</h2><p id="quickInsight" class="subtle"></p></div>
+          </article>
+        </div>
+
+        <div id="homeComposicao" class="home-panel">
+          <article class="card">
+            <div class="section-title-row"><div><h2>Composição corporal</h2><p class="subtle">Última medição</p></div><span class="score-badge">76/100</span></div>
+            <div class="composition-list" id="compositionList"></div>
+          </article>
+          <article class="card">
+            <h2>Controle de peso</h2>
+            <div class="control-grid">
+              <div><span>Peso ideal</span><strong>73,7 kg</strong></div>
+              <div><span>Controle de peso</span><strong>−2,6 kg</strong></div>
+              <div><span>Controle de gordura</span><strong>−3,1 kg</strong></div>
+              <div><span>Controle muscular</span><strong>+0,5 kg</strong></div>
+            </div>
+          </article>
+        </div>
+
+        <div id="homeSegmentar" class="home-panel">
+          <article class="card">
+            <h2>Massa magra segmentar</h2>
+            <p class="subtle">Distribuição da última bioimpedância</p>
+            <div id="leanSegments" class="segment-grid"></div>
+          </article>
+          <article class="card">
+            <h2>Gordura segmentar</h2>
+            <p class="subtle">Distribuição da última bioimpedância</p>
+            <div id="fatSegments" class="segment-grid"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" data-view="results">
+        <div class="page-title"><div><p class="eyebrow">HISTÓRICO</p><h1>Resultados</h1></div><button class="primary small" id="addMeasurementBtn">＋ Nova</button></div>
+        <div class="filters" id="resultFilters">
+          <button class="active" data-filter="all">Todos</button>
+          <button data-filter="2026">2026</button>
+        </div>
+        <div class="timeline" id="resultsTimeline"></div>
+      </section>
+
+      <section class="view" data-view="evolution">
+        <div class="page-title"><div><p class="eyebrow">TENDÊNCIAS</p><h1>Evolução</h1></div></div>
+        <div class="metric-tabs" id="metricTabs">
+          <button class="active" data-metric="weight">Peso</button>
+          <button data-metric="muscle">Músculo</button>
+          <button data-metric="fatPct">% Gordura</button>
+          <button data-metric="bmi">IMC</button>
+        </div>
+        <article class="card evolution-card">
+          <div class="evolution-number"><span id="evoMetricLabel">Peso</span><strong id="evoMetricValue">76,3 <small>kg</small></strong><em id="evoMetricDelta">−14,5 kg</em></div>
+          <div class="chart-wrap large"><svg id="evolutionChart" class="chart" viewBox="0 0 720 410" role="img" aria-label="Gráfico de evolução detalhada"></svg></div>
+        </article>
+        <article class="card"><h2>Comparativo do período</h2><div id="comparisonIndicators" class="indicator-list"></div></article>
+      </section>
+
+      <section class="view" data-view="compare">
+        <div class="page-title"><div><p class="eyebrow">LADO A LADO</p><h1>Comparar</h1></div></div>
+        <article class="card compare-selectors">
+          <label>Primeira medição<select id="compareA"></select></label>
+          <span>→</span>
+          <label>Segunda medição<select id="compareB"></select></label>
+        </article>
+        <div id="compareGrid" class="compare-grid"></div>
+      </section>
+
+      <section class="view" data-view="insights">
+        <div class="page-title"><div><p class="eyebrow">ANÁLISE</p><h1>Insights</h1></div></div>
+        <article class="card insight-hero"><span class="insight-icon big">✦</span><div><span class="label">Trajetória</span><h2 id="trajectoryTitle"></h2><p id="trajectoryText" class="subtle"></p></div></article>
+        <div class="insight-grid" id="insightGrid"></div>
+        <article class="card disclaimer"><strong>Importante</strong><p>Este painel organiza suas medições e tendências. Não substitui avaliação médica ou nutricional.</p></article>
+      </section>
+    </main>
+
+    <button class="fab" id="fabAdd" aria-label="Adicionar nova bioimpedância">＋</button>
+
+    <nav class="bottom-nav" aria-label="Navegação principal">
+      <button class="active" data-nav="home"><span>⌂</span><small>Início</small></button>
+      <button data-nav="results"><span>▤</span><small>Resultados</small></button>
+      <button data-nav="evolution"><span>⌁</span><small>Evolução</small></button>
+      <button data-nav="compare"><span>⇄</span><small>Comparar</small></button>
+      <button data-nav="insights"><span>✦</span><small>Insights</small></button>
+    </nav>
+  </div>
+
+  <dialog id="measurementDialog" class="dialog">
+    <form method="dialog" id="measurementForm">
+      <div class="dialog-head"><div><p class="eyebrow">NOVA MEDIÇÃO</p><h2>Adicionar bioimpedância</h2></div><button class="icon-btn" value="cancel">×</button></div>
+      <div class="form-grid">
+        <label>Data<input name="date" type="date" required /></label>
+        <label>Hora<input name="time" type="time" /></label>
+        <label>Peso (kg)<input name="weight" type="number" step="0.1" required /></label>
+        <label>Massa muscular (kg)<input name="muscle" type="number" step="0.1" required /></label>
+        <label>Gordura corporal (%)<input name="fatPct" type="number" step="0.1" required /></label>
+        <label>IMC<input name="bmi" type="number" step="0.1" /></label>
+        <label>Massa de gordura (kg)<input name="fatMass" type="number" step="0.1" /></label>
+        <label>Água corporal (L)<input name="water" type="number" step="0.1" /></label>
+        <label>Metabolismo basal (kcal)<input name="bmr" type="number" step="1" /></label>
+        <label>Gordura visceral<input name="visceral" type="number" step="1" /></label>
+      </div>
+      <div class="dialog-actions"><button value="cancel" class="secondary">Cancelar</button><button type="submit" value="default" class="primary">Salvar medição</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="dataDialog" class="dialog">
+    <div class="dialog-head"><div><p class="eyebrow">DADOS</p><h2>Privacidade e backup</h2></div><button class="icon-btn" id="closeDataDialog">×</button></div>
+    <p class="subtle">As medições adicionadas por você ficam salvas apenas neste navegador. Exporte um backup para levar os dados para outro aparelho.</p>
+    <div class="stack-actions">
+      <button class="primary" id="exportBtn">Exportar backup JSON</button>
+      <label class="secondary file-label">Importar backup<input id="importInput" type="file" accept="application/json" hidden /></label>
+      <button class="danger-ghost" id="resetBtn">Restaurar dados originais</button>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
