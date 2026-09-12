@@ -1,42 +1,25 @@
-# InBody Tracker
+# Health Tracker
 
-PWA responsivo, mobile-first, para acompanhar bioimpedância e composição corporal.
+PWA responsivo, mobile-first, para acompanhar bioimpedância, composição corporal e exames laboratoriais.
 
-## Privacy Architecture V2
+## V3
 
-O código-fonte atual não contém medições pessoais, nome, altura, peso de referência ou outros dados de saúde pré-carregados. Os dados são importados pelo usuário e ficam armazenados somente no `localStorage` do navegador/aparelho.
+- Dashboard corporal com histórico de bioimpedância.
+- Composição corporal e análise segmentar.
+- Gráficos de peso, massa muscular, gordura corporal e IMC.
+- Novo módulo **Saúde** para resultados laboratoriais.
+- Gráficos individuais por marcador laboratorial.
+- Histórico de exames e cadastro manual de novos resultados.
+- Importação/exportação de backup JSON.
+- Dados persistidos no `localStorage` do navegador.
+- Compatível com instalação como PWA no iPhone.
 
-O backup JSON exportado pelo próprio app pode conter dados pessoais e deve ser tratado como arquivo privado. Ele não deve ser commitado neste repositório.
+## Dados
 
-## Funcionalidades
+O código atual não precisa conter dados pessoais. O histórico pode ser carregado por um arquivo JSON privado e permanece salvo no dispositivo. O schema V3 suporta:
 
-- Dashboard de peso, IMC, gordura corporal e massa muscular.
-- Histórico de medições.
-- Gráficos de evolução.
-- Comparação entre bioimpedâncias.
-- Composição corporal e análise segmentar quando esses campos existirem no arquivo importado.
-- Cadastro manual de novas medições.
-- Importação e exportação de backup JSON.
-- Armazenamento local no aparelho.
-- PWA instalável no iPhone/Android.
-- Sem dependências externas.
+- `profile`
+- `measurements`
+- `labs`
 
-## Primeira utilização
-
-Abra o app, acesse o menu `⋯` e importe um backup privado JSON ou adicione a primeira medição manualmente.
-
-## Importante sobre este repositório
-
-Este repositório deve permanecer **privado**. Uma versão anterior do projeto continha um histórico pessoal pré-carregado em commits antigos. A versão atual remove esses dados do código em execução, mas tornar o repositório público exigiria antes uma limpeza/recriação do histórico Git.
-
-## Rodar localmente
-
-```bash
-python3 -m http.server 8080
-```
-
-Abra `http://localhost:8080`.
-
-## Publicação
-
-O site pode ser publicado usando somente a versão atual sanitizada. O repositório-fonte deve continuar privado até que o histórico Git antigo seja eliminado.
+Backups V2 continuam aceitos; nesse caso o app importa as bioimpedâncias e inicia o módulo de exames vazio.
