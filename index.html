@@ -13,21 +13,23 @@
   <meta name="apple-mobile-web-app-title" content="Health Tracker" />
   <meta name="description" content="Dashboard pessoal de bioimpedância, exames e laudos de saúde." />
   <title>Health Tracker</title>
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" href="icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest-v45.webmanifest?v=4.5" />
+  <link rel="icon" href="icon.svg?v=4.5" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg?v=4.5" />
+  <link rel="stylesheet" href="styles.css?v=4.5" />
+  <link rel="stylesheet" href="v45.css?v=4.5" />
 </head>
 <body>
   <div id="appSplash" class="app-splash" aria-hidden="true">
-    <img src="icon.svg" alt="" />
+    <img src="icon.svg?v=4.5" alt="" />
     <strong>Health Tracker</strong>
-    <small>V4.3</small>
+    <small>V4.5</small>
   </div>
+
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">HEALTH TRACKER <span class="version-badge">V4.3</span></p>
+        <p class="eyebrow">HEALTH TRACKER <span class="version-badge">V4.5</span></p>
         <h1 id="greeting">Olá</h1>
         <p class="subtle">Bioimpedância, exames, laudos e tendências em um só lugar.</p>
       </div>
@@ -48,9 +50,9 @@
               <div>
                 <span class="label">Peso atual</span>
                 <div class="hero-value"><strong id="heroWeight">—</strong><span>kg</span></div>
-                <div class="meta" id="heroDate">Nenhuma medição carregada</div>
+                <div class="meta" id="heroDate">Carregando dados…</div>
               </div>
-              <div class="delta good" id="weightDelta">— <small>sem referência</small></div>
+              <div class="delta good" id="weightDelta">— <small>referência</small></div>
             </div>
             <div class="metric-grid three">
               <div class="metric"><span>IMC</span><strong id="heroBmi">—</strong><em class="ok" id="heroBmiStatus">—</em></div>
@@ -82,7 +84,7 @@
 
           <article class="card insight-card">
             <div class="insight-icon">✦</div>
-            <div><span class="label">Leitura rápida</span><h2 id="quickInsightTitle">Carregue seus dados para começar.</h2><p id="quickInsight" class="subtle"></p></div>
+            <div><span class="label">Leitura rápida</span><h2 id="quickInsightTitle">Sua evolução em contexto.</h2><p id="quickInsight" class="subtle"></p></div>
           </article>
 
           <article class="card health-glance" id="healthGlanceCard">
@@ -121,7 +123,6 @@
       <section class="view" data-view="results">
         <div class="page-title">
           <div><p class="eyebrow">BIOIMPEDÂNCIA</p><h1>Resultados</h1></div>
-          <div class="page-actions"><button class="primary small" id="addMeasurementBtn">＋ Nova</button></div>
         </div>
         <div class="timeline" id="resultsTimeline"></div>
       </section>
@@ -144,10 +145,6 @@
       <section class="view" data-view="health">
         <div class="page-title">
           <div><p class="eyebrow">EXAMES</p><h1>Saúde</h1></div>
-          <div class="page-actions">
-            <button class="secondary small" id="addReportBtn">＋ Laudo</button>
-            <button class="primary small" id="addLabBtn">＋ Exame</button>
-          </div>
         </div>
         <article class="card health-overview-card">
           <div class="section-title-row"><div><h2>Painel laboratorial</h2><p class="subtle">Acompanhe cada marcador ao longo do tempo</p></div><span class="score-badge" id="labCountBadge">0</span></div>
@@ -163,7 +160,7 @@
           <div class="section-title-row"><div><h2>Laudos e achados clínicos</h2><p class="subtle">Linha do tempo dos principais exames e conclusões</p></div><span class="score-badge" id="reportCountBadge">0</span></div>
           <div id="reportHistory" class="report-history"></div>
         </article>
-        <article class="card disclaimer"><strong>Importante</strong><p>O app organiza resultados e tendências, mas não interpreta exames nem substitui avaliação médica.</p></article>
+        <article class="card disclaimer"><strong>Importante</strong><p>O app organiza resultados e tendências, mas não substitui avaliação médica.</p></article>
       </section>
 
       <section class="view" data-view="compare">
@@ -172,8 +169,6 @@
         <div id="compareGrid" class="compare-grid"></div>
       </section>
     </main>
-
-    <button class="fab" id="fabAdd" aria-label="Adicionar nova bioimpedância">＋</button>
 
     <nav class="bottom-nav" aria-label="Navegação principal">
       <button class="active" data-nav="home"><span>⌂</span><small>Início</small></button>
@@ -184,65 +179,20 @@
     </nav>
   </div>
 
-  <dialog id="measurementDialog" class="dialog">
-    <form method="dialog" id="measurementForm">
-      <div class="dialog-head"><div><p class="eyebrow">NOVA MEDIÇÃO</p><h2>Adicionar bioimpedância</h2></div><button class="icon-btn" value="cancel">×</button></div>
-      <div class="form-grid">
-        <label>Data<input name="date" type="date" required /></label>
-        <label>Hora<input name="time" type="time" /></label>
-        <label>Peso (kg)<input name="weight" type="number" step="0.1" required /></label>
-        <label>Massa muscular (kg)<input name="muscle" type="number" step="0.1" required /></label>
-        <label>Gordura corporal (%)<input name="fatPct" type="number" step="0.1" required /></label>
-        <label>IMC<input name="bmi" type="number" step="0.1" /></label>
-        <label>Massa de gordura (kg)<input name="fatMass" type="number" step="0.1" /></label>
-        <label>Água corporal (L)<input name="water" type="number" step="0.1" /></label>
-        <label>Metabolismo basal (kcal)<input name="bmr" type="number" step="1" /></label>
-        <label>Gordura visceral<input name="visceral" type="number" step="1" /></label>
-      </div>
-      <div class="dialog-actions"><button value="cancel" class="secondary">Cancelar</button><button type="submit" value="default" class="primary">Salvar medição</button></div>
-    </form>
-  </dialog>
-
-  <dialog id="labDialog" class="dialog">
-    <form method="dialog" id="labForm">
-      <div class="dialog-head"><div><p class="eyebrow">NOVO EXAME</p><h2>Adicionar resultado laboratorial</h2></div><button class="icon-btn" value="cancel">×</button></div>
-      <div class="form-grid">
-        <label>Data<input name="date" type="date" required /></label>
-        <label>Exame<select name="key" required><option value="glucose">Glicemia</option><option value="totalChol">Colesterol total</option><option value="ldl">LDL</option><option value="hdl">HDL</option><option value="triglycerides">Triglicérides</option></select></label>
-        <label>Valor<input name="value" type="number" step="0.1" required /></label>
-        <label>Unidade<input name="unit" type="text" value="mg/dL" /></label>
-      </div>
-      <div class="dialog-actions"><button value="cancel" class="secondary">Cancelar</button><button type="submit" value="default" class="primary">Salvar exame</button></div>
-    </form>
-  </dialog>
-
-  <dialog id="reportDialog" class="dialog">
-    <form method="dialog" id="reportForm">
-      <div class="dialog-head"><div><p class="eyebrow">NOVO LAUDO</p><h2>Adicionar laudo ou achado clínico</h2></div><button class="icon-btn" value="cancel">×</button></div>
-      <div class="form-grid">
-        <label>Data<input name="date" type="date" /></label>
-        <label>Categoria<select name="category"><option value="sono">Sono</option><option value="neurologia">Neurologia</option><option value="imagem">Imagem</option><option value="ortopedia">Ortopedia / Coluna</option><option value="clinico">Clínico</option><option value="outros">Outros</option></select></label>
-        <label class="full">Título<input name="title" type="text" required placeholder="Ex.: ENMG de membro inferior esquerdo" /></label>
-        <label class="full">Resumo<textarea name="summary" rows="3" required placeholder="Conclusão principal do laudo"></textarea></label>
-        <label class="full">Pontos-chave<textarea name="bullets" rows="4" placeholder="Um item por linha"></textarea></label>
-      </div>
-      <div class="dialog-actions"><button value="cancel" class="secondary">Cancelar</button><button type="submit" value="default" class="primary">Salvar laudo</button></div>
-    </form>
-  </dialog>
-
   <dialog id="dataDialog" class="dialog">
-    <div class="dialog-head"><div><p class="eyebrow">DADOS</p><h2>Privacidade e backup</h2></div><button class="icon-btn" id="closeDataDialog">×</button></div>
-    <p class="subtle">Bioimpedâncias, exames e laudos ficam salvos neste navegador. Você pode importar o histórico completo e exportar um backup JSON a qualquer momento.</p>
+    <div class="dialog-head">
+      <div><p class="eyebrow">DADOS</p><h2>Atualização do app</h2></div>
+      <button class="icon-btn" id="closeDataDialog">×</button>
+    </div>
+    <p class="subtle">Os dados desta versão são publicados diretamente no GitHub. Para incluir uma nova bioimpedância, exame ou laudo, envie o arquivo para mim e eu atualizo o app.</p>
     <div class="stack-actions">
-      <button class="primary" id="exportBtn">Exportar backup JSON</button>
-      <label class="secondary file-label">Importar backup<input id="importInput" type="file" accept="application/json" hidden /></label>
-      <button class="danger-ghost" id="resetBtn">Apagar dados deste aparelho</button>
+      <button class="primary" id="exportBtn">Exportar cópia JSON</button>
     </div>
   </dialog>
 
-  <script src="core.js"></script>
-  <script src="charts.js"></script>
-  <script src="render.js"></script>
-  <script src="ui.js"></script>
+  <script src="core.js?v=4.5"></script>
+  <script src="charts.js?v=4.5"></script>
+  <script src="render.js?v=4.5"></script>
+  <script src="ui-v45.js?v=4.5"></script>
 </body>
 </html>
