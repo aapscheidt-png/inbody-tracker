@@ -2,7 +2,8 @@ function render(){
   measurements=normalizeMeasurements(measurements);
   labs=normalizeLabs(labs);
   reports=normalizeReports(reports);
-  document.getElementById('greeting').textContent=profile.displayName?`Olá, ${profile.displayName} 👋`:'Olá 👋';
+  document.querySelector('.topbar .eyebrow').textContent='HEALTH TRACKER · V4.1';
+  document.getElementById('greeting').textContent=profile.displayName?`Olá, ${profile.displayName}`:'Olá';
   if(hasData()){
     renderHome();
     renderResults();
