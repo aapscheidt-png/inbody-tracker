@@ -1,29 +1,42 @@
-# InBody Tracker • Anderson
+# InBody Tracker
 
 PWA responsivo, mobile-first, para acompanhar bioimpedância e composição corporal.
 
+## Privacy Architecture V2
+
+O código-fonte atual não contém medições pessoais, nome, altura, peso de referência ou outros dados de saúde pré-carregados. Os dados são importados pelo usuário e ficam armazenados somente no `localStorage` do navegador/aparelho.
+
+O backup JSON exportado pelo próprio app pode conter dados pessoais e deve ser tratado como arquivo privado. Ele não deve ser commitado neste repositório.
+
 ## Funcionalidades
-- Dashboard com peso, IMC, gordura corporal e massa muscular.
-- Série histórica de medições.
-- Gráficos de peso, massa muscular, percentual de gordura e IMC.
-- Comparação entre duas bioimpedâncias.
-- Dados completos da medição de 12/09/2026, incluindo composição e análise segmentar.
-- Cadastro de novas medições no próprio navegador.
-- Backup e restauração via JSON.
-- Instalável no iPhone/Android como PWA.
+
+- Dashboard de peso, IMC, gordura corporal e massa muscular.
+- Histórico de medições.
+- Gráficos de evolução.
+- Comparação entre bioimpedâncias.
+- Composição corporal e análise segmentar quando esses campos existirem no arquivo importado.
+- Cadastro manual de novas medições.
+- Importação e exportação de backup JSON.
+- Armazenamento local no aparelho.
+- PWA instalável no iPhone/Android.
 - Sem dependências externas.
 
-## Dados incluídos
-O app foi inicializado com as medições disponíveis no histórico, de 03/02/2026 a 12/09/2026. O peso aproximado de 93,8 kg do início de 2026 é usado apenas como referência de trajetória, não como bioimpedância datada.
+## Primeira utilização
 
-## Privacidade
-A versão atual contém dados pessoais de saúde pré-carregados em `app.js`. **Não publique este repositório como público** sem antes remover ou proteger esses dados. Medições adicionadas depois ficam em `localStorage` no navegador.
+Abra o app, acesse o menu `⋯` e importe um backup privado JSON ou adicione a primeira medição manualmente.
+
+## Importante sobre este repositório
+
+Este repositório deve permanecer **privado**. Uma versão anterior do projeto continha um histórico pessoal pré-carregado em commits antigos. A versão atual remove esses dados do código em execução, mas tornar o repositório público exigiria antes uma limpeza/recriação do histórico Git.
 
 ## Rodar localmente
+
 ```bash
 python3 -m http.server 8080
 ```
+
 Abra `http://localhost:8080`.
 
-## GitHub Pages
-Depois de colocar os arquivos em um repositório apropriado, habilite Pages para a branch principal e a raiz do projeto. Para manter os dados privados, prefira um repositório/ambiente privado ou uma arquitetura em que os dados pessoais não fiquem versionados no código-fonte.
+## Publicação
+
+O site pode ser publicado usando somente a versão atual sanitizada. O repositório-fonte deve continuar privado até que o histórico Git antigo seja eliminado.
