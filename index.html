@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="InBody Tracker" />
   <meta name="description" content="Dashboard pessoal de evolução de composição corporal." />
-  <title>InBody Tracker • Anderson</title>
+  <title>InBody Tracker</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="styles.css" />
@@ -18,7 +18,7 @@
     <header class="topbar">
       <div>
         <p class="eyebrow">INBODY TRACKER</p>
-        <h1 id="greeting">Olá, Anderson 👋</h1>
+        <h1 id="greeting">Olá 👋</h1>
         <p class="subtle">Seu corpo em números. Sua evolução em contexto.</p>
       </div>
       <button class="icon-btn" id="settingsBtn" aria-label="Dados e configurações">⋯</button>
@@ -37,21 +37,21 @@
             <div class="hero-head">
               <div>
                 <span class="label">Peso atual</span>
-                <div class="hero-value"><strong id="heroWeight">76,3</strong><span>kg</span></div>
-                <div class="meta" id="heroDate">12/09/2026 • 11:39</div>
+                <div class="hero-value"><strong id="heroWeight">—</strong><span>kg</span></div>
+                <div class="meta" id="heroDate">Nenhuma medição carregada</div>
               </div>
-              <div class="delta good" id="weightDelta">↓ 17,5 kg <small>vs. início/2026</small></div>
+              <div class="delta good" id="weightDelta">— <small>sem referência</small></div>
             </div>
             <div class="metric-grid three">
-              <div class="metric"><span>IMC</span><strong id="heroBmi">22,8</strong><em class="ok">Normal</em></div>
-              <div class="metric"><span>% Gordura</span><strong id="heroFatPct">18,5%</strong><em class="ok">Normal</em></div>
-              <div class="metric"><span>Massa muscular</span><strong id="heroMuscle">35,0 kg</strong><em class="ok">Normal</em></div>
+              <div class="metric"><span>IMC</span><strong id="heroBmi">—</strong><em class="ok" id="heroBmiStatus">—</em></div>
+              <div class="metric"><span>% Gordura</span><strong id="heroFatPct">—</strong><em class="ok" id="heroFatStatus">—</em></div>
+              <div class="metric"><span>Massa muscular</span><strong id="heroMuscle">—</strong><em class="ok" id="heroMuscleStatus">—</em></div>
             </div>
           </article>
 
           <article class="card">
             <div class="section-title-row">
-              <div><h2>Minha evolução</h2><p class="subtle">Bioimpedâncias registradas em 2026</p></div>
+              <div><h2>Minha evolução</h2><p class="subtle">Histórico de bioimpedâncias registradas</p></div>
               <button class="pill-btn" id="openEvolutionBtn">Ver tudo</button>
             </div>
             <div class="legend compact">
@@ -63,29 +63,29 @@
           </article>
 
           <div class="summary-strip">
-            <div><span>Desde 03/02</span><strong id="summaryWeightChange">−14,5 kg</strong><small>Peso</small></div>
-            <div><span>Desde 03/02</span><strong id="summaryFatChange">−9,6 p.p.</strong><small>Gordura</small></div>
-            <div><span>Desde 03/02</span><strong id="summaryMuscleChange">−1,8 kg</strong><small>Músculo</small></div>
+            <div><span id="summaryWeightLabel">Período</span><strong id="summaryWeightChange">—</strong><small>Peso</small></div>
+            <div><span id="summaryFatLabel">Período</span><strong id="summaryFatChange">—</strong><small>Gordura</small></div>
+            <div><span id="summaryMuscleLabel">Período</span><strong id="summaryMuscleChange">—</strong><small>Músculo</small></div>
           </div>
 
           <article class="card insight-card">
             <div class="insight-icon">✦</div>
-            <div><span class="label">Leitura rápida</span><h2>Você reduziu gordura mantendo boa parte da massa muscular.</h2><p id="quickInsight" class="subtle"></p></div>
+            <div><span class="label">Leitura rápida</span><h2 id="quickInsightTitle">Carregue seus dados para começar.</h2><p id="quickInsight" class="subtle"></p></div>
           </article>
         </div>
 
         <div id="homeComposicao" class="home-panel">
           <article class="card">
-            <div class="section-title-row"><div><h2>Composição corporal</h2><p class="subtle">Última medição</p></div><span class="score-badge">76/100</span></div>
+            <div class="section-title-row"><div><h2>Composição corporal</h2><p class="subtle">Última medição</p></div><span class="score-badge" id="scoreBadge">—/100</span></div>
             <div class="composition-list" id="compositionList"></div>
           </article>
           <article class="card">
             <h2>Controle de peso</h2>
             <div class="control-grid">
-              <div><span>Peso ideal</span><strong>73,7 kg</strong></div>
-              <div><span>Controle de peso</span><strong>−2,6 kg</strong></div>
-              <div><span>Controle de gordura</span><strong>−3,1 kg</strong></div>
-              <div><span>Controle muscular</span><strong>+0,5 kg</strong></div>
+              <div><span>Peso ideal</span><strong id="idealWeight">—</strong></div>
+              <div><span>Controle de peso</span><strong id="weightControl">—</strong></div>
+              <div><span>Controle de gordura</span><strong id="fatControl">—</strong></div>
+              <div><span>Controle muscular</span><strong id="muscleControl">—</strong></div>
             </div>
           </article>
         </div>
@@ -122,7 +122,7 @@
           <button data-metric="bmi">IMC</button>
         </div>
         <article class="card evolution-card">
-          <div class="evolution-number"><span id="evoMetricLabel">Peso</span><strong id="evoMetricValue">76,3 <small>kg</small></strong><em id="evoMetricDelta">−14,5 kg</em></div>
+          <div class="evolution-number"><span id="evoMetricLabel">Peso</span><strong id="evoMetricValue">—</strong><em id="evoMetricDelta">—</em></div>
           <div class="chart-wrap large"><svg id="evolutionChart" class="chart" viewBox="0 0 720 410" role="img" aria-label="Gráfico de evolução detalhada"></svg></div>
         </article>
         <article class="card"><h2>Comparativo do período</h2><div id="comparisonIndicators" class="indicator-list"></div></article>
@@ -178,14 +178,17 @@
 
   <dialog id="dataDialog" class="dialog">
     <div class="dialog-head"><div><p class="eyebrow">DADOS</p><h2>Privacidade e backup</h2></div><button class="icon-btn" id="closeDataDialog">×</button></div>
-    <p class="subtle">As medições adicionadas por você ficam salvas apenas neste navegador. Exporte um backup para levar os dados para outro aparelho.</p>
+    <p class="subtle">Seus dados ficam somente neste navegador. O código publicado não contém suas medições. Exporte um backup para transferir ou recuperar o histórico em outro aparelho.</p>
     <div class="stack-actions">
       <button class="primary" id="exportBtn">Exportar backup JSON</button>
       <label class="secondary file-label">Importar backup<input id="importInput" type="file" accept="application/json" hidden /></label>
-      <button class="danger-ghost" id="resetBtn">Restaurar dados originais</button>
+      <button class="danger-ghost" id="resetBtn">Apagar dados deste aparelho</button>
     </div>
   </dialog>
 
-  <script src="app.js"></script>
+  <script src="core.js"></script>
+  <script src="charts.js"></script>
+  <script src="render.js"></script>
+  <script src="ui.js"></script>
 </body>
 </html>
