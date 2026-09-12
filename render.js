@@ -2,7 +2,6 @@ function render(){
   measurements=normalizeMeasurements(measurements);
   labs=normalizeLabs(labs);
   reports=normalizeReports(reports);
-  document.querySelector('.topbar .eyebrow').textContent='HEALTH TRACKER · V4.1';
   document.getElementById('greeting').textContent=profile.displayName?`Olá, ${profile.displayName}`:'Olá';
   if(hasData()){
     renderHome();
@@ -32,6 +31,7 @@ function renderEmptyBody(){
   document.getElementById('quickInsightTitle').textContent='Carregue seus dados para começar.';
   document.getElementById('quickInsight').textContent='Use o menu ⋯ para importar seu histórico completo.';
   document.getElementById('overviewChart').innerHTML='';
+  document.getElementById('overviewLatest').innerHTML='';
   document.getElementById('compositionList').innerHTML='<p class="subtle">Nenhuma medição disponível.</p>';
   document.getElementById('scoreBadge').textContent='—/100';
   ['idealWeight','weightControl','fatControl','muscleControl'].forEach(id=>document.getElementById(id).textContent='—');
@@ -73,6 +73,7 @@ function renderHome(){
   document.getElementById('quickInsightTitle').textContent='Sua evolução em contexto.';
   document.getElementById('quickInsight').textContent=measurements.length>1?`Entre ${brDate(f.date)} e ${brDate(l.date)}, o peso variou ${signed(dw,' kg')}, a gordura ${signed(df,' p.p.')} e a massa muscular ${signed(dm,' kg')}.`:'Primeira medição registrada.';
   renderMultiChart(document.getElementById('overviewChart'));
+  document.getElementById('overviewLatest').innerHTML=`<span class="last-chip red"><i></i>Peso <strong>${fmt(l.weight)} kg</strong></span><span class="last-chip blue"><i></i>Músculo <strong>${fmt(l.muscle)} kg</strong></span><span class="last-chip amber"><i></i>Gordura <strong>${fmt(l.fatPct)}%</strong></span>`;
   renderComposition();
   renderSegments();
 }
