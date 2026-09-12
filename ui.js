@@ -136,19 +136,11 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
   }
 });
 
-function applyVersionUi(){
-  const greeting=document.getElementById('greeting');
-  const targetGreeting=profile.displayName?`Olá, ${profile.displayName}`:'Olá';
-  if(greeting&&greeting.textContent!==targetGreeting)greeting.textContent=targetGreeting;
-  const versionLabel=document.querySelector('.topbar .eyebrow');
-  if(versionLabel)versionLabel.textContent='HEALTH TRACKER · V4.1';
-}
-
+const isStandalone=window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+document.body.classList.toggle('standalone',isStandalone);
 render();
-applyVersionUi();
-const greetingNode=document.getElementById('greeting');
-if(greetingNode){
-  const greetingObserver=new MutationObserver(()=>applyVersionUi());
-  greetingObserver.observe(greetingNode,{childList:true,subtree:true,characterData:true});
+const splash=document.getElementById('appSplash');
+if(splash){setTimeout(()=>splash.classList.add('hidden'),isStandalone?650:0)}
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('./sw.js?v=4.3').then(reg=>reg.update()).catch(()=>{});
 }
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
