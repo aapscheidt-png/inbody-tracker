@@ -1,6 +1,8 @@
 'use strict';
 
-// V5.2: panorama de saúde calculado localmente a partir da base privada descriptografada.
+// V5.2.1: panorama de saúde calculado localmente a partir da base privada descriptografada.
+// Princípio de segurança: resultado isolado fora da referência gera acompanhamento, não gravidade automática.
+// O estado vermelho só pode aparecer quando a própria base privada trouxer prioridade clínica explícita.
 const V52_SPECIALTIES=[
   {id:'metabolic',label:'Metabólico e glicemia',icon:'◌',labKeys:['glucose','hba1c','estimated_avg_glucose','insulin','insulin_free','homa_ir','uric_acid']},
   {id:'cardio',label:'Cardiovascular e lipídios',icon:'♡',labKeys:['total_cholesterol','hdl','ldl','non_hdl','triglycerides','homocysteine']},
@@ -32,10 +34,13 @@ function v52ReportLooksReassuring(r){
 }
 function v52LabStatusSummary(labsForSpec){
   const statuses=labsForSpec.map(x=>({item:x,status:labStatus(x)}));
-  const attention=statuses.filter(x=>['high','low'].includes(x.status.code));
+  const outside=statuses.filter(x=>['high','low'].includes(x.status.code));
   const context=statuses.filter(x=>x.status.code==='context');
   const ok=statuses.filter(x=>x.status.code==='ok');
-  return{statuses,attention,context,ok};
+  return{statuses,outside,context,ok};
+}
+function v521HasExplicitPriority(items){
+  return items.some(x=>x&&(x.clinicalPriority==='high'||x.priority==='high'||x.requiresPromptMedicalReview===true));
 }
 function v52BodyEvidence(){
   const m=latestBody();if(!m)return null;
@@ -54,41 +59,44 @@ function v52BuildSpecialty(spec){
       if(value!=null&&Array.isArray(range)&&bodyStatus(value,range)!=='Na faixa')flags.push(key);
     }
     const status=flags.length?{code:'follow',label:'Acompanhar'}:{code:'good',label:'Favorável'};
-    return{...spec,date:e.date,status,summary:flags.length?'A composição corporal tem indicadores fora das faixas de referência do aparelho; acompanhe a tendência, não apenas uma medição isolada.':'Os principais indicadores corporais disponíveis estão dentro das faixas de referência registradas no exame mais recente.',labs:[],report:null,body:e,evidenceCount:1};
+    return{...spec,date:e.date,status,summary:flags.length?'Há indicadores fora das faixas de referência do aparelho. O foco aqui é acompanhar a tendência ao longo do tempo, não atribuir gravidade a uma medição isolada.':'Os principais indicadores corporais disponíveis estão dentro das faixas de referência registradas no exame mais recente.',labs:[],report:null,body:e,evidenceCount:1,outsideCount:flags.length};
   }
   const ls=v52LatestLabsFor(spec),rs=v52ReportsFor(spec),report=rs[0]||null;
   if(!ls.length&&!report)return null;
   const labSum=v52LabStatusSummary(ls);
+  const explicitPriority=v521HasExplicitPriority([...ls,report].filter(Boolean));
   let status;
-  if(labSum.attention.length)status={code:'attention',label:'Atenção'};
-  else if(report&&!v52ReportLooksReassuring(report))status={code:'follow',label:'Acompanhar'};
-  else if(labSum.context.length)status={code:'follow',label:'Acompanhar'};
+  if(explicitPriority)status={code:'priority',label:'Prioridade médica'};
+  else if(labSum.outside.length||labSum.context.length||(report&&!v52ReportLooksReassuring(report)))status={code:'follow',label:'Acompanhar'};
   else status={code:'good',label:'Favorável'};
   const phrases=[];
   if(ls.length){
     const newest=ls.slice(0,4).map(x=>`${x.label} ${fmtFlex(x.value)}${x.unit?` ${x.unit}`:''}`);
     phrases.push(`Marcadores mais recentes: ${newest.join(', ')}.`);
-    if(labSum.attention.length)phrases.push(`${labSum.attention.length} ${labSum.attention.length===1?'marcador está':'marcadores estão'} fora da referência disponível no próprio exame.`);
+    if(labSum.outside.length)phrases.push(`${labSum.outside.length} ${labSum.outside.length===1?'marcador está':'marcadores estão'} fora da referência disponível no próprio exame; isso é sinalizado para acompanhamento e não significa, por si só, urgência ou gravidade.`);
     else if(labSum.context.length)phrases.push('Parte dos marcadores exige interpretação pelo contexto clínico, risco individual ou tratamento em uso.');
     else phrases.push('Nos marcadores com referência recuperada, não há desvio relevante no resultado mais recente.');
   }
   if(report)phrases.push(`Último laudo da área: ${report.summary||report.title}.`);
+  if(explicitPriority)phrases.push('Esta área foi marcada como prioridade porque a base privada contém uma indicação clínica explícita de revisão médica prioritária.');
   const dates=[...ls,report].filter(Boolean);const date=v52LatestDate(dates);
-  return{...spec,date,status,summary:phrases.join(' '),labs:ls,report,body:null,evidenceCount:ls.length+(report?1:0)};
+  return{...spec,date,status,summary:phrases.join(' '),labs:ls,report,body:null,evidenceCount:ls.length+(report?1:0),outsideCount:labSum.outside.length};
 }
 function v52Panorama(){return V52_SPECIALTIES.map(v52BuildSpecialty).filter(Boolean).sort((a,b)=>(b.date||'').localeCompare(a.date||''));}
 function v52GlobalSummary(rows){
-  const good=rows.filter(x=>x.status.code==='good').length,follow=rows.filter(x=>x.status.code==='follow').length,attention=rows.filter(x=>x.status.code==='attention').length;
   if(!rows.length)return 'Ainda não há dados suficientes para montar o panorama.';
+  const good=rows.filter(x=>x.status.code==='good').length,follow=rows.filter(x=>x.status.code==='follow').length,priority=rows.filter(x=>x.status.code==='priority').length;
   const latest=rows.map(x=>x.date).filter(Boolean).sort().at(-1);
-  let s=`Panorama calculado localmente a partir das evidências mais recentes de ${rows.length} áreas de saúde`;
-  if(latest)s+=`, com dados até ${brDate(latest)}`;
-  s+=`. ${good} ${good===1?'área aparece favorável':'áreas aparecem favoráveis'}, ${follow} ${follow===1?'merece':'merecem'} acompanhamento`;
-  if(attention)s+=` e ${attention} ${attention===1?'tem marcador laboratorial':'têm marcadores laboratoriais'} que merece${attention===1?'':'m'} atenção`;
-  return s+'.';
+  let headline;
+  if(priority)headline=`Panorama geral com ${priority} ${priority===1?'área marcada como prioridade médica':'áreas marcadas como prioridade médica'}, além dos demais pontos de acompanhamento.`;
+  else if(follow)headline=`Panorama predominantemente favorável, com ${follow} ${follow===1?'área para acompanhamento':'áreas para acompanhamento'}.`;
+  else headline='Panorama favorável nas áreas com dados disponíveis.';
+  let detail=` ${good} ${good===1?'área está favorável':'áreas estão favoráveis'} entre ${rows.length} áreas avaliadas`;
+  if(latest)detail+=`, com evidências até ${brDate(latest)}`;
+  return headline+detail+'.';
 }
 function v52EvidenceHtml(row){
-  const labsHtml=row.labs.map(x=>{const st=labStatus(x);return `<li><div><strong>${esc(x.label)}</strong><span>${brDate(x.date)} · ${fmtFlex(x.value)} ${esc(x.unit||'')}</span></div><em class="status ${esc(st.code)}">${esc(st.label)}</em></li>`;}).join('');
+  const labsHtml=row.labs.map(x=>{const st=labStatus(x),visualCode=['high','low'].includes(st.code)?'monitor':st.code;return `<li><div><strong>${esc(x.label)}</strong><span>${brDate(x.date)} · ${fmtFlex(x.value)} ${esc(x.unit||'')}</span></div><em class="status ${esc(visualCode)}">${esc(st.label)}</em></li>`;}).join('');
   const reportHtml=row.report?`<li><div><strong>${esc(row.report.title)}</strong><span>${row.report.date?brDate(row.report.date):'Data não recuperada'} · ${esc(row.report.summary||'Laudo disponível')}</span></div><em class="status context">Laudo</em></li>`:'';
   const bodyHtml=row.body?`<li><div><strong>${esc(row.body.title)}</strong><span>${brDate(row.body.date)} · ${esc(row.body.summary)}</span></div><em class="status context">InBody</em></li>`:'';
   return `<ul class="panorama-evidence-list">${labsHtml}${reportHtml}${bodyHtml}</ul>`;
@@ -96,7 +104,7 @@ function v52EvidenceHtml(row){
 function v52RenderPanorama(){
   const box=document.getElementById('healthPanoramaContent');if(!box)return;
   const rows=v52Panorama();
-  box.innerHTML=`<div class="panorama-overview"><span class="label">VISÃO CONSOLIDADA</span><h3>${esc(v52GlobalSummary(rows))}</h3><p>O panorama usa sempre o dado mais recente disponível de cada área e é recalculado após cada sincronização. Achados antigos continuam preservados no histórico, mas não substituem a evidência mais nova da mesma área.</p></div><div class="panorama-grid">${rows.map(r=>`<article class="panorama-area ${esc(r.status.code)}"><div class="panorama-area-head"><div class="panorama-symbol">${esc(r.icon)}</div><div><h3>${esc(r.label)}</h3><time>${r.date?`Última evidência: ${brDate(r.date)}`:'Data não recuperada'}</time></div><span class="panorama-state ${esc(r.status.code)}">${esc(r.status.label)}</span></div><p>${esc(r.summary)}</p><details><summary>Ver evidências (${r.evidenceCount})</summary>${v52EvidenceHtml(r)}</details></article>`).join('')}</div><p class="panorama-footnote">Este panorama organiza resultados e laudos; não estabelece diagnóstico e não substitui avaliação médica, sintomas, exame físico ou contexto clínico individual.</p>`;
+  box.innerHTML=`<div class="panorama-overview"><span class="label">VISÃO CONSOLIDADA</span><h3>${esc(v52GlobalSummary(rows))}</h3><p>O panorama usa o dado mais recente disponível de cada área e é recalculado após cada sincronização. Resultado isolado fora da referência aparece como acompanhamento; o app não atribui gravidade automaticamente. Vermelho fica reservado a uma prioridade clínica explicitamente registrada na base privada.</p></div><div class="panorama-grid">${rows.map(r=>`<article class="panorama-area ${esc(r.status.code)}"><div class="panorama-area-head"><div class="panorama-symbol">${esc(r.icon)}</div><div><h3>${esc(r.label)}</h3><time>${r.date?`Última evidência: ${brDate(r.date)}`:'Data não recuperada'}</time></div><span class="panorama-state ${esc(r.status.code)}">${esc(r.status.label)}</span></div><p>${esc(r.summary)}</p><details><summary>Ver evidências (${r.evidenceCount})</summary>${v52EvidenceHtml(r)}</details></article>`).join('')}</div><p class="panorama-footnote">Este panorama organiza resultados e laudos; não estabelece diagnóstico e não substitui avaliação médica, sintomas, exame físico ou contexto clínico individual.</p>`;
 }
 function v52EnsureUi(){
   const health=document.querySelector('.view[data-view="health"]'),hero=health?.querySelector('.health-summary-hero');if(!health||!hero)return;
