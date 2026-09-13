@@ -5,6 +5,7 @@ on:
     branches:
       - v5-private-data-architecture
       - v5-1-exam-index
+      - v5-1-1-ux
   workflow_dispatch:
 
 permissions:
@@ -71,6 +72,12 @@ jobs:
           for f in ['core-v5.js','crypto-v5.js','charts-v5.js','render-v5.js','v51.js','ui-v5.js','crypto-ui-v5.js','v51.css']:
               assert f in sw, f'{f} not in SW shell'
           assert 'health-data-v5.enc.json' in sw
-          assert 'health-tracker-v5-1-shell' in sw
-          print('html-service-worker-contract-v5.1: PASS')
+          assert 'health-tracker-v5-1-1-shell' in sw
+          v51=pathlib.Path('v51.js').read_text()
+          crypto_ui=pathlib.Path('crypto-ui-v5.js').read_text()
+          assert 'openExamIndexBtn' in v51
+          assert 'v511SyncSuccessMessage' in v51
+          assert 'Sincronizando…' in crypto_ui
+          assert 'v511ShowToast' in crypto_ui
+          print('html-service-worker-contract-v5.1.1: PASS')
           PY
