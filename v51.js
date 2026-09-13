@@ -99,3 +99,24 @@ const examSearch=document.getElementById('examIndexSearch');if(examSearch)examSe
 const examFilters=document.getElementById('examIndexFilters');if(examFilters)examFilters.addEventListener('click',e=>{const b=e.target.closest('[data-exam-filter]');if(!b)return;examIndexFilter=b.dataset.examFilter;examIndexExpanded=false;examFilters.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));renderExamIndex();});
 const examList=document.getElementById('examIndexList');if(examList)examList.addEventListener('click',async e=>{const b=e.target.closest('[data-copy-path]');if(!b)return;const path=b.dataset.copyPath;try{await navigator.clipboard.writeText(path);const small=b.querySelector('small');if(small){small.textContent='Caminho copiado';setTimeout(()=>small.textContent='Toque para copiar',1400);}}catch(_){prompt('Copie o caminho:',path);}});
 const examMore=document.getElementById('examIndexMore');if(examMore)examMore.addEventListener('click',()=>{examIndexExpanded=!examIndexExpanded;renderExamIndex();});
+
+// V5.1.1 UX: acesso rápido ao índice de exames e feedback explícito de sincronização.
+function v511EnsureExamJump(){
+  if(document.getElementById('openExamIndexBtn'))return;
+  const health=document.querySelector('.view[data-view="health"]'),hero=health?.querySelector('.health-summary-hero');
+  if(!health||!hero)return;
+  const b=document.createElement('button');b.id='openExamIndexBtn';b.className='exam-index-jump';b.type='button';b.innerHTML='<span class="exam-jump-icon">⌕</span><span><strong>Procurar meus exames</strong><small>Veja quando fez e onde o arquivo está guardado</small></span><span class="exam-jump-arrow">›</span>';
+  hero.insertAdjacentElement('afterend',b);
+  b.addEventListener('click',()=>{const card=document.querySelector('.exam-index-card');if(!card)return;card.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>document.getElementById('examIndexSearch')?.focus({preventScroll:true}),450);});
+}
+function v511SyncRecordCount(){return bodyMeasurements().length+labs().length+reports().length+(data.treatments||[]).length+(data.archiveIndex||[]).length;}
+function v511SyncSuccessMessage(){
+  const now=new Date(),time=now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),count=v511SyncRecordCount();
+  try{localStorage.setItem('health-tracker-last-sync-v5',now.toISOString());}catch(_){}
+  return `Sincronização concluída · ${time} · ${count} registros carregados`;
+}
+function v511ShowToast(message,state='ok'){
+  let t=document.getElementById('syncToastV511');if(!t){t=document.createElement('div');t.id='syncToastV511';t.className='sync-toast';t.setAttribute('role','status');t.setAttribute('aria-live','polite');document.body.appendChild(t);}
+  t.textContent=message;t.dataset.state=state;t.classList.add('show');clearTimeout(v511ShowToast._timer);v511ShowToast._timer=setTimeout(()=>t.classList.remove('show'),3600);
+}
+v511EnsureExamJump();
