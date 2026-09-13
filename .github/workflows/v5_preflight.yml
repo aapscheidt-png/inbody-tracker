@@ -7,6 +7,7 @@ on:
       - v5-1-exam-index
       - v5-1-1-ux
       - v5-1-1-version-fix
+      - v5-2-health-panorama
   workflow_dispatch:
 
 permissions:
@@ -22,7 +23,7 @@ jobs:
       - name: JavaScript syntax
         run: |
           set -euo pipefail
-          for f in core-v5.js crypto-v5.js charts-v5.js render-v5.js v51.js ui-v5.js crypto-ui-v5.js sw-v5.js; do
+          for f in core-v5.js crypto-v5.js charts-v5.js render-v5.js v51.js v52.js ui-v5.js crypto-ui-v5.js sw-v5.js; do
             test -f "$f"
             node --check "$f"
           done
@@ -33,7 +34,7 @@ jobs:
           test ! -e core.js
           test ! -e core-v3.js
           test ! -e health-recovery-key-v5.json
-          ! grep -R -n --exclude='health-data-v5.enc.json' --exclude='v5_preflight.yml' -E '287[.]364[.]238|ANDERSON ANDRE PSCHEIDT|BUNDLED_HEALTH_DATA' .
+          ! grep -R -n --exclude='health-data-v5.enc.json' --exclude='v5_preflight.yml' -E '287[.]364[.]238|ANDERSON ANDRE PSCHEIDT|BUNDLED_HEALTH_DATA|iCloud Drive[[:space:]]*[›/][[:space:]]*Medicina' .
 
       - name: Encrypted dataset contract
         run: |
@@ -48,8 +49,8 @@ jobs:
           assert enc['keyId']==pub['keyId']
           assert pub['publicKeyJwk']['kty']=='RSA'
           assert pub['publicKeyJwk']['alg']=='RSA-OAEP-256'
-          assert manifest['start_url']=='./?v=5.1.1'
-          assert manifest['icons'][0]['src']=='icon.svg?v=5.1.1'
+          assert manifest['start_url']=='./?v=5.2'
+          assert manifest['icons'][0]['src']=='icon.svg?v=5.2'
           for key in ('wrappedKey','iv','ciphertext'):
               s=enc[key]
               base64.urlsafe_b64decode(s + '='*((4-len(s)%4)%4))
@@ -58,31 +59,36 @@ jobs:
           print('encrypted-dataset-contract-v2: PASS')
           PY
 
-      - name: HTML and service worker contract
+      - name: HTML, panorama and service worker contract
         run: |
           python - <<'PY'
           import pathlib, re
           html=pathlib.Path('index.html').read_text()
-          required_files=['styles.css','v45.css','v5.css','v51.css','core-v5.js','crypto-v5.js','charts-v5.js','render-v5.js','v51.js','ui-v5.js','crypto-ui-v5.js','sw-v5.js','manifest-v5.webmanifest','health-data-v5.enc.json']
+          required_files=['styles.css','v45.css','v5.css','v51.css','v52.css','core-v5.js','crypto-v5.js','charts-v5.js','render-v5.js','v51.js','v52.js','ui-v5.js','crypto-ui-v5.js','sw-v5.js','manifest-v5.webmanifest','health-data-v5.enc.json']
           for f in required_files:
               assert pathlib.Path(f).exists(), f'missing {f}'
           required_ids=['greeting','privacyState','heroWeight','heroDate','heroBmi','heroFatPct','heroMuscle','weightDelta','overviewChart','overviewLatest','homeInsight','healthGlance','healthDateBase','resultsTimeline','evolutionChart','evoMetricLabel','evoMetricValue','evoMetricDelta','evoReference','healthSummaryDate','healthFreshness','healthSummaryText','healthKpis','healthCategoryTabs','healthMarkers','labMetricLabel','labMetricValue','labMetricDelta','labReference','labContext','labChart','labHistory','reportHistory','examIndexSearch','examIndexFilters','examIndexCount','examIndexList','examIndexMore','clinicalTimeline','bodyDetailDialog','bodyDetailContent','bodyDetailTitle','dataDialog','importInput','recoveryKeyInput','syncBtn','exportBtn','resetBtn','clearKeyBtn']
           for i in required_ids:
               assert re.search(rf'id=["\']{re.escape(i)}["\']',html), f'missing DOM id {i}'
-          assert '<span class="version-badge">V5.1.1</span>' in html
-          assert 'A V5.1.1 publica apenas uma base' in html
-          assert '?v=5.1"' not in html
-          assert html.count('?v=5.1.1') >= 10
+          assert '<span class="version-badge">V5.2</span>' in html
+          assert 'A V5.2 publica apenas uma base' in html
+          assert html.count('?v=5.2') >= 12
+          assert 'v52.css?v=5.2' in html
+          assert 'v52.js?v=5.2' in html
           sw=pathlib.Path('sw-v5.js').read_text()
-          for f in ['core-v5.js','crypto-v5.js','charts-v5.js','render-v5.js','v51.js','ui-v5.js','crypto-ui-v5.js','v51.css']:
+          for f in ['core-v5.js','crypto-v5.js','charts-v5.js','render-v5.js','v51.js','v52.js','ui-v5.js','crypto-ui-v5.js','v51.css','v52.css']:
               assert f in sw, f'{f} not in SW shell'
           assert 'health-data-v5.enc.json' in sw
-          assert 'health-tracker-v5-1-1-shell' in sw
+          assert 'health-tracker-v5-2-shell' in sw
           v51=pathlib.Path('v51.js').read_text()
+          v52=pathlib.Path('v52.js').read_text()
           crypto_ui=pathlib.Path('crypto-ui-v5.js').read_text()
           assert 'openExamIndexBtn' in v51
           assert 'v511SyncSuccessMessage' in v51
           assert 'Sincronizando…' in crypto_ui
           assert 'v511ShowToast' in crypto_ui
-          print('html-service-worker-contract-v5.1.1: PASS')
+          for token in ['V52_SPECIALTIES','openHealthPanoramaBtn','healthPanoramaDialog','v52Panorama','Ver meu panorama de saúde','Ver evidências']:
+              assert token in v52, f'missing panorama token {token}'
+          assert 'localmente' in v52
+          print('html-panorama-service-worker-contract-v5.2: PASS')
           PY
