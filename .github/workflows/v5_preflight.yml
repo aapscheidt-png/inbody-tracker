@@ -8,6 +8,7 @@ on:
       - v5-1-1-ux
       - v5-1-1-version-fix
       - v5-2-health-panorama
+      - v5-2-1-calmer-health-status
   workflow_dispatch:
 
 permissions:
@@ -82,6 +83,7 @@ jobs:
           assert 'health-tracker-v5-2-shell' in sw
           v51=pathlib.Path('v51.js').read_text()
           v52=pathlib.Path('v52.js').read_text()
+          css52=pathlib.Path('v52.css').read_text()
           crypto_ui=pathlib.Path('crypto-ui-v5.js').read_text()
           assert 'openExamIndexBtn' in v51
           assert 'v511SyncSuccessMessage' in v51
@@ -90,5 +92,11 @@ jobs:
           for token in ['V52_SPECIALTIES','openHealthPanoramaBtn','healthPanoramaDialog','v52Panorama','Ver meu panorama de saúde','Ver evidências']:
               assert token in v52, f'missing panorama token {token}'
           assert 'localmente' in v52
-          print('html-panorama-service-worker-contract-v5.2: PASS')
+          assert "status={code:'attention',label:'Atenção'}" not in v52
+          assert "status={code:'priority',label:'Prioridade médica'}" in v52
+          assert 'não significa, por si só, urgência ou gravidade' in v52
+          assert 'v521HasExplicitPriority' in v52
+          assert '.panorama-area.priority' in css52
+          assert '.status.monitor' in css52
+          print('html-panorama-service-worker-contract-v5.2-calm-severity: PASS')
           PY
