@@ -6,7 +6,7 @@ const V52_SPECIALTIES=[
   {id:'cardio',label:'Cardiovascular e lipídios',icon:'♡',labKeys:['total_cholesterol','hdl','ldl','non_hdl','triglycerides','homocysteine']},
   {id:'hematology',label:'Hematologia',icon:'◇',labKeys:['rbc','hemoglobin','hematocrit','mcv','mch','mchc','rdw','wbc','neutrophils_abs','eosinophils_abs','basophils_abs','lymphocytes_abs','monocytes_abs','platelets','mpv']},
   {id:'kidney',label:'Rins e eletrólitos',icon:'◫',labKeys:['creatinine','egfr','urea','sodium','potassium']},
-  {id:'liver',label:'Fígado e abdome',icon:'◒',labKeys:['alt','ast','ggt','bilirubin_total','bilirubin_direct','bilirubin_indirect','alkaline_phosphatase','albumin','lipase'],reportTerms:['abdome','abdominal','fígado','figado','hepát','hepat','vesícula','vesicula']},
+  {id:'liver',label:'Fígado e abdome',icon:'◒',labKeys:['alt','ast','ggt','bilirubin_total','bilirubin_direct','bilirubin_indirect','alkaline_phosphatase','albumin','lipase'],reportTerms:['abdome','abdominal','usg abd','abd tot','fígado','figado','hepát','hepat','vesícula','vesicula']},
   {id:'thyroid',label:'Tireoide',icon:'⌁',labKeys:['tsh','free_t4','t3','anti_tpo']},
   {id:'vitamins',label:'Vitaminas e minerais',icon:'✦',labKeys:['vitamin_d_25oh','vitamin_b12','vitamin_c','iron','ferritin','zinc','magnesium','calcium']},
   {id:'hormones',label:'Hormonal e TRT',icon:'△',labKeys:['testosterone_total','testosterone_free','testosterone_bioavailable','shbg','fsh','lh','estradiol','dht','prolactin','cortisol_serum']},
@@ -83,7 +83,7 @@ function v52GlobalSummary(rows){
   const latest=rows.map(x=>x.date).filter(Boolean).sort().at(-1);
   let s=`Panorama calculado localmente a partir das evidências mais recentes de ${rows.length} áreas de saúde`;
   if(latest)s+=`, com dados até ${brDate(latest)}`;
-  s+=`. ${good} ${good===1?'área aparece':'áreas aparecem'} favorável${good===1?'':'is'}, ${follow} ${follow===1?'merece':'merecem'} acompanhamento`;
+  s+=`. ${good} ${good===1?'área aparece favorável':'áreas aparecem favoráveis'}, ${follow} ${follow===1?'merece':'merecem'} acompanhamento`;
   if(attention)s+=` e ${attention} ${attention===1?'tem marcador laboratorial':'têm marcadores laboratoriais'} que merece${attention===1?'':'m'} atenção`;
   return s+'.';
 }
@@ -104,13 +104,14 @@ function v52EnsureUi(){
   if(!actions){actions=document.createElement('div');actions.id='healthPrimaryActions';actions.className='health-primary-actions';hero.insertAdjacentElement('afterend',actions);}
   let pano=document.getElementById('openHealthPanoramaBtn');
   if(!pano){pano=document.createElement('button');pano.id='openHealthPanoramaBtn';pano.className='health-action primary';pano.type='button';pano.innerHTML='<span class="health-action-icon">✦</span><span><strong>Ver meu panorama de saúde</strong><small>Resumo por área com a evidência mais recente</small></span><span class="health-action-arrow">›</span>';actions.appendChild(pano);}
-  let exam=document.getElementById('openExamIndexBtn');
-  if(!exam){exam=document.createElement('button');exam.id='openExamIndexBtn';exam.className='health-action';exam.type='button';exam.innerHTML='<span class="health-action-icon">⌕</span><span><strong>Procurar meus exames</strong><small>Veja quando fez e onde o arquivo está guardado</small></span><span class="health-action-arrow">›</span>';actions.appendChild(exam);}
+  let exam=document.getElementById('openExamIndexBtn'),examCreated=false;
+  if(!exam){exam=document.createElement('button');exam.id='openExamIndexBtn';exam.type='button';examCreated=true;actions.appendChild(exam);}else if(exam.parentElement!==actions){actions.appendChild(exam);}
+  exam.className='health-action';exam.innerHTML='<span class="health-action-icon">⌕</span><span><strong>Procurar meus exames</strong><small>Veja quando fez e onde o arquivo está guardado</small></span><span class="health-action-arrow">›</span>';
   if(!document.getElementById('healthPanoramaDialog')){
     const d=document.createElement('dialog');d.id='healthPanoramaDialog';d.className='detail-dialog panorama-dialog';d.innerHTML='<div class="dialog-head"><div><p class="eyebrow">PANORAMA DE SAÚDE</p><h2>Seu estado de saúde em contexto</h2></div><button class="icon-btn" id="closeHealthPanorama" aria-label="Fechar">×</button></div><div id="healthPanoramaContent" class="detail-scroll panorama-content"></div>';document.body.appendChild(d);
   }
   if(!pano.dataset.bound){pano.addEventListener('click',()=>{v52RenderPanorama();document.getElementById('healthPanoramaDialog')?.showModal();});pano.dataset.bound='1';}
-  if(!exam.dataset.v52Bound){exam.addEventListener('click',()=>{const card=document.querySelector('.exam-index-card');if(!card)return;card.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>document.getElementById('examIndexSearch')?.focus({preventScroll:true}),450);});exam.dataset.v52Bound='1';}
+  if(examCreated&&!exam.dataset.v52Bound){exam.addEventListener('click',()=>{const card=document.querySelector('.exam-index-card');if(!card)return;card.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>document.getElementById('examIndexSearch')?.focus({preventScroll:true}),450);});exam.dataset.v52Bound='1';}
   const close=document.getElementById('closeHealthPanorama');if(close&&!close.dataset.bound){close.addEventListener('click',()=>document.getElementById('healthPanoramaDialog')?.close());close.dataset.bound='1';}
 }
 
