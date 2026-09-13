@@ -15,4 +15,4 @@ document.getElementById('healthCategoryTabs').addEventListener('click',e=>{const
 document.getElementById('healthMarkers').addEventListener('click',e=>{const b=e.target.closest('[data-lab-key]');if(!b)return;currentLabKey=b.dataset.labKey;renderHealth();});
 if(window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone)document.body.classList.add('standalone');
 renderApp();
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw-v5.js?v=5.0',{updateViaCache:'none'}).catch(()=>{});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw-v5.js?v=5.1',{updateViaCache:'none'}).catch(()=>{});
