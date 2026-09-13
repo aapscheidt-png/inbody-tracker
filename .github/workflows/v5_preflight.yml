@@ -6,6 +6,7 @@ on:
       - v5-private-data-architecture
       - v5-1-exam-index
       - v5-1-1-ux
+      - v5-1-1-version-fix
   workflow_dispatch:
 
 permissions:
@@ -47,7 +48,8 @@ jobs:
           assert enc['keyId']==pub['keyId']
           assert pub['publicKeyJwk']['kty']=='RSA'
           assert pub['publicKeyJwk']['alg']=='RSA-OAEP-256'
-          assert manifest['start_url']=='./?v=5.1'
+          assert manifest['start_url']=='./?v=5.1.1'
+          assert manifest['icons'][0]['src']=='icon.svg?v=5.1.1'
           for key in ('wrappedKey','iv','ciphertext'):
               s=enc[key]
               base64.urlsafe_b64decode(s + '='*((4-len(s)%4)%4))
@@ -67,7 +69,10 @@ jobs:
           required_ids=['greeting','privacyState','heroWeight','heroDate','heroBmi','heroFatPct','heroMuscle','weightDelta','overviewChart','overviewLatest','homeInsight','healthGlance','healthDateBase','resultsTimeline','evolutionChart','evoMetricLabel','evoMetricValue','evoMetricDelta','evoReference','healthSummaryDate','healthFreshness','healthSummaryText','healthKpis','healthCategoryTabs','healthMarkers','labMetricLabel','labMetricValue','labMetricDelta','labReference','labContext','labChart','labHistory','reportHistory','examIndexSearch','examIndexFilters','examIndexCount','examIndexList','examIndexMore','clinicalTimeline','bodyDetailDialog','bodyDetailContent','bodyDetailTitle','dataDialog','importInput','recoveryKeyInput','syncBtn','exportBtn','resetBtn','clearKeyBtn']
           for i in required_ids:
               assert re.search(rf'id=["\']{re.escape(i)}["\']',html), f'missing DOM id {i}'
-          assert 'V5.1' in html
+          assert '<span class="version-badge">V5.1.1</span>' in html
+          assert 'A V5.1.1 publica apenas uma base' in html
+          assert '?v=5.1"' not in html
+          assert html.count('?v=5.1.1') >= 10
           sw=pathlib.Path('sw-v5.js').read_text()
           for f in ['core-v5.js','crypto-v5.js','charts-v5.js','render-v5.js','v51.js','ui-v5.js','crypto-ui-v5.js','v51.css']:
               assert f in sw, f'{f} not in SW shell'
