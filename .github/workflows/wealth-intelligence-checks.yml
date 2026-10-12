@@ -2,6 +2,7 @@ name: Wealth Intelligence checks
 on:
   push:
     branches:
+      - main
       - wealth-intelligence-v1
     paths:
       - "wealth-intelligence/**"
