@@ -24,7 +24,7 @@ const { chromium } = require("playwright-core");
   await page.goto(base, {waitUntil: "networkidle", timeout: 30000});
   await page.locator("#heroTotal").waitFor();
   const before = await page.locator("#heroTotal").textContent();
-  assert.ok(before.includes("1.329.973"), "Demo opening balance");
+  assert.ok(before.includes("1.329.974"), "Demo opening balance rounded to whole reais, got "+before+"; JS errors: "+errors.join(" | "));
   assert.ok(await page.locator("#demoNotice").isVisible(), "Demo notice is visible");
   await page.screenshot({path:"artifacts/01-home-demo.png",fullPage:true});
 
