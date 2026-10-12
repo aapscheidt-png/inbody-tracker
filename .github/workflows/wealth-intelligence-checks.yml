@@ -82,3 +82,25 @@ jobs:
           name: wealth-mobile-e2e
           path: wealth-intelligence/artifacts/*.png
           if-no-files-found: ignore
+
+  published-site:
+    runs-on: ubuntu-latest
+    needs: [unit, mobile-e2e]
+    steps:
+      - name: Check Wealth public GitHub Pages route
+        run: |
+          URL="https://aapscheidt-png.github.io/inbody-tracker/wealth-intelligence"
+          for i in {1..25}; do
+            code=$(curl --location --silent --show-error --output /tmp/wealth-site.html --write-out '%{http_code}' "$URL/" || true)
+            if [ "$code" = "200" ] && grep -q '<title>Wealth Intelligence AI</title>' /tmp/wealth-site.html; then
+              echo "Live mobile app verified at $URL/"
+              for asset in engine.js analytics.js performance.js importer.js app.js styles.css manifest.webmanifest sw.js; do
+                curl --fail --location --silent --show-error --output /dev/null "$URL/$asset"
+              done
+              exit 0
+            fi
+            echo "Waiting for GitHub Pages deployment: HTTP $code (attempt $i/25)"
+            sleep 6
+          done
+          echo "No matching public site after retries." >&2
+          exit 1
