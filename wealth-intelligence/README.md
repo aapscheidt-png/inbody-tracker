@@ -1,8 +1,8 @@
-# Wealth Intelligence AI — V1.0
+# Wealth Intelligence AI — V1.1
 
 Aplicativo independente de inteligência patrimonial com interface mobile-first/PWA para iPhone.
 
-## Funcionalidades
+## Novidades V1.1\n- Visual aprimorado conforme mockup aprovado: fundo azul-marinho, acentos esmeralda/azul, cartões e índice circular.\n- Filtros temporais 1M/3M/6M/1A/Tudo no gráfico inicial.\n- Ponte patrimonial com aportes líquidos e retorno estimado, calculados de séries de patrimônio.\n- Identificação de patamares patrimoniais atingidos nas datas observadas.\n- Exibição do P10 e P90 além da mediana e chance da meta.\n- Calibração *opcional* de retorno e volatilidade com histórico, habilitada apenas com pelo menos 12 intervalos válidos ao longo de 12 meses.\n- Testes extras da lógica financeira, consistência de IDs e sintaxe no GitHub Actions.\n\n## Funcionalidades
 - Visão consolidada da carteira, distribuição por classe, custo e variação não realizada.
 - Cadastro, edição e exclusão de ativos BRL e USD; conversão manual de moeda.
 - Simulações Monte Carlo (1.000 trajetórias independentes), percentis P10/P50/P90, chance estimada de atingir meta e valor deflacionado.
@@ -21,7 +21,7 @@ A versão publicada contém **apenas uma carteira de demonstração fictícia**,
 - Premissas **não calibradas** por retornos históricos das posições; não considera custos, impostos, defaults, correlação entre classes, risco de liquidez nem mudanças estruturais de mercado.
 - Não há cotações em tempo real, IA generativa, ordens de compra/venda ou recomendação automática de ativos.
 
-## Executar
+## Testes\n\`\`\`bash\nnode --test tests/*.test.cjs\n\`\`\`\n\n## Executar
 ```bash
 node server.js
 # http://localhost:3000
