@@ -69,3 +69,18 @@ button,.position{touch-action:manipulation}
 [data-color-key="other"]{--asset-color:#adb8c8}
 .asset-icon[data-color-key]{color:var(--asset-color)}
 .legend-row .dot[data-color-key]{background:var(--asset-color)}
+
+
+/* V1.2 — return attribution with cash-flow dates */
+.performance-panel{background:radial-gradient(circle at 100% 0%,rgba(37,105,124,.16),transparent 50%),linear-gradient(160deg,#102331,#0c1723 84%)}
+.performance-metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:9px 0 17px}
+.performance-stat{display:flex;flex-direction:column;gap:7px;border:1px solid #263d4d;border-radius:17px;padding:14px 12px;background:rgba(8,22,33,.67);min-width:0}
+.performance-stat>span{color:#96aeba;font-size:10px;line-height:1.45;font-weight:750;letter-spacing:.06em;min-height:31px}
+.performance-stat strong{font-size:clamp(18px,4.5vw,27px);line-height:1.13;letter-spacing:-.04em;overflow-wrap:anywhere}
+.performance-stat small{color:#7e9eac;font-size:10px;line-height:1.5}
+.benchmark-pair{display:flex;justify-content:space-between;gap:12px;border-top:1px solid rgba(99,149,158,.2);padding:16px 0 14px}
+.benchmark-pair>div{display:flex;flex-direction:column;gap:8px;min-width:0}
+.benchmark-pair>div:last-child{text-align:right}
+.benchmark-pair span{color:#8eabb9;font-size:11px}
+.benchmark-pair strong{font-size:clamp(16px,3.7vw,20px);font-variant-numeric:tabular-nums}
+@media(max-width:370px){.performance-metrics{gap:8px}.performance-stat{padding:12px 9px}.performance-stat span{font-size:9px}.benchmark-pair span{font-size:10px}}
