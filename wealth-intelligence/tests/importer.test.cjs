@@ -1,0 +1,30 @@
+"use strict";
+const assert=require("node:assert/strict");
+global.window=global;
+require("../engine.js");
+require("../importer.js");
+const I=global.WealthImporter,E=global.WealthEngine;
+const csv='nome;codigo;classe;moeda;quantidade;custo_unitario;preco_atual;data_preco\r\n'+
+'"Tesouro IPCA+";IPCA2035;"Renda fixa";BRL;1;"1.234,56";1350,50;12/10/2026\r\n'+
+'"ETF global";WRLD;Internacional;USD;2;150.25;155.50;2026-10-12';
+const p=I.rowsToPositions(csv,"2026-10-12");
+assert.equal(p.length,2);
+assert.equal(p[0].type,"fixed_income");
+assert.equal(p[0].price,1350.5);
+assert.equal(p[0].cost,1234.56);
+assert.equal(p[0].asOf,"2026-10-12");
+assert.equal(p[1].type,"international");
+assert.equal(p[1].currency,"USD");
+const loaded=E.normalize({...E.emptyData(),positions:p});
+assert.equal(loaded.positions.length,2);
+assert.ok(I.template().startsWith("\ufeff"));
+const quoted=I.parse('nome;quantidade;custo_unitario;preco_atual\n"Fundo ""A""";1;10;20')[1][0];
+assert.equal(quoted,'Fundo "A"');
+assert.equal(I.escapeCell("=HYPERLINK(1)"),'"\'=HYPERLINK(1)"');
+assert.throws(()=>I.rowsToPositions("nome;quantidade;custo_unitario;preco_atual\nXYZ;-1;2;3","2026-10-12"));
+assert.throws(()=>I.rowsToPositions("nome;quantidade;custo_unitario;preco_atual\nXYZ;1;2;3\nABC;1;2;3", "xdate"),/Data|date/i);
+assert.throws(()=>I.rowsToPositions("nome;quantidade;custo_unitario;preco_atual;data_preco\nXYZ;1;2;3;31\/02\/2026","2026-10-12"));
+const fs=require("node:fs"),path=require("node:path");
+const html=fs.readFileSync(path.join(__dirname,"..","index.html"),"utf8");
+assert.ok(html.includes('src="./importer.js"'));
+console.log("Wealth Intelligence importer checks passed.");
