@@ -18,7 +18,7 @@ const DEMO={version:1,mode:"demo",fx:5.21,assumptions:{target:5000000,monthly:70
 const deepClone=(x)=>JSON.parse(JSON.stringify(x));
 const n=(value,fallback=0)=>{const x=Number(value);return Number.isFinite(x)?x:fallback;};
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
-const asDate=()=>new Date().toISOString().slice(0,10);
+const asDate=()=>{const today=new Date(),y=today.getFullYear(),m=String(today.getMonth()+1).padStart(2,"0"),d=String(today.getDate()).padStart(2,"0");return y+"-"+m+"-"+d;};
 function emptyData(){return {version:1,mode:"personal",fx:5.2,assumptions:{target:5000000,monthly:7000,years:15,rate:10,vol:14,inflation:4.5},positions:[],history:[]};}
 function cleanPosition(p){if(!p||typeof p!=="object")return null;const units=n(p.units,-1),cost=n(p.cost,-1),price=n(p.price,-1),type=String(p.type||"other");if(!(units>0&&units<1e10&&cost>=0&&cost<1e12&&price>=0&&price<1e12))return null;const name=String(p.name||"").trim().slice(0,90);if(!name)return null;return{id:String(p.id||("p"+Math.random().toString(36).slice(2))).slice(0,55),name,ticker:String(p.ticker||"").slice(0,30),type:TYPES[type]?type:"other",currency:p.currency==="USD"?"USD":"BRL",units,cost,price,asOf:/^\d{4}-\d{2}-\d{2}$/.test(p.asOf||"")?p.asOf:asDate()};}
 function cleanSnapshot(x){if(!x||!/^\d{4}-\d{2}-\d{2}$/.test(String(x.date||"")))return null;const total=n(x.total,-1),flow=n(x.flow,0);if(total<0||total>1e15||Math.abs(flow)>1e15)return null;return{date:x.date,total,flow};}
