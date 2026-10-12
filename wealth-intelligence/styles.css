@@ -57,3 +57,15 @@ body{background:radial-gradient(ellipse 480px 450px at 83% -4%,rgba(22,83,115,.2
 .notice,.fineprint{line-height:1.65}
 button,.position{touch-action:manipulation}
 @media(max-width:600px){.hero-chart{height:131px}.chart-switches{max-width:300px}.growth-details{gap:8px}.growth-details>div{padding:10px}.growth-details span{font-size:10px}.milestone-item{gap:7px}.milestone-item time{font-size:9px}}
+
+/* CSP-safe fixed palette: SVG chart data and DOM classes never execute remote code */
+[data-color-key="fixed_income"]{--asset-color:#67bcaa}
+[data-color-key="stocks"]{--asset-color:#66a7ff}
+[data-color-key="reits"]{--asset-color:#d7bd78}
+[data-color-key="international"]{--asset-color:#b69aff}
+[data-color-key="funds"]{--asset-color:#efa979}
+[data-color-key="crypto"]{--asset-color:#fa8f9e}
+[data-color-key="cash"]{--asset-color:#7ac4d0}
+[data-color-key="other"]{--asset-color:#adb8c8}
+.asset-icon[data-color-key]{color:var(--asset-color)}
+.legend-row .dot[data-color-key]{background:var(--asset-color)}
