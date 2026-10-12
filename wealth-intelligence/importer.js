@@ -51,7 +51,7 @@ function number(value,label){
 }
 function date(raw){
  const x=String(raw||"").trim();
- if(!x)return new Date().toLocaleDateString("en-CA");
+ if(!x){const t=new Date();return t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+String(t.getDate()).padStart(2,"0");}
  let y,m,d;const iso=x.match(/^(\d{4})-(\d{2})-(\d{2})$/),br=x.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
  if(iso){[,y,m,d]=iso;}else if(br){[,d,m,y]=br;}else throw Error("Data inválida: "+x);
  const z=new Date(Date.UTC(+y,+m-1,+d));if(z.getUTCFullYear()!==+y||z.getUTCMonth()!==+m-1||z.getUTCDate()!==+d)throw Error("Data impossível: "+x);
@@ -69,7 +69,7 @@ function rowsToPositions(text,defaultDate){
  if(!(qty>0&&qty<1e10&&cost>=0&&cost<1e12&&price>=0&&price<1e12))throw Error(tag+"valores fora dos limites.");
  const key=normalized(v("classe")).replace(/_/g," "),type=types[key]||types[normalized(v("classe"))]||"other";
  const curr=String(v("moeda")||"BRL").trim().toUpperCase();if(!["BRL","USD"].includes(curr))throw Error(tag+"moeda não reconhecida. Use BRL ou USD.");
- let asOf=defaultDate||date("");if(String(v("data")).trim())asOf=date(v("data"));
+ let asOf=defaultDate?date(defaultDate):date("");if(String(v("data")).trim())asOf=date(v("data"));
  result.push({id:"csv_"+(idx+1)+"_"+Math.random().toString(36).slice(2,8),name,ticker:code.slice(0,30),type,currency:curr,units:qty,cost,price,asOf});
  }
  return result;
