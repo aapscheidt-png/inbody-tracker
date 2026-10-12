@@ -1,0 +1,36 @@
+name: Wealth Intelligence checks
+on:
+  push:
+    branches:
+      - wealth-intelligence-v1
+    paths:
+      - "wealth-intelligence/**"
+      - ".github/workflows/wealth-intelligence-checks.yml"
+  pull_request:
+    paths:
+      - "wealth-intelligence/**"
+      - ".github/workflows/wealth-intelligence-checks.yml"
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: wealth-intelligence
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Static syntax
+        run: |
+          node --check engine.js
+          node --check importer.js
+          node --check performance.js
+          node --check analytics.js
+          node --check app.js
+          node --check server.js
+          node --check sw.js
+      - name: Finance engine and UI contracts
+        run: node --test tests/*.test.cjs
