@@ -34,3 +34,20 @@ jobs:
           node --check sw.js
       - name: Finance engine and UI contracts
         run: node --test tests/*.test.cjs
+      - name: Production HTTP smoke test
+        run: |
+          node server.js &
+          echo $! > /tmp/wealth_server.pid
+          trap 'kill $(cat /tmp/wealth_server.pid) || true' EXIT
+          for i in {1..15}; do
+            if curl --fail --silent http://127.0.0.1:3000/health > /tmp/wealth-health.json; then break; fi
+            sleep 1
+          done
+          grep -q '"ok":true' /tmp/wealth-health.json
+          curl --fail --silent http://127.0.0.1:3000/ > /tmp/wealth-index.html
+          grep -q 'Wealth Intelligence AI' /tmp/wealth-index.html
+          for file in app.js engine.js analytics.js performance.js importer.js styles.css sw.js manifest.webmanifest; do
+            curl --fail --silent -o /dev/null "http://127.0.0.1:3000/$file"
+          done
+          echo 'Production HTTP smoke test passed'
+
