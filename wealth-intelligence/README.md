@@ -1,6 +1,13 @@
-# Wealth Intelligence AI — V1.1
+# Wealth Intelligence AI — V1.2
 
 Aplicativo independente de inteligência patrimonial com interface mobile-first/PWA para iPhone.
+
+## Novidades V1.2
+- TIR anualizada aproximada (dinheiro ponderado) baseada em fluxos datados e valores patrimoniais, com tratamento explícito de soluções múltiplas.
+- Referência hipotética anual configurável e comparação em reais, aplicando as mesmas entradas e saídas de capital.
+- Importação de carteira por CSV (modelo exportável), sem misturar posições reais e dados fictícios do demo.
+- CSV exportado com proteção básica contra injeção de fórmulas ao abrir em planilhas.
+- Testes automatizados adicionais de retornos com aportes/retiradas e validadores de importação.
 
 ## Novidades V1.1\n- Visual aprimorado conforme mockup aprovado: fundo azul-marinho, acentos esmeralda/azul, cartões e índice circular.\n- Filtros temporais 1M/3M/6M/1A/Tudo no gráfico inicial.\n- Ponte patrimonial com aportes líquidos e retorno estimado, calculados de séries de patrimônio.\n- Identificação de patamares patrimoniais atingidos nas datas observadas.\n- Exibição do P10 e P90 além da mediana e chance da meta.\n- Calibração *opcional* de retorno e volatilidade com histórico, habilitada apenas com pelo menos 12 intervalos válidos ao longo de 12 meses.\n- Testes extras da lógica financeira, consistência de IDs e sintaxe no GitHub Actions.\n\n## Funcionalidades
 - Visão consolidada da carteira, distribuição por classe, custo e variação não realizada.
