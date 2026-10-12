@@ -1,0 +1,26 @@
+"use strict";
+const assert=require("node:assert/strict");
+global.window=global;
+require("../engine.js");require("../analytics.js");require("../performance.js");
+const E=global.WealthEngine,P=global.WealthPerformance,A=global.WealthAnalytics;
+const eq=(a,b,tolerance=.03)=>assert.ok(Math.abs(a-b)<tolerance,`Expected ${a} ~ ${b}`);
+const rows=[{date:"2025-01-01",total:1000,flow:0},{date:"2026-01-01",total:1100,flow:0}];
+const irr=P.annualizedMoneyWeightedReturn(rows);assert.equal(irr.available,true);eq(irr.annualPct,10,.05);
+const ref=P.referenceScenario(rows,10);assert.equal(ref.available,true);eq(ref.referenceEnding,1100,.2);eq(ref.excess,0,.2);
+const deposits=[{date:"2025-01-01",total:1000,flow:0},{date:"2026-01-01",total:1200,flow:100}];
+const x=P.annualizedMoneyWeightedReturn(deposits);assert.equal(x.available,true);eq(x.annualPct,10,.05);
+const baseline=P.referenceScenario(deposits,10);eq(baseline.referenceResult,100,.2);eq(baseline.actualResult,100,.01);
+const withdraw=[{date:"2025-01-01",total:1000,flow:0},{date:"2026-01-01",total:900,flow:-100}];
+eq(P.annualizedMoneyWeightedReturn(withdraw).annualPct,0,.02);
+assert.equal(P.annualizedMoneyWeightedReturn([{date:"2025-01-01",total:0,flow:0}]).available,false);
+const dd=P.maxObservedDrawdown([{date:"2025-01-01",total:100,flow:0},{date:"2025-03-01",total:120,flow:0},{date:"2025-04-01",total:72,flow:0}]);
+eq(dd.drawdownPct,40,.001);
+const normalized=E.normalize(E.DEMO);assert.equal(normalized.benchmarkAnnualPct,10);
+const migrated=E.normalize({...E.DEMO,benchmarkAnnualPct:undefined});assert.equal(migrated.benchmarkAnnualPct,10);
+assert.ok(A.growthBridge(E.DEMO.history).ready);
+const fs=require("node:fs"),path=require("node:path");
+const html=fs.readFileSync(path.join(__dirname,"..","index.html"),"utf8");
+assert.ok(html.includes("performance.js"));
+const app=fs.readFileSync(path.join(__dirname,"..","app.js"),"utf8");
+for(const id of ["performanceXirr","performanceExcess","performanceReference","saveBenchmark","benchmarkRateInput"]){assert.ok(html.includes('id="'+id+'"'));assert.ok(app.includes('"'+id+'"'));}
+console.log("Wealth Intelligence performance checks passed.");
