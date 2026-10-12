@@ -1,0 +1,19 @@
+{
+  "id": "wealth-intelligence-ai",
+  "name": "Wealth Intelligence AI",
+  "short_name": "Wealth AI",
+  "description": "Inteligência patrimonial, simulações e acompanhamento de investimentos",
+  "start_url": "./#home",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080e15",
+  "theme_color": "#080e15",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
