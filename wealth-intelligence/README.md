@@ -36,6 +36,9 @@ node server.js
 Ou construir o Dockerfile com a pasta `wealth-intelligence` como raiz de build.
 
 ## Hospedagem independente no Vercel
+
+[**Publicar o Wealth Intelligence no Vercel (um clique)**](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Faapscheidt-png%2Finbody-tracker&root-directory=wealth-intelligence)
+
 O projeto contém `vercel.json` e pode ser publicado como site estático sem credenciais nem serviços de banco. No Vercel, importe `aapscheidt-png/inbody-tracker`, configure **Root Directory: `wealth-intelligence`**, selecione **Framework: Other** e não configure build nem variáveis de ambiente. O domínio atribuído será exclusivo do Wealth Intelligence AI. Verifique o endereço de produção e os recursos de importação antes de inserir dados reais.
 
 Até a hospedagem ser conectada/configurada, o código está publicado no GitHub, mas não há um URL de produção do novo app confirmado. Importar o repositório com a raiz do Health Tracker, em vez da subpasta, pode publicar outro app: confira a raiz.
