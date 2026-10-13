@@ -84,3 +84,11 @@ button,.position{touch-action:manipulation}
 .benchmark-pair span{color:#8eabb9;font-size:11px}
 .benchmark-pair strong{font-size:clamp(16px,3.7vw,20px);font-variant-numeric:tabular-nums}
 @media(max-width:370px){.performance-metrics{gap:8px}.performance-stat{padding:12px 9px}.performance-stat span{font-size:9px}.benchmark-pair span{font-size:10px}}
+
+/* Valuation-only holdings from historical statements */
+[data-color-key="pension"]{--asset-color:#7bcdcb}
+[data-color-key="metals"]{--asset-color:#d9b65d}
+.unknown-cost{display:flex!important;flex-direction:row!important;gap:11px;align-items:center;background:#112532;padding:12px;border:1px solid #284351;border-radius:13px;color:#c7dad9!important;line-height:1.4}
+.unknown-cost input{width:18px!important;height:18px!important;min-width:18px;accent-color:#36e6ae}
+.unknown-cost span{font-size:12px}
+#heroGain:not(.negative){max-width:100%;white-space:normal}
