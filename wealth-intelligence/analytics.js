@@ -2,7 +2,7 @@
 (function(global){
   const MS_DAY=86400000;
   const parse=(value)=>{const t=Date.parse(String(value)+"T00:00:00Z");return Number.isFinite(t)?t:null;};
-  const normalizeRows=(rows)=>Array.isArray(rows)?rows.filter(x=>x&&parse(x.date)!==null&&Number.isFinite(Number(x.total))&&Number.isFinite(Number(x.flow||0))).map(x=>({date:x.date,total:Number(x.total),flow:Number(x.flow||0)})).sort((a,b)=>a.date.localeCompare(b.date)):[];
+  const normalizeRows=(rows)=>Array.isArray(rows)?rows.filter(x=>x&&parse(x.date)!==null&&Number.isFinite(Number(x.total))&&Number.isFinite(Number(x.flow||0))).map(x=>({date:x.date,total:Number(x.total),flow:Number(x.flow||0),flowKnown:x.flowKnown!==false})).sort((a,b)=>a.date.localeCompare(b.date)):[];
   function periodHistory(rows,key,now){
     const all=normalizeRows(rows),months={m1:1,m3:3,m6:6,y1:12,all:0},n=months[key];
     if(!n||!all.length)return all;
@@ -17,7 +17,7 @@
   }
   function growthBridge(rows){
     const a=normalizeRows(rows);
-    if(a.length<2)return {ready:false,opening:null,closing:null,netFlows:0,result:0,change:0,returnOnOpening:null};
+    if(a.length<2||a.slice(1).some(x=>x.flowKnown===false))return {ready:false,reason:"Aportes e retiradas ainda não conciliados.",opening:null,closing:null,netFlows:0,result:0,change:0,returnOnOpening:null};
     const opening=a[0].total,closing=a[a.length-1].total;
     const netFlows=a.slice(1).reduce((v,x)=>v+x.flow,0);
     const result=closing-opening-netFlows,change=closing-opening;
@@ -32,7 +32,7 @@
     const h=normalizeRows(rows),points=[];
     for(let i=1;i<h.length;i++){
       const prev=h[i-1],next=h[i],days=(parse(next.date)-parse(prev.date))/MS_DAY;
-      if(days<7||prev.total<=0||next.total<0)continue;
+      if(days<7||prev.total<=0||next.total<0||next.flowKnown===false)continue;
       const r=(next.total-next.flow)/prev.total-1;
       if(r<=-1||!Number.isFinite(r))continue;
       points.push({from:prev.date,to:next.date,days,return:r,annualizedLogReturn:Math.log1p(r)*365.25/days});
