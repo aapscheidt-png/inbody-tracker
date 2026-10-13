@@ -76,6 +76,24 @@ const { chromium } = require("playwright-core");
   assert.ok((await page.locator("#positionsList .position").first().textContent()).includes("ETF internacional"));
   await page.screenshot({path:"artifacts/04-imported-wallet.png",fullPage:true});
 
+  // Historical holdings have only balances, not transaction costs or reconciled net contributions.
+  await page.locator("#openSettings").click();
+  const unknown={version:1,mode:"personal",fx:5.2,benchmarkAnnualPct:10,
+    assumptions:{target:5000000,monthly:7000,years:12,rate:10,vol:12,inflation:4},
+    positions:[{id:"legacy1",name:"Posição histórica demonstrativa",ticker:"HIST",type:"pension",currency:"BRL",units:1,cost:0,costKnown:false,price:75000,asOf:"2026-05-31"}],
+    history:[{date:"2025-12-31",total:60000,flow:0,flowKnown:false},{date:"2026-05-31",total:75000,flow:0,flowKnown:false}]};
+  page.once("dialog", dialog=>dialog.accept());
+  await page.locator("#importBackup").setInputFiles({name:"historical.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(unknown))});
+  await page.locator(".tabbar [data-go='home']").click();
+  assert.ok((await page.locator("#heroTotal").textContent()).includes("75.000"));
+  assert.ok((await page.locator("#heroGain").textContent()).includes("indisponível"));
+  await page.locator(".tabbar [data-go='portfolio']").click();
+  assert.ok((await page.locator("#positionsList").textContent()).includes("N/D"));
+  await page.locator(".tabbar [data-go='history']").click();
+  assert.equal(await page.locator("#historyTwr").textContent(),"—");
+  assert.equal(await page.locator("#performanceXirr").textContent(),"—");
+  await page.screenshot({path:"artifacts/05-valuation-only.png",fullPage:true});
+
   assert.deepEqual(errors, [], "No browser errors on core flows");
   console.log("PASS: Chromium mobile UX, all 5 views, simulation, local storage, CSV import");
   await browser.close();
