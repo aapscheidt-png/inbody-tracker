@@ -2,6 +2,14 @@
 
 Aplicativo independente de inteligência patrimonial com interface mobile-first/PWA para iPhone.
 
+## Integração de extratos históricos sem custos conhecidos (V1.3)
+- Importação local de backups JSON que trazem saldos por ativo sem quantidade real ou preço médio, com campos `costKnown:false` e unidade contábil 1.
+- Fluxos de aportes e retiradas não conciliados são marcados `flowKnown:false`; os indicadores TIR, retorno ajustado por aportes e benchmark são suprimidos nesses casos.
+- Essas posições valorizadas pelo saldo em BRL **não devem ser interpretadas como quantidade de cotas**. O aplicativo mostra apenas valor registrado e composição patrimonial.
+- Dados financeiros pessoais não estão neste repositório; o usuário importa o backup pelo menu de dados. Conservar arquivo privado.
+- Ao importar backup, os dados locais existentes serão substituídos. Recomenda-se exportar backup antes.
+- Dados do extrato de maio de 2026 são históricos; atualizar com extrato atual antes de considerar as informações vigentes.
+
 ## Novidades V1.2
 - TIR anualizada aproximada (dinheiro ponderado) baseada em fluxos datados e valores patrimoniais, com tratamento explícito de soluções múltiplas.
 - Referência hipotética anual configurável e comparação em reais, aplicando as mesmas entradas e saídas de capital.
