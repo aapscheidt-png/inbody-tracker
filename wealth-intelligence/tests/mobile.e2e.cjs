@@ -111,6 +111,10 @@ const { chromium } = require("playwright-core");
   await page.locator(".tabbar [data-go='history']").click();
   await page.locator("#assetHistoryPanel").waitFor({state:"visible"});
   assert.ok(await page.locator("#dataAuditPanel").isVisible());
+  assert.ok(await page.locator("#reportedFlowsPanel").isVisible());
+  assert.ok((await page.locator("#reportedTotalFlows").textContent()).includes("13.260"));
+  assert.ok((await page.locator("#reportedTotalIncome").textContent()).includes("1.319"));
+
   assert.ok((await page.locator("#auditIssues").textContent()).includes("SEPTEMBER_TOTAL_FORMULA"));
   await page.screenshot({path:"artifacts/06-xlsx-history.png",fullPage:true});
   assert.deepEqual(errors, [], "No browser errors on core flows");
