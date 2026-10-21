@@ -24,7 +24,7 @@ const { chromium } = require("playwright-core");
   await page.goto(base, {waitUntil: "networkidle", timeout: 30000});
   await page.locator("#heroTotal").waitFor();
   const before = await page.locator("#heroTotal").textContent();
-  assert.ok(before.includes("1.329.974"), "Demo opening balance rounded to whole reais, got "+before+"; JS errors: "+errors.join(" | "));
+  assert.ok(before.includes("1.329.973,50"), "Demo balance displays exact cents, got "+before+"; JS errors: "+errors.join(" | "));
   assert.ok(await page.locator("#demoNotice").isVisible(), "Demo notice is visible");
   await page.screenshot({path:"artifacts/01-home-demo.png",fullPage:true});
 
@@ -94,6 +94,30 @@ const { chromium } = require("playwright-core");
   assert.equal(await page.locator("#performanceXirr").textContent(),"—");
   await page.screenshot({path:"artifacts/05-valuation-only.png",fullPage:true});
 
+  // Privacy-safe synthetic XLSX exercises the native ZIP/XML parser in a real mobile browser.
+  const {fixture}=require("./synthetic-xlsx.cjs");
+  await page.locator("#openSettings").click();
+  await page.locator("#importXlsx").setInputFiles({
+    name:"synthetic-wealth.xlsx",
+    mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer:fixture()
+  });
+  await page.locator("#xlsxDialog").waitFor({state:"visible",timeout:15000});
+  assert.ok((await page.locator("#xlsxPreview").textContent()).includes("PATRIMÔNIO PROVISÓRIO"));
+  page.once("dialog",dialog=>dialog.accept());
+  await page.locator("#confirmXlsx").click();
+  await page.locator("#dataQualityStrip").waitFor({state:"visible"});
+  assert.ok((await page.locator("#heroAsOf").textContent()).includes("PARCIAL"));
+  await page.locator(".tabbar [data-go='history']").click();
+  await page.locator("#assetHistoryPanel").waitFor({state:"visible"});
+  assert.ok(await page.locator("#dataAuditPanel").isVisible());
+  assert.ok(await page.locator("#reportedFlowsPanel").isVisible());
+  assert.ok((await page.locator("#reportedTotalFlows").textContent()).includes("13.260"));
+  const receivedIncome=await page.locator("#reportedTotalIncome").textContent();
+  assert.ok(receivedIncome.includes("1.319,54"),"Reported income was "+receivedIncome+"; ledger "+(await page.locator("#reportedFlowsList").textContent()).slice(0,250));
+
+  assert.ok((await page.locator("#auditIssues").textContent()).includes("SEPTEMBER_TOTAL_FORMULA"));
+  await page.screenshot({path:"artifacts/06-xlsx-history.png",fullPage:true});
   assert.deepEqual(errors, [], "No browser errors on core flows");
   console.log("PASS: Chromium mobile UX, all 5 views, simulation, local storage, CSV import");
   await browser.close();

@@ -1,4 +1,4 @@
-# Wealth Intelligence AI — V1.2
+# Wealth Intelligence AI — V2.0 (branch de pesquisa)
 
 Aplicativo independente de inteligência patrimonial com interface mobile-first/PWA para iPhone.
 
@@ -9,6 +9,23 @@ Aplicativo independente de inteligência patrimonial com interface mobile-first/
 - Dados financeiros pessoais não estão neste repositório; o usuário importa o backup pelo menu de dados. Conservar arquivo privado.
 - Ao importar backup, os dados locais existentes serão substituídos. Recomenda-se exportar backup antes.
 - Dados do extrato de maio de 2026 são históricos; atualizar com extrato atual antes de considerar as informações vigentes.
+
+## Wealth Data Engine V2 (importação Excel nativa, somente local)
+
+O importador de arquivos `.xlsx` reconhece o formato de acompanhamento do usuário com abas patrimoniais `2024`, `2025` e `2026`. O processamento usa os recursos nativos ZIP/XML do navegador, **sem enviar o arquivo a um servidor**. Ignora inteiramente abas externas ao escopo de investimentos (p.ex., pagamentos, folha ou dados de terceiros).
+
+Características:
+- Reconstrói séries datadas de saldos por ativo e de carteira, preservando a aba e a célula de origem, incluindo saldos históricos de posições já encerradas.
+- Diferencia posições atuais de ativos que desapareceram da última observação; não soma a posição antiga ao saldo vigente.
+- Reconcilia o fechamento de setembro quando a fórmula usa uma observação doméstica de data errada; usa fonte canônica quando abas se contradizem na virada de ano, emitindo alerta.
+- Mantém as datas de competência mensal distintas das observações diárias. O panorama de outubro é **provisório** quando a previdência não está atualizada para o mesmo mês.
+- Armazena aportes declarados, dividendos, rendimentos de FIIs e taxas USD/BRL históricas em conjuntos separados, com proveniência; esses dados **não são considerados fluxos externos certificados**.
+- Preço médio e quantidade não informados **continuam desconhecidos**. Saldos históricos são representados por `units:1` e `valuationOnly:true` como proxy contábil, não como número real de cotas.
+- Nenhuma TWR, TIR, lucro por ativo ou comparação com benchmark é calculada como rentabilidade real até que os fluxos externos estejam conciliados.
+
+O importador exibe uma **prévia** com contagens e alerta de competências diferentes antes de qualquer confirmação. Importar substitui posições/histórico no navegador; exporte backup JSON para proteção. A precisão e abrangência do parser estão vinculadas ao layout explicitamente reconhecido: novos modelos e fontes exigem testes de mapeamento antes de serem incorporados.
+
+**Privacidade:** nem os arquivos originais nem os dados importados estão no GitHub. Artefatos CI usam um workbook inteiramente sintético. O aplicativo não faz sincronização remota, e armazenamento local não substitui uma cópia segura.
 
 ## Novidades V1.2
 - TIR anualizada aproximada (dinheiro ponderado) baseada em fluxos datados e valores patrimoniais, com tratamento explícito de soluções múltiplas.
