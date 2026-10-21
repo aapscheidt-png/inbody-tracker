@@ -78,10 +78,10 @@ function monthlyDate(year,col){let y=Number(year),m=col;
  if(year==="2026"){y=col===1?2025:2026;m=col===1?12:col-1;}
  if(!(m>=1&&m<=12))return null;return year==="2026"&&m===10?"2026-10-01":new Date(Date.UTC(y,m,0)).toISOString().slice(0,10);
 }
-function addPoint(store,name,type,date,value,source,account,currencyCode="BRL",row=null,col=null){
+function addPoint(store,name,type,date,value,source,account,currencyCode="BRL",row=null,col=null,datePrecision="day"){
  if(!date||!isReal(value)||value<0)return;const key=currencyCode+"|"+type+"|"+name.toUpperCase();
  let series=store.get(key);if(!series){series={id:key,name,ticker:type==="stocks"?name:"",type,currency:currencyCode,account,observations:[]};store.set(key,series);}
- series.observations.push({date,value:currency(value),source:{sheet:source,cell:col===null?null:colName(col)+row},confidence:"reported_balance"});
+ series.observations.push({date,value:currency(value),source:{sheet:source,cell:col===null?null:colName(col)+row},confidence:"reported_balance",datePrecision});
 }
 function monthLabel(value){const str=String(value||"").trim().toLowerCase(),m=str.match(/^(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\/(\d{2})$/);if(!m)return null;const months={jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};const year=2000+Number(m[2]),month=months[m[1]];return year+"-"+String(month).padStart(2,"0")+"-01";}
 function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new Map(),rateSources=[],reportedContributions=[],reportedDistributions=[];
@@ -94,7 +94,7 @@ function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new M
   }
   for(const [section,rows] of [["international",m.intl],["pension",m.pension],["crypto",m.crypto]])for(const row of rows){const name=(section==="international"?"Exterior · ":"")+label(s,row),type=classFor(name,section);
    for(let c=m.monthly[0];c<=m.monthly[1];c++){const date=monthlyDate(year,c),v=get(s,row,c);if(!date||!isReal(v)||v<=0)continue;
-    addPoint(assets,name,type,date,v,year,section==="pension"?"Previdência":section==="crypto"?"Cripto":"Investimentos internacionais",section==="international"?"USD":"BRL",row,c);
+    addPoint(assets,name,type,date,v,year,section==="pension"?"Previdência":section==="crypto"?"Cripto":"Investimentos internacionais",section==="international"?"USD":"BRL",row,c,"month");
    }
   }
   for(let c=m.monthly[0];c<=m.monthly[1];c++){const date=monthlyDate(year,c),v=get(s,m.total,c);if(!date||!isReal(v)||v<=0)continue;
@@ -131,7 +131,7 @@ function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new M
   }
   asset.observations=[...perDate.values()].sort((a,b)=>a.date.localeCompare(b.date));
   if(asset.observations.length>LIMIT.points)bad("histórico por ativo excede limite");
-  const last=asset.observations.at(-1);asset.current={date:last.date,value:last.value,source:last.source,partial:last.date!==latestOverall};
+  const last=asset.observations.at(-1);asset.current={date:last.date,value:last.value,source:last.source,datePrecision:last.datePrecision,partial:last.date!==latestOverall};
   deduped.push(asset);
  }
  const uniqueRates=new Map();for(const r of rateSources){const prev=uniqueRates.get(r.date);if(prev&&Math.abs(prev.rate-r.rate)>.02)quality.push({code:"FX_OVERLAP",severity:"info",date:r.date,reported:prev.rate,corrected:r.rate,message:"Cotações cambiais divergentes em abas de transição"});uniqueRates.set(r.date,r);}
@@ -139,7 +139,7 @@ function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new M
  const lastFX=sortedRates.find(x=>x.date==="2026-10-01")||sortedRates.at(-1);
  const maxByAccount=new Map();for(const a of deduped){const old=maxByAccount.get(a.account);if(!old||a.current.date>old)maxByAccount.set(a.account,a.current.date);}
  const positions=deduped.filter(a=>a.current.value>0&&a.current.date===maxByAccount.get(a.account)&&a.current.date>="2026-09-01").map((a,i)=>({
- id:"xlsx"+String(i+1).padStart(3,"0"),name:a.name,ticker:a.ticker,type:a.type,currency:"BRL",units:1,cost:0,costKnown:false,price:a.currency==="USD"?currency(a.current.value*(lastFX?.rate||1)):a.current.value,asOf:a.current.date,source:a.current.source,account:a.account,valuationOnly:true,
+ id:"xlsx"+String(i+1).padStart(3,"0"),name:a.name,ticker:a.ticker,type:a.type,currency:"BRL",units:1,cost:0,costKnown:false,price:a.currency==="USD"?currency(a.current.value*(lastFX?.rate||1)):a.current.value,asOf:a.current.date,datePrecision:a.current.datePrecision,source:a.current.source,account:a.account,valuationOnly:true,
  originalCurrency:a.currency,originalValue:a.current.value,fxRate:a.currency==="USD"?(lastFX?.rate||null):null
  }));
  const latestPension=positions.filter(x=>x.type==="pension").map(x=>x.asOf).sort().at(-1);
