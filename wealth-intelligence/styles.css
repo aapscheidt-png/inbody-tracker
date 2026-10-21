@@ -123,3 +123,10 @@ button,.position{touch-action:manipulation}
 .xlsx-warning{line-height:1.7;color:#dfd3bb;background:rgba(218,174,102,.07);border:1px solid rgba(218,174,102,.3);border-radius:13px;padding:14px;font-size:12px}
 .xlsx-warning strong{color:#ffdfa5}
 @media(max-width:390px){.asset-observation{grid-template-columns:1fr auto;gap:5px}.asset-observation small{grid-column:1/-1}.audit-overview{grid-template-columns:1fr 1fr}}
+
+
+.reported-flows-list{display:flex;flex-direction:column;gap:8px;margin:12px 0 16px}
+.reported-row{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:start;border:1px solid #254251;border-radius:13px;padding:12px;background:rgba(10,28,40,.75)}
+.reported-row span{font-size:11px;color:#a7c4c9}
+.reported-row strong{font-size:13px}
+.reported-row small{grid-column:1/-1;font-size:10px;color:#7e9dae}
