@@ -69,7 +69,7 @@ const meta={
 function classFor(name,section){const t=name.toUpperCase();
  if(section==="stock")return"stocks";if(section==="international")return"international";if(section==="pension")return"pension";if(section==="crypto")return"crypto";
  if(t.includes("OURO")||t.includes("PRATA"))return"metals";
- if(t.includes("IMOB"))return"reits";if(t.includes("FGTS"))return"other";
+ if(t.includes("IMOB"))return"reits";if(t.includes("FGTS"))return"funds";
  if(t.includes("POUP"))return"cash";if(t.includes("IA"))return"funds";return"fixed_income";
 }
 function monthlyDate(year,col){let y=Number(year),m=col;
@@ -126,7 +126,8 @@ function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new M
   deduped.push(asset);
  }
  const lastFX=rateSources.filter(x=>x.date==="2026-10-31").at(-1)||rateSources.at(-1);
- const positions=deduped.filter(a=>a.current.value>0&&a.current.date>="2026-09-01").map((a,i)=>({
+ const maxByAccount=new Map();for(const a of deduped){const old=maxByAccount.get(a.account);if(!old||a.current.date>old)maxByAccount.set(a.account,a.current.date);}
+ const positions=deduped.filter(a=>a.current.value>0&&a.current.date===maxByAccount.get(a.account)&&a.current.date>="2026-09-01").map((a,i)=>({
  id:"xlsx"+String(i+1).padStart(3,"0"),name:a.name,ticker:a.ticker,type:a.type,currency:"BRL",units:1,cost:0,costKnown:false,price:a.currency==="USD"?currency(a.current.value*(lastFX?.rate||1)):a.current.value,asOf:a.current.date,source:a.current.source,account:a.account,valuationOnly:true,
  originalCurrency:a.currency,originalValue:a.current.value,fxRate:a.currency==="USD"?(lastFX?.rate||null):null
  }));
