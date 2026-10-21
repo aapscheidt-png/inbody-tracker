@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - research/wealth-data-engine-v2-20261021
       - wealth-intelligence-v1
     paths:
       - "wealth-intelligence/**"
@@ -26,6 +27,7 @@ jobs:
           node-version: "22"
       - name: Static syntax
         run: |
+          node --check xlsx-engine.js
           node --check engine.js
           node --check importer.js
           node --check performance.js
