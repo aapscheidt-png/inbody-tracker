@@ -94,6 +94,25 @@ const { chromium } = require("playwright-core");
   assert.equal(await page.locator("#performanceXirr").textContent(),"—");
   await page.screenshot({path:"artifacts/05-valuation-only.png",fullPage:true});
 
+  // Privacy-safe synthetic XLSX exercises the native ZIP/XML parser in a real mobile browser.
+  const {fixture}=require("./synthetic-xlsx.cjs");
+  await page.locator("#openSettings").click();
+  await page.locator("#importXlsx").setInputFiles({
+    name:"synthetic-wealth.xlsx",
+    mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer:fixture()
+  });
+  await page.locator("#xlsxDialog").waitFor({state:"visible",timeout:15000});
+  assert.ok((await page.locator("#xlsxPreview").textContent()).includes("PATRIMÔNIO PROVISÓRIO"));
+  page.once("dialog",dialog=>dialog.accept());
+  await page.locator("#confirmXlsx").click();
+  await page.locator("#dataQualityStrip").waitFor({state:"visible"});
+  assert.ok((await page.locator("#heroAsOf").textContent()).includes("PARCIAL"));
+  await page.locator(".tabbar [data-go='history']").click();
+  await page.locator("#assetHistoryPanel").waitFor({state:"visible"});
+  assert.ok(await page.locator("#dataAuditPanel").isVisible());
+  assert.ok((await page.locator("#auditIssues").textContent()).includes("SEPTEMBER_TOTAL_FORMULA"));
+  await page.screenshot({path:"artifacts/06-xlsx-history.png",fullPage:true});
   assert.deepEqual(errors, [], "No browser errors on core flows");
   console.log("PASS: Chromium mobile UX, all 5 views, simulation, local storage, CSV import");
   await browser.close();
