@@ -76,7 +76,7 @@ function monthlyDate(year,col){let y=Number(year),m=col;
  if(year==="2024"){y=col===1?2023:col===2?2023:2024;m=col===1?11:col===2?12:col-2;}
  if(year==="2025"){y=col===1?2024:2025;m=col===1?12:col-1;}
  if(year==="2026"){y=col===1?2025:2026;m=col===1?12:col-1;}
- if(!(m>=1&&m<=12))return null;return new Date(Date.UTC(y,m,0)).toISOString().slice(0,10);
+ if(!(m>=1&&m<=12))return null;return year==="2026"&&m===10?"2026-10-01":new Date(Date.UTC(y,m,0)).toISOString().slice(0,10);
 }
 function addPoint(store,name,type,date,value,source,account,currencyCode="BRL",row=null,col=null){
  if(!date||!isReal(value)||value<0)return;const key=currencyCode+"|"+type+"|"+name.toUpperCase();
