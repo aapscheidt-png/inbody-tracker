@@ -83,7 +83,8 @@ function addPoint(store,name,type,date,value,source,account,currencyCode="BRL",r
  let series=store.get(key);if(!series){series={id:key,name,ticker:type==="stocks"?name:"",type,currency:currencyCode,account,observations:[]};store.set(key,series);}
  series.observations.push({date,value:currency(value),source:{sheet:source,cell:col===null?null:colName(col)+row},confidence:"reported_balance"});
 }
-function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new Map(),rateSources=[];
+function monthLabel(value){const str=String(value||"").trim().toLowerCase(),m=str.match(/^(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\/(\d{2})$/);if(!m)return null;const months={jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};const year=2000+Number(m[2]),month=months[m[1]];return year+"-"+String(month).padStart(2,"0")+"-01";}
+function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new Map(),rateSources=[],reportedContributions=[],reportedDistributions=[];
  for(const year of ["2024","2025","2026"]){const s=book.sheets[year],m=meta[year],heading=s[1]||{};
   const dateCols=Object.entries(heading).filter(([col,val])=>+col>=1&&isReal(val)&&val>40000&&val<60000).map(([col,val])=>({col:+col,date:dateSerial(val)}));
   const entries=[...Array.from({length:m.stock[1]-m.stock[0]+1},(_,i)=>({row:m.stock[0]+i,section:"stock"})),...m.other.map(row=>({row,section:"other"}))];
@@ -101,9 +102,17 @@ function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new M
    const prior=totals.get(date);if(prior&&Math.abs(prior.total-record.total)>.01){quality.push({code:"MONTHLY_OVERLAP",severity:"warning",date,previous:prior.total,incoming:record.total,sources:[prior.source,record.source]});}
    if(!prior||+year>=+prior.source.slice(0,4))totals.set(date,record);
   }
-  if(year==="2026"){
-   for(let c=1;c<=11;c++){const v=get(s,m.fx,c);if(isReal(v)&&v>0)rateSources.push({date:monthlyDate(year,c),rate:v,source:year+"!"+colName(c)+m.fx});}
+  for(let c=m.monthly[0];c<=m.monthly[1];c++){const v=get(s,m.fx,c),date=monthlyDate(year,c);if(date&&isReal(v)&&v>0)rateSources.push({date,rate:v,source:year+"!"+colName(c)+m.fx});}
+  const contributionRange=year==="2024"?[93,101]:year==="2025"?[122,133]:[89,98];
+  for(let row=contributionRange[0];row<=contributionRange[1];row++){const serial=get(s,row,0),amount=get(s,row,1),date=isReal(serial)&&serial>40000?dateSerial(serial):null;
+   if(date&&isReal(amount)&&amount!==0)reportedContributions.push({date,amount:currency(amount),source:year+"!A"+row+":B"+row,kind:"reported_aporte",externalFlowVerified:false});}
+  const divHeader=year==="2024"?56:year==="2025"?76:75,divRows=year==="2024"?[57,82]:year==="2025"?[77,110]:[76,76];
+  for(let row=divRows[0];row<=divRows[1];row++){const name=label(s,row);
+   for(let c=m.monthly[0];c<=m.monthly[1];c++){const date=monthLabel(get(s,divHeader,c)),amount=get(s,row,c);
+    if(date&&isReal(amount)&&amount>0)reportedDistributions.push({date,amount:currency(amount),name:year==="2026"?"Ações BR (consolidado)":name,kind:year==="2026"?"stock_dividends_total":"stock_dividend_entry",source:year+"!"+colName(c)+row,cashReceiptVerified:false});}
   }
+  if(year==="2026"){for(let c=1;c<=11;c++){const date=monthLabel(get(s,75,c)),amount=get(s,79,c);if(date&&isReal(amount)&&amount>0)reportedDistributions.push({date,amount:currency(amount),name:"Fundos imobiliários (consolidado)",kind:"fii_income_total",source:year+"!"+colName(c)+"79",cashReceiptVerified:false});}}
+ 
  }
  // Canonical monthly book-ends: 2024 for Dec 2024, 2025 for Dec 2025.
  const s24=book.sheets["2024"],s25=book.sheets["2025"],s26=book.sheets["2026"];
@@ -125,7 +134,9 @@ function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new M
   const last=asset.observations.at(-1);asset.current={date:last.date,value:last.value,source:last.source,partial:last.date!==latestOverall};
   deduped.push(asset);
  }
- const lastFX=rateSources.filter(x=>x.date==="2026-10-31").at(-1)||rateSources.at(-1);
+ const uniqueRates=new Map();for(const r of rateSources){const prev=uniqueRates.get(r.date);if(prev&&Math.abs(prev.rate-r.rate)>.02)quality.push({code:"FX_OVERLAP",severity:"info",date:r.date,reported:prev.rate,corrected:r.rate,message:"Cotações cambiais divergentes em abas de transição"});uniqueRates.set(r.date,r);}
+ const sortedRates=[...uniqueRates.values()].sort((a,b)=>a.date.localeCompare(b.date));
+ const lastFX=sortedRates.find(x=>x.date==="2026-10-01")||sortedRates.at(-1);
  const maxByAccount=new Map();for(const a of deduped){const old=maxByAccount.get(a.account);if(!old||a.current.date>old)maxByAccount.set(a.account,a.current.date);}
  const positions=deduped.filter(a=>a.current.value>0&&a.current.date===maxByAccount.get(a.account)&&a.current.date>="2026-09-01").map((a,i)=>({
  id:"xlsx"+String(i+1).padStart(3,"0"),name:a.name,ticker:a.ticker,type:a.type,currency:"BRL",units:1,cost:0,costKnown:false,price:a.currency==="USD"?currency(a.current.value*(lastFX?.rate||1)):a.current.value,asOf:a.current.date,source:a.current.source,account:a.account,valuationOnly:true,
@@ -134,8 +145,8 @@ function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new M
  const latestPension=positions.filter(x=>x.type==="pension").map(x=>x.asOf).sort().at(-1);
  if(latestPension&&latestPension<latestOverall)quality.push({code:"STALE_PENSION",severity:"warning",date:latestOverall,pensionDate:latestPension,message:"Previdência de competência anterior ao último saldo doméstico."});
  const history=[...totals.values()].filter(x=>x.date<="2026-09-30").sort((a,b)=>a.date.localeCompare(b.date));
- return{version:2,schema:"wealth-data-engine-v2",importedFrom:"Excel local: 2024, 2025, 2026",sourceMetadata:{filename:"Papel.xlsx",latestDate:latestOverall,latestFullMonth:history.at(-1)?.date,latestPensionDate:latestPension,partial:true},
- assetHistory:deduped,positions,history,quality,sourceRates:rateSources,metrics:{assets:deduped.length,positions:positions.length,observations:deduped.reduce((s,a)=>s+a.observations.length,0),months:history.length,flags:quality.length}};
+ return{version:2,schema:"wealth-data-engine-v2",importedFrom:"Excel local: 2024, 2025, 2026",reportedContributions,reportedDistributions,sourceMetadata:{filename:"Papel.xlsx",latestDate:latestOverall,latestFullMonth:history.at(-1)?.date,latestPensionDate:latestPension,partial:true},
+ assetHistory:deduped,positions,history,quality,sourceRates:sortedRates,metrics:{assets:deduped.length,positions:positions.length,observations:deduped.reduce((s,a)=>s+a.observations.length,0),months:history.length,flags:quality.length,contributions:reportedContributions.length,distributions:reportedDistributions.length}};
 }
 async function parseFile(file){if(!file||file.size>LIMIT.file)bad("arquivo muito grande");const model=await workbook(await file.arrayBuffer());return analyze(model);}
 global.WealthXlsx={parseFile,workbook,analyze,meta};
