@@ -54,6 +54,12 @@ jobs:
           done
           echo 'Production HTTP smoke test passed'
 
+      - name: Package Excel parsing module for private QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: wealth-data-engine-v2-source
+          path: wealth-intelligence/xlsx-engine.js
+          if-no-files-found: error
   mobile-e2e:
     runs-on: ubuntu-latest
     defaults:
