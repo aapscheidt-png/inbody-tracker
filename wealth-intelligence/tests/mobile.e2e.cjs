@@ -24,7 +24,7 @@ const { chromium } = require("playwright-core");
   await page.goto(base, {waitUntil: "networkidle", timeout: 30000});
   await page.locator("#heroTotal").waitFor();
   const before = await page.locator("#heroTotal").textContent();
-  assert.ok(before.includes("1.329.974"), "Demo opening balance rounded to whole reais, got "+before+"; JS errors: "+errors.join(" | "));
+  assert.ok(before.includes("1.329.973,50"), "Demo balance displays exact cents, got "+before+"; JS errors: "+errors.join(" | "));
   assert.ok(await page.locator("#demoNotice").isVisible(), "Demo notice is visible");
   await page.screenshot({path:"artifacts/01-home-demo.png",fullPage:true});
 
@@ -114,7 +114,7 @@ const { chromium } = require("playwright-core");
   assert.ok(await page.locator("#reportedFlowsPanel").isVisible());
   assert.ok((await page.locator("#reportedTotalFlows").textContent()).includes("13.260"));
   const receivedIncome=await page.locator("#reportedTotalIncome").textContent();
-  assert.ok(receivedIncome.includes("1.319"),"Reported income was "+receivedIncome+"; ledger "+(await page.locator("#reportedFlowsList").textContent()).slice(0,250));
+  assert.ok(receivedIncome.includes("1.319,54"),"Reported income was "+receivedIncome+"; ledger "+(await page.locator("#reportedFlowsList").textContent()).slice(0,250));
 
   assert.ok((await page.locator("#auditIssues").textContent()).includes("SEPTEMBER_TOTAL_FORMULA"));
   await page.screenshot({path:"artifacts/06-xlsx-history.png",fullPage:true});
