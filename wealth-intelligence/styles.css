@@ -193,3 +193,24 @@ button,.position{touch-action:manipulation}
 .history-view-nav button{flex:0 0 auto;border:1px solid #335163;background:#102637;color:#9fb9c6;border-radius:14px;padding:11px 13px;font-size:11px;font-weight:740}
 .history-view-nav button.active{background:rgba(42,143,129,.22);border-color:#37b69d;color:#8df6d4}
 .history-view-hint{font-size:11px;line-height:1.65;margin:0 0 16px}
+
+
+/* V2.2 — understandable income ledger and traceable source export */
+.reconcile-export{width:100%;margin:1px 0 15px;border:1px solid rgba(59,145,164,.45);color:#96e6d4;justify-content:center}
+.income-selector{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 0 12px}
+.income-selector label{font-size:12px;color:#9cb9c8}
+.income-selector select{font-size:12px;background:#102c40;color:#e9f8f9;border:1px solid #37586b;padding:10px 30px 10px 12px;border-radius:11px}
+.income-annual-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:1px 0 19px}
+.income-annual-summary>div{min-width:0;background:#0b2232;border:1px solid #274555;border-radius:15px;padding:13px 11px;display:flex;flex-direction:column;gap:10px}
+.income-annual-summary span{font-size:10px;line-height:1.45;color:#95b6c4;font-weight:750;letter-spacing:.035em}
+.income-annual-summary strong{font-size:clamp(16px,3.7vw,22px);font-variant-numeric:tabular-nums;overflow-wrap:anywhere;letter-spacing:-.035em}
+.income-monthly{display:flex;flex-direction:column;gap:13px;margin:2px 0 19px}
+.income-month-row{display:grid;grid-template-columns:34px minmax(0,1fr) 100px;align-items:center;gap:9px}
+.income-month-name{font-size:11px;color:#acbdc5;text-transform:capitalize}
+.income-month-track{height:11px;border-radius:8px;display:flex;background:#162f3c;overflow:hidden}
+.income-month-stock{display:block;background:#31a7bd;transition:width .3s}
+.income-month-fii{display:block;background:#d5b16d;transition:width .3s}
+.income-month-value{text-align:right;font-size:12px;font-variant-numeric:tabular-nums;font-weight:750;color:#dceff0}
+.ledger-latest-head{border-top:1px solid #24404e;margin:5px 0 10px;padding-top:18px}
+.ledger-latest-head h3{font-size:13px}
+@media(max-width:390px){.income-month-row{grid-template-columns:27px minmax(0,1fr) 86px;gap:7px}.income-month-value{font-size:11px}.income-annual-summary>div{padding:12px 9px}}
