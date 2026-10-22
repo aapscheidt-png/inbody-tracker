@@ -111,6 +111,9 @@ const { chromium } = require("playwright-core");
   assert.equal(await page.locator("#demoNotice").isVisible(),false,"Demo notice must be hidden after personal Excel import");
   assert.ok((await page.locator("#heroTotal").textContent()).includes("1.037,50"),"Provisional aligned positions, not stale Dashboard, should be headline");
   assert.ok((await page.locator("#reconcileReported").textContent()).includes("2.500,00"));
+  assert.ok((await page.locator("#heroGain").textContent()).includes("Diferença para o Dashboard"));
+  assert.ok(await page.locator("#heroGain").evaluate(x=>x.classList.contains("reconcile-warning")));
+
   assert.ok((await page.locator("#reconcileCalculated").textContent()).includes("R$"));
   assert.ok((await page.locator("#reconcileExplanation").textContent()).includes("dois valores não fecham"));
   assert.ok((await page.locator("#reconcileStatus").textContent()).includes("SUBTOTAIS VERIFICADOS"));
