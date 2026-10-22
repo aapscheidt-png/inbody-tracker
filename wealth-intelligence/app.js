@@ -149,16 +149,23 @@ function renderReconciliation(p){
  text("reconcileCalculated",money(calculated,2));
  text("reconcileDifference",difference===null?"Não disponível":money(Math.abs(difference),2));
  text("reconcileReportedSource",meta.dashboardCell||"Dashboard do Excel");
- text("reconcileStatus",meta.sourceVerified?"SUBTOTAIS VERIFICADOS · DATAS MISTAS":"BASE NÃO VALIDADA");
  const buckets=meta.sourceBuckets||[];
- el("reconcileSources").innerHTML=buckets.length?buckets.map(b=>'<div class="reconcile-bucket"><span>'+esc(b.label)+'</span><strong>'+ (b.excelValue===null?"N/D":money(b.excelValue,2))+'</strong><small>'+esc(b.excelCell)+' · '+esc(b.asOf)+(b.matched?" · Confere":" · Divergente")+'</small></div>').join(""):
- '<p class="muted">Subtotais não verificados nesta carga. Reimporte seu Excel original.</p>';
+ const sourceStillCurrent=meta.sourceVerified===true&&meta.calculatedTotal!==null&&Math.abs(p.total-meta.calculatedTotal)<.02 &&
+ buckets.length===4 && buckets.every(b=>b.matched&&Math.abs(p.items.filter(x=>({
+ domestic:["Carteira de ações","Carteira doméstica"],international:["Investimentos internacionais"],pension:["Previdência"],crypto:["Cripto"]
+ }[b.key]||[]).includes(x.account)).reduce((t,x)=>t+x.value,0)-b.importedValue)<.03);
+ text("reconcileStatus",sourceStillCurrent?"SUBTOTAIS VERIFICADOS · DATAS MISTAS":meta.sourceVerified?"POSIÇÕES ALTERADAS APÓS IMPORTAR":"BASE NÃO VALIDADA");
+ el("reconcileSources").innerHTML=buckets.length?buckets.map(b=>{
+ const now=p.items.filter(x=>({domestic:["Carteira de ações","Carteira doméstica"],international:["Investimentos internacionais"],pension:["Previdência"],crypto:["Cripto"]}[b.key]||[]).includes(x.account)).reduce((t,x)=>t+x.value,0);
+ const ok=b.matched&&Math.abs(now-b.importedValue)<.03;
+ return '<div class="reconcile-bucket"><span>'+esc(b.label)+'</span><strong>'+ (b.excelValue===null?"N/D":money(b.excelValue,2))+'</strong><small>'+esc(b.excelCell)+' · '+esc(b.asOf)+(ok?" · Confere":" · Alterado ou divergente")+'</small></div>';
+ }).join(""):'<p class="muted">Subtotais não verificados nesta carga. Reimporte seu Excel original.</p>';
  const last=state.history.at(-1);
  text("reconcileMonthTotal",last?money(last.total,2):"—");
  text("reconcileMonthDate",last?observedDate(last.date,"month"):"Sem fechamento");
  text("reconcilePensionDate",meta.latestPensionDate?observedDate(meta.latestPensionDate,"month"):"—");
  const matchesCrypto=difference!==null&&meta.cryptoPrevious!==null&&meta.cryptoOctober!==null&&Math.abs(difference-(meta.cryptoPrevious-meta.cryptoOctober))<.02;
- text("reconcileExplanation",!meta.sourceVerified?"Esta importação não possui conferência dos quatro subtotais do Excel. Reimporte o arquivo original para validar as posições e suas competências.":reported===null?
+ text("reconcileExplanation",meta.sourceVerified&&!sourceStillCurrent?"A carteira foi alterada desde a importação. Os subtotais anteriormente verificados deixaram de representar todas as posições atuais. Faça uma nova conferência com o Excel.":!meta.sourceVerified?"Esta importação não possui conferência dos quatro subtotais do Excel. Reimporte o arquivo original para validar as posições e suas competências.":reported===null?
   "Os dados históricos carregados não incluem a referência original do Dashboard. Importe novamente o Excel para reconciliar ambos os totais.":
   matchesCrypto?"A diferença de "+money(Math.abs(difference),2)+" corresponde a saldos de cripto de setembro ainda usados pelo Dashboard. A soma das posições considera os valores de outubro. Previdência permanece com fechamento de setembro.":
   Math.abs(difference)<.02?"O valor do Dashboard confere com a soma das posições. Confira as datas de competência antes de interpretar como fechamento de outubro.":
