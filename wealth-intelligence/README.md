@@ -10,6 +10,15 @@ Aplicativo independente de inteligência patrimonial com interface mobile-first/
 - Ao importar backup, os dados locais existentes serão substituídos. Recomenda-se exportar backup antes.
 - Dados do extrato de maio de 2026 são históricos; atualizar com extrato atual antes de considerar as informações vigentes.
 
+## Correção V2.3 · Fontes conferidas por subtotal
+
+- O painel principal exibe a **soma dos últimos saldos disponíveis**, não a célula `Dashboard!B6`, que utiliza criptoativos de setembro e outros saldos de outubro.
+- O total é **provisório**, pois a previdência de setembro não é um fechamento integral em outubro.
+- Antes de aceitar um XLSX, o importador compara os saldos convertidos e classificados das posições com quatro fontes independentes: Brasil `2026!X72`, exterior `2026!L86`, previdência `2026!K116+K117` e cripto `2026!L121+L122`. Divergências interrompem a importação; os dados anteriores são preservados.
+- O app exibe as quatro referências, a última competência, o nome do arquivo, a data de importação e uma impressão SHA-256 calculada **localmente**, para identificar importações antigas no iPhone.
+- Dados pessoais não são publicados no GitHub. Os testes de regressão usam Excel fictício, enquanto a planilha fornecida pelo usuário é auditada somente localmente.
+- O Dashboard original permanece visível no quadro de conciliação, explicitamente separado dos subtotais confirmados. Resultados reais exigem extratos atualizados e conciliação dos fluxos.
+
 ## V2.2: Proventos históricos e conferência rastreável
 
 - A aba Histórico › Aportes e proventos apresenta **proventos por ano**, totais separados de dividendos de ações e rendimentos de FIIs e distribuição por mês, sem transformar os lançamentos em rentabilidade auditada.

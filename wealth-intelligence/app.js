@@ -44,7 +44,8 @@ function renderDataQuality(){
  const meta=state.dataEngine?.sourceMetadata,bar=el("dataQualityStrip");bar.hidden=!meta;
  if(!meta)return;
  text("dataQualityHeadline",meta.partial?"Patrimônio provisório · datas diferentes":"Patrimônio conciliado por competência");
- text("dataQualitySubtitle","Último fechamento: "+(meta.latestFullMonth||"não disponível")+" · Previdência: "+(meta.latestPensionDate||"sem data"));
+ text("dataQualitySubtitle",(meta.filename||"Arquivo não identificado")+" · "+(meta.importedAt?"importado "+new Date(meta.importedAt).toLocaleString("pt-BR"):"importação anterior, sem data de conferência")+" · Previdência até "+(meta.latestPensionDate||"sem data"));
+ text("dataFileFingerprint",meta.sha256?"Arquivo SHA-256: "+meta.sha256.slice(0,16)+"… · referência do Excel": "Esta base não tem identificação verificável do arquivo importado.");
 }
 function renderReportedFlows(){
  const data=state.dataEngine,panel=el("reportedFlowsPanel");panel.hidden=!data;if(!data)return;
@@ -105,9 +106,15 @@ function renderAudit(){
  el("auditIssues").innerHTML=flags.length?flags.slice(0,35).map(f=>'<div class="audit-item"><strong>'+esc(f.code)+'</strong><span>'+esc(f.date||f.asset||"")+'</span><small>'+esc(f.message||((f.reported||f.corrected)?"Informado: "+money(f.reported)+" · Reconciliado: "+money(f.corrected):f.cell||"Divergência entre fontes"))+'</small></div>').join(""):'<p class="muted">Nenhuma divergência detectada pelas regras implementadas; isso não substitui conciliação bancária.</p>';
 }
 async function importExcel(file){
- if(!file)return;pendingXlsx=null;el("confirmXlsx").disabled=true;notify("Analisando planilha localmente...");
+ if(!file)return;pendingXlsx=null;el("confirmXlsx").disabled=true;
+  el("importStatus").hidden=false;text("importStatus","Conferindo o arquivo "+String(file.name||"Excel")+" com o saldo de cada classe...");
+  notify("Analisando planilha localmente...");
  try{
   const parsed=await X.parseFile(file);parsed.sourceMetadata.filename=String(file.name||"Excel importado").slice(0,95);
+  parsed.sourceMetadata.importedAt=new Date().toISOString();
+  parsed.sourceMetadata.fileSize=file.size;
+  if(globalThis.crypto?.subtle){const hash=await globalThis.crypto.subtle.digest("SHA-256",await file.arrayBuffer());parsed.sourceMetadata.sha256=[...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,"0")).join("");}
+  if(parsed.sourceMetadata.sourceVerified!==true)throw Error("Subtotais do Excel divergem das posições importadas. Esta carga foi interrompida para evitar valores incorretos.");
   if(!parsed.positions.length||!parsed.history.length)throw Error("A importação não identificou posições e históricos válidos.");
   const next=E.emptyData();next.positions=parsed.positions;next.history=parsed.history;
   const fx=parsed.sourceRates.filter(x=>x.rate>0).at(-1)?.rate;
@@ -116,9 +123,10 @@ async function importExcel(file){
   next.dataEngine={quality:parsed.quality,sourceMetadata:parsed.sourceMetadata,assetHistory:parsed.assetHistory,sourceRates:parsed.sourceRates,reportedContributions:parsed.reportedContributions,reportedDistributions:parsed.reportedDistributions};
   const candidate=E.normalize(next);pendingXlsx=candidate;
   const worth=E.portfolio(candidate).total;
-  el("xlsxPreview").innerHTML='<div class="xlsx-summary"><div><small>POSIÇÕES COM SALDO</small><strong>'+candidate.positions.length+'</strong></div><div><small>OBSERVAÇÕES POR ATIVO</small><strong>'+parsed.metrics.observations+'</strong></div><div><small>MESES CONSOLIDADOS</small><strong>'+candidate.history.length+'</strong></div><div><small>PATRIMÔNIO PROVISÓRIO</small><strong>'+money(worth)+'</strong></div></div><p class="xlsx-warning"><strong>Competências diferentes.</strong> Última posição doméstica '+esc(parsed.sourceMetadata.latestDate)+', último fechamento '+esc(parsed.sourceMetadata.latestFullMonth)+', previdência '+esc(parsed.sourceMetadata.latestPensionDate)+'. Saldos, não preços unitários ou custos de compra.</p><p class="muted paragraph">'+parsed.quality.filter(q=>q.severity==="warning").length+' alertas de divergência. Importar substitui os dados do navegador, mas não altera o Excel original.</p>';
+  el("xlsxPreview").innerHTML='<p class="xlsx-check-ok">Conferência aprovada: Brasil, exterior, previdência e cripto coincidem com os quatro subtotais do Excel. O Dashboard pode continuar divergente porque usa competências diferentes.</p><div class="xlsx-summary"><div><small>POSIÇÕES COM SALDO</small><strong>'+candidate.positions.length+'</strong></div><div><small>OBSERVAÇÕES POR ATIVO</small><strong>'+parsed.metrics.observations+'</strong></div><div><small>MESES CONSOLIDADOS</small><strong>'+candidate.history.length+'</strong></div><div><small>SALDOS PROVISÓRIOS</small><strong>'+money(worth,2)+'</strong></div></div><p class="xlsx-warning"><strong>Competências diferentes.</strong> Última posição doméstica '+esc(parsed.sourceMetadata.latestDate)+', último fechamento '+esc(parsed.sourceMetadata.latestFullMonth)+', previdência '+esc(parsed.sourceMetadata.latestPensionDate)+'. Saldos, não preços unitários ou custos de compra.</p><p class="muted paragraph">'+parsed.quality.filter(q=>q.severity==="warning").length+' alertas de divergência. Importar substitui os dados do navegador, mas não altera o Excel original.</p>';
+  text("importStatus","Conferência concluída: quatro subtotais coincidem com a planilha. Confirme a importação.");
   el("settingsDialog").close();el("xlsxDialog").showModal();el("confirmXlsx").disabled=false;
- }catch(error){pendingXlsx=null;notify("Falha na leitura: "+error.message);}
+  }catch(error){pendingXlsx=null;el("importStatus").hidden=false;text("importStatus","Importação interrompida: "+error.message+" Nenhum valor anterior foi substituído.");notify("Falha na leitura: "+error.message);}
 }
 function confirmExcelImport(){
  if(!pendingXlsx)return;
@@ -133,21 +141,31 @@ function renderReconciliation(p){
  panel.hidden=!has;
  if(!has){text("heroEyebrow","PATRIMÔNIO CONSOLIDADO");text("heroGainCaption","resultado não realizado sobre custo atual");text("heroCostLabel","CAPITAL ALOCADO*");return;}
  const reported=meta.dashboardTotal,calculated=p.total,difference=reported===null?null:reported-calculated;
- text("heroEyebrow",reported!==null?"TOTAL EXIBIDO NO EXCEL":"PATRIMÔNIO PROVISÓRIO");
+ text("heroEyebrow","SOMA DOS SALDOS DISPONÍVEIS · PROVISÓRIO");
  text("heroGainCaption","Diferença entre origens e competências dos saldos");
  text("heroCostLabel","CUSTO DE AQUISIÇÃO");
- text("heroTotal",money(reported===null?calculated:reported,2));
+ text("heroTotal",money(calculated,2));
  text("reconcileReported",reported===null?"Importe o Excel atualizado":money(reported,2));
  text("reconcileCalculated",money(calculated,2));
  text("reconcileDifference",difference===null?"Não disponível":money(Math.abs(difference),2));
  text("reconcileReportedSource",meta.dashboardCell||"Dashboard do Excel");
- text("reconcileStatus",meta.partial?"DATAS MISTAS":"CONFERÊNCIA");
+ const buckets=meta.sourceBuckets||[];
+ const sourceStillCurrent=meta.sourceVerified===true&&meta.calculatedTotal!==null&&Math.abs(p.total-meta.calculatedTotal)<.02 &&
+ buckets.length===4 && buckets.every(b=>b.matched&&Math.abs(p.items.filter(x=>({
+ domestic:["Carteira de ações","Carteira doméstica"],international:["Investimentos internacionais"],pension:["Previdência"],crypto:["Cripto"]
+ }[b.key]||[]).includes(x.account)).reduce((t,x)=>t+x.value,0)-b.importedValue)<.03);
+ text("reconcileStatus",sourceStillCurrent?"SUBTOTAIS VERIFICADOS · DATAS MISTAS":meta.sourceVerified?"POSIÇÕES ALTERADAS APÓS IMPORTAR":"BASE NÃO VALIDADA");
+ el("reconcileSources").innerHTML=buckets.length?buckets.map(b=>{
+ const now=p.items.filter(x=>({domestic:["Carteira de ações","Carteira doméstica"],international:["Investimentos internacionais"],pension:["Previdência"],crypto:["Cripto"]}[b.key]||[]).includes(x.account)).reduce((t,x)=>t+x.value,0);
+ const ok=b.matched&&Math.abs(now-b.importedValue)<.03;
+ return '<div class="reconcile-bucket"><span>'+esc(b.label)+'</span><strong>'+ (b.excelValue===null?"N/D":money(b.excelValue,2))+'</strong><small>'+esc(b.excelCell)+' · '+esc(b.asOf)+(ok?" · Confere":" · Alterado ou divergente")+'</small></div>';
+ }).join(""):'<p class="muted">Subtotais não verificados nesta carga. Reimporte seu Excel original.</p>';
  const last=state.history.at(-1);
  text("reconcileMonthTotal",last?money(last.total,2):"—");
  text("reconcileMonthDate",last?observedDate(last.date,"month"):"Sem fechamento");
  text("reconcilePensionDate",meta.latestPensionDate?observedDate(meta.latestPensionDate,"month"):"—");
  const matchesCrypto=difference!==null&&meta.cryptoPrevious!==null&&meta.cryptoOctober!==null&&Math.abs(difference-(meta.cryptoPrevious-meta.cryptoOctober))<.02;
- text("reconcileExplanation",reported===null?
+ text("reconcileExplanation",meta.sourceVerified&&!sourceStillCurrent?"A carteira foi alterada desde a importação. Os subtotais anteriormente verificados deixaram de representar todas as posições atuais. Faça uma nova conferência com o Excel.":!meta.sourceVerified?"Esta importação não possui conferência dos quatro subtotais do Excel. Reimporte o arquivo original para validar as posições e suas competências.":reported===null?
   "Os dados históricos carregados não incluem a referência original do Dashboard. Importe novamente o Excel para reconciliar ambos os totais.":
   matchesCrypto?"A diferença de "+money(Math.abs(difference),2)+" corresponde a saldos de cripto de setembro ainda usados pelo Dashboard. A soma das posições considera os valores de outubro. Previdência permanece com fechamento de setembro.":
   Math.abs(difference)<.02?"O valor do Dashboard confere com a soma das posições. Confira as datas de competência antes de interpretar como fechamento de outubro.":
@@ -247,7 +265,7 @@ function exportReconciliation(){
 
 function importCsv(file){if(!file)return;if(file.size>2000000){notify("CSV excede o limite de 2 MB.");return;}const reader=new FileReader();reader.onload=()=>{try{const positions=I.rowsToPositions(String(reader.result||""),E.asDate());if(!confirm("Importar "+positions.length+" posições? Isso substituirá suas posições e seu histórico local. Exporte um backup antes de continuar."))return;const next=E.emptyData();next.positions=positions;if(state.mode==="personal"){next.fx=state.fx;next.assumptions={...state.assumptions};next.benchmarkAnnualPct=state.benchmarkAnnualPct;}state=E.normalize(next);simulationKey="";if(!persist())return;el("settingsDialog").close();render();go("portfolio");notify(positions.length+" posições importadas. Confira a cotação do dólar, se houver ativos em USD.");}catch(error){notify("CSV recusado: "+error.message);}};reader.onerror=()=>notify("Não foi possível ler o CSV.");reader.readAsText(file);}
 
-function importJson(file){if(!file)return;if(file.size>3000000){notify("Backup excede 3 MB.");return;}const reader=new FileReader();reader.onload=()=>{try{const candidate=E.normalize(JSON.parse(reader.result));if(!confirm("Importar o backup e substituir todos os dados locais atuais?"))return;state=candidate;simulationKey="";persist();el("settingsDialog").close();render();go("home");notify("Backup importado com sucesso.");}catch(err){notify("Importação recusada: "+err.message);}};reader.onerror=()=>notify("Não foi possível ler o arquivo.");reader.readAsText(file);}
+function importJson(file){if(!file)return;if(file.size>3000000){notify("Backup excede 3 MB.");return;}const reader=new FileReader();reader.onload=()=>{try{const candidate=E.normalize(JSON.parse(reader.result));if(candidate.dataEngine?.sourceMetadata)candidate.dataEngine.sourceMetadata.importedAt=new Date().toISOString();if(!confirm("Importar o backup e substituir todos os dados locais atuais?"))return;state=candidate;simulationKey="";persist();el("settingsDialog").close();render();go("home");notify("Backup importado com sucesso.");}catch(err){notify("Importação recusada: "+err.message);}};reader.onerror=()=>notify("Não foi possível ler o arquivo.");reader.readAsText(file);}
 document.addEventListener("click",ev=>{const historyTab=ev.target.closest("[data-history-view]");if(historyTab){historyView=historyTab.dataset.historyView;renderHistorySections();return;}const periodBtn=ev.target.closest("[data-period]");if(periodBtn){activePeriod=periodBtn.dataset.period;renderHeroPeriod();renderGrowthBridge();return;}const goBtn=ev.target.closest("[data-go]");if(goBtn){go(goBtn.dataset.go);return;}const close=ev.target.closest("[data-close]");if(close){el(close.dataset.close).close();return;}const edit=ev.target.closest("[data-edit]");if(edit){positionModal(edit.dataset.edit);return;}const remove=ev.target.closest("[data-remove]");if(remove){const id=remove.dataset.remove,p=state.positions.find(x=>x.id===id);if(p&&confirm("Excluir "+p.name+" da carteira?")){state.positions=state.positions.filter(x=>x.id!==id);persist();simulationKey="";render();notify("Ativo excluído.");}return;}const deleteSnapshot=ev.target.closest("[data-delete-snapshot]");if(deleteSnapshot){const date=deleteSnapshot.dataset.deleteSnapshot;if(confirm("Excluir registro de "+isoDate(date)+"?")){state.history=state.history.filter(x=>x.date!==date);persist();render();renderHistory();notify("Registro excluído.");}return;}const action=ev.target.closest("[data-action]");if(action){if(action.dataset.action==="start")startPortfolio();if(action.dataset.action==="add-position")positionModal();if(action.dataset.action==="add-snapshot")addSnapshotModal();}});
 el("positionForm").addEventListener("submit",handlePositionSubmit);
 el("portfolioSearch").addEventListener("input",()=>renderGroupedPortfolio(viewSnapshot()));
@@ -255,6 +273,7 @@ el("portfolioSort").addEventListener("change",()=>renderGroupedPortfolio(viewSna
 el("assetHistorySelect").addEventListener("change",updateAssetHistory);
 el("confirmXlsx").addEventListener("click",confirmExcelImport);
 el("importXlsx").addEventListener("change",ev=>{const file=ev.target.files[0];ev.target.value="";importExcel(file);});
+el("reimportFromHome").addEventListener("click",()=>el("importXlsx").click());
 el("posUnknownCost").addEventListener("change",()=>{el("posCost").disabled=el("posUnknownCost").checked;el("posCost").required=!el("posUnknownCost").checked;});
 el("snapshotForm").addEventListener("submit",handleSnapshotSubmit);
 el("openSettings").addEventListener("click",()=>{el("fxInput").value=state.fx;el("benchmarkRateInput").value=state.benchmarkAnnualPct;el("settingsDialog").showModal();});

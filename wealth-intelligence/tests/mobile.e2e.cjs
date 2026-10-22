@@ -103,16 +103,26 @@ const { chromium } = require("playwright-core");
     buffer:fixture()
   });
   await page.locator("#xlsxDialog").waitFor({state:"visible",timeout:15000});
-  assert.ok((await page.locator("#xlsxPreview").textContent()).includes("PATRIMÔNIO PROVISÓRIO"));
+  assert.ok((await page.locator("#xlsxPreview").textContent()).includes("SALDOS PROVISÓRIOS"));
   page.once("dialog",dialog=>dialog.accept());
   await page.locator("#confirmXlsx").click();
   await page.locator("#dataQualityStrip").waitFor({state:"visible"});
   await page.locator("#reconciliationPanel").waitFor({state:"visible"});
   assert.equal(await page.locator("#demoNotice").isVisible(),false,"Demo notice must be hidden after personal Excel import");
-  assert.ok((await page.locator("#heroTotal").textContent()).includes("2.500,00"),"Dashboard original should be the headline");
+  assert.ok((await page.locator("#heroTotal").textContent()).includes("1.037,50"),"Provisional aligned positions, not stale Dashboard, should be headline");
   assert.ok((await page.locator("#reconcileReported").textContent()).includes("2.500,00"));
   assert.ok((await page.locator("#reconcileCalculated").textContent()).includes("R$"));
   assert.ok((await page.locator("#reconcileExplanation").textContent()).includes("dois valores não fecham"));
+  assert.ok((await page.locator("#reconcileStatus").textContent()).includes("SUBTOTAIS VERIFICADOS"));
+  assert.equal(await page.locator("#reconcileSources .reconcile-bucket").count(),4);
+  assert.ok((await page.locator("#dataFileFingerprint").textContent()).includes("SHA-256"));
+  await page.locator("#importXlsx").setInputFiles({
+    name:"synthetic-divergent.xlsx",
+    mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",buffer:fixture(true)
+  });
+  await page.locator("#importStatus").waitFor({state:"attached"});
+  await page.waitForFunction(()=>document.querySelector("#importStatus")?.textContent?.includes("Importação interrompida"),null,{timeout:10000});
+  assert.ok((await page.locator("#heroTotal").textContent()).includes("1.037,50"),"A planilha divergente não deve substituir os valores válidos");
   await page.screenshot({path:"artifacts/07-reconciliation-home.png",fullPage:true});
   await page.locator(".tabbar [data-go='portfolio']").click();
   assert.ok(await page.locator("#portfolioBreakdown").isVisible());
@@ -162,6 +172,14 @@ const { chromium } = require("playwright-core");
   assert.ok(holdingsText.includes("saldo_historico"));
   assert.ok(holdingsText.includes('"nao"'),"Unknown cost must remain unknown after export");
   await page.locator("#settingsDialog [data-close]").first().click();
+  await page.locator(".tabbar [data-go='portfolio']").click();
+  await page.locator("#portfolioSearch").fill("ABCB4");
+  await page.locator("#positionsList [data-edit]").first().click();
+  await page.locator("#posPrice").fill("120");
+  await page.locator("#positionForm button[type=submit]").click();
+  await page.locator(".tabbar [data-go='home']").click();
+  assert.ok((await page.locator("#reconcileStatus").textContent()).includes("POSIÇÕES ALTERADAS"),"Must revoke verification badge after local edit");
+  assert.ok((await page.locator("#reconcileExplanation").textContent()).includes("carteira foi alterada"));
   assert.deepEqual(errors, [], "No browser errors on core flows");
   console.log("PASS: Chromium mobile UX, all 5 views, simulation, local storage, CSV import");
   await browser.close();
