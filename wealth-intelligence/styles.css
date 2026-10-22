@@ -214,3 +214,15 @@ button,.position{touch-action:manipulation}
 .ledger-latest-head{border-top:1px solid #24404e;margin:5px 0 10px;padding-top:18px}
 .ledger-latest-head h3{font-size:13px}
 @media(max-width:390px){.income-month-row{grid-template-columns:27px minmax(0,1fr) 86px;gap:7px}.income-month-value{font-size:11px}.income-annual-summary>div{padding:12px 9px}}
+
+/* V2.3 — source-verified financial balances, local import tracking */
+.quality-fingerprint{font-size:10px;color:#8fb4c2;overflow-wrap:anywhere}
+.reconcile-source-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:13px 0 12px}
+.reconcile-bucket{background:#0d2736;border:1px solid #294858;border-radius:13px;padding:11px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.reconcile-bucket>span{color:#9dbac5;font-size:10px;line-height:1.4}
+.reconcile-bucket strong{font-size:clamp(13px,3.4vw,19px);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.reconcile-bucket small{font-size:10px;line-height:1.4;color:#95b49c}
+#reimportFromHome{width:100%;margin:6px 0 15px;border-color:#33af9d;color:#92e6d2}
+.xlsx-check-ok{border-radius:12px;padding:13px;background:#13382f;border:1px solid #347c69;color:#b9e8d5;font-size:12px;line-height:1.6;margin:14px 0 4px}
+.xlsx-import-status{padding:10px 12px;border:1px solid #b78b59;border-radius:11px;background:#3a291f;color:#f6d4ab;line-height:1.6;font-size:11px;margin:8px 0}
+@media(max-width:370px){.reconcile-source-list{grid-template-columns:1fr}}
