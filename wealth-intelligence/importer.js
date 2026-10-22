@@ -8,9 +8,14 @@ moeda:["moeda","currency","divisa"],
 quantidade:["quantidade","qty","quantity","unidades","units"],
 custo:["custo_unitario","custo","custo_medio","preco_medio","average_cost","cost"],
 preco:["preco_atual","preco","cotacao","valor_unitario","current_price","price"],
-data:["data_preco","data","data_cotacao","price_date","as_of"]
+data:["data_preco","data","data_cotacao","price_date","as_of"],
+custoConhecido:["custo_conhecido","cost_known","costknown"],
+saldoHistorico:["saldo_historico","valuation_only","valuationonly"],
+conta:["conta","account"],
+precisao:["precisao_data","date_precision"]
 };
 const types={
+"previdencia":"pension","pension":"pension","metais":"metals","ouro":"metals","prata":"metals","metals":"metals",
 "renda fixa":"fixed_income","fixed_income":"fixed_income","rf":"fixed_income",
 "acoes br":"stocks","acoes":"stocks","stocks":"stocks","acoes brasileiras":"stocks",
 "fundos imobiliarios":"reits","fii":"reits","fiis":"reits","reits":"reits",
@@ -65,17 +70,28 @@ function rowsToPositions(text,defaultDate){
  const result=[];for(let idx=0;idx<rows.length;idx++){
  const row=rows[idx],v=(key)=>keys[key]===undefined?"":row[keys[key]]||"",tag="Linha "+(idx+2)+": ";
  const name=String(v("nome")).trim(),code=String(v("codigo")).trim();if(!name||name.length>90)throw Error(tag+"Nome do ativo inválido.");
- const qty=number(v("quantidade"),tag+"Quantidade"),cost=number(v("custo"),tag+"Custo"),price=number(v("preco"),tag+"Preço");
+ const qty=number(v("quantidade"),tag+"Quantidade"),price=number(v("preco"),tag+"Preço");
+ const rawCost=String(v("custo")).trim(),flag=normalized(v("custoConhecido"));
+ const costKnown=flag?["sim","true","1","yes"].includes(flag):rawCost!=="";
+ if(flag&&!["sim","true","1","yes","nao","false","0","no"].includes(flag))throw Error(tag+"custo_conhecido inválido: use sim ou não.");
+ if(costKnown&&!rawCost)throw Error(tag+"custo unitário obrigatório quando custo_conhecido é sim.");
+ const cost=costKnown?number(rawCost,tag+"Custo"):0;
  if(!(qty>0&&qty<1e10&&cost>=0&&cost<1e12&&price>=0&&price<1e12))throw Error(tag+"valores fora dos limites.");
  const key=normalized(v("classe")).replace(/_/g," "),type=types[key]||types[normalized(v("classe"))]||"other";
  const curr=String(v("moeda")||"BRL").trim().toUpperCase();if(!["BRL","USD"].includes(curr))throw Error(tag+"moeda não reconhecida. Use BRL ou USD.");
  let asOf=defaultDate?date(defaultDate):date("");if(String(v("data")).trim())asOf=date(v("data"));
- result.push({id:"csv_"+(idx+1)+"_"+Math.random().toString(36).slice(2,8),name,ticker:code.slice(0,30),type,currency:curr,units:qty,cost,price,asOf});
+ const historical=String(v("saldoHistorico")).trim().toLocaleLowerCase("pt-BR");
+ const valuationOnly=["sim","true","1","yes"].includes(historical);
+ const precision=normalized(v("precisao"));
+ result.push({id:"csv_"+(idx+1)+"_"+Math.random().toString(36).slice(2,8),name,ticker:code.slice(0,30),type,currency:curr,units:qty,cost,costKnown,valuationOnly,price,asOf,
+ account:String(v("conta")||"").slice(0,80),datePrecision:["mes","month"].includes(precision)?"month":"day"});
  }
  return result;
 }
 function escapeCell(value){const s=String(value===undefined||value===null?"":value),safe=/^[\s]*[=+@\-\t\r]/.test(s)?"'"+s:s;return '"'+safe.replace(/"/g,'""')+'"';}
-const example=[["nome","codigo","classe","moeda","quantidade","custo_unitario","preco_atual","data_preco"],["Tesouro IPCA+","IPCA2035","Renda fixa","BRL","1","1000.00","1100.00","2026-10-12"],["ETF Global","WORLD","Internacional","USD","2","150.00","160.00","2026-10-12"]];
+const example=[["nome","codigo","classe","moeda","quantidade","custo_unitario","preco_atual","data_preco","custo_conhecido","saldo_historico","conta","precisao_data"],
+["Tesouro IPCA+","IPCA2035","Renda fixa","BRL","1","1000.00","1100.00","2026-10-12","sim","nao","","dia"],
+["Fundo Previdenciário","PREVI","Previdência","BRL","1","","250000.00","2026-09-30","nao","sim","Previdência","mes"]];
 function template(){return "\uFEFF"+example.map(row=>row.map(escapeCell).join(";")).join("\r\n")+"\r\n";}
 global.WealthImporter={parse,rowsToPositions,template,escapeCell};
 })(window);
