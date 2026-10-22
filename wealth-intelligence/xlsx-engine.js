@@ -45,7 +45,7 @@ async function workbook(buffer){const zip=unzipDirectory(new Uint8Array(buffer))
  const out={sheets:{},origin:"excel_local",size:zip.bytes.byteLength};
  const names=[...w.getElementsByTagName("sheet")];if(names.length>LIMIT.sheets)bad("abas excedem o limite");
  for(const node of names){const name=node.getAttribute("name")||"",id=node.getAttribute("r:id")||node.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships","id");
-  if(!["2024","2025","2026"].includes(name))continue;const path=ids.get(id);if(!path)continue;const raw=await readEntry(zip,path);if(!raw)continue;const d=xml(raw),rows={};
+  if(!["2024","2025","2026","Dashboard"].includes(name))continue;const path=ids.get(id);if(!path)continue;const raw=await readEntry(zip,path);if(!raw)continue;const d=xml(raw),rows={};
   for(const row of d.getElementsByTagName("row")){const n=Number(row.getAttribute("r"));if(!(n>0&&n<=1000))continue;const cells={};
    for(const cell of row.getElementsByTagName("c")){const ref=cell.getAttribute("r")||"",col=colNumber(ref),typ=cell.getAttribute("t")||"",v=cell.getElementsByTagName("v")[0],inline=cell.getElementsByTagName("is")[0];
     if(col<0||col>120)continue;let value=null;
@@ -142,10 +142,24 @@ function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new M
  id:"xlsx"+String(i+1).padStart(3,"0"),name:a.name,ticker:a.ticker,type:a.type,currency:"BRL",units:1,cost:0,costKnown:false,price:a.currency==="USD"?currency(a.current.value*(lastFX?.rate||1)):a.current.value,asOf:a.current.date,datePrecision:a.current.datePrecision,source:a.current.source,account:a.account,valuationOnly:true,
  originalCurrency:a.currency,originalValue:a.current.value,fxRate:a.currency==="USD"?(lastFX?.rate||null):null
  }));
+ const reportedDashboard=Number(get(book.sheets["Dashboard"]||{},6,1));
+ const calculated=currency(positions.reduce((sum,p)=>sum+p.price,0));
+ const dashboardTotal=isReal(reportedDashboard)&&reportedDashboard>0?currency(reportedDashboard):null;
+ const difference=dashboardTotal===null?null:currency(dashboardTotal-calculated);
+ const cryptoPrevious=currency(Number(get(s26,121,10)||0)+Number(get(s26,122,10)||0));
+ const cryptoOctober=currency(Number(get(s26,121,11)||0)+Number(get(s26,122,11)||0));
+ if(difference!==null&&Math.abs(difference)>.005){
+  const cryptoDiff=currency(cryptoPrevious-cryptoOctober);
+  const matched=Math.abs(difference-cryptoDiff)<.02;
+  quality.push({code:matched?"DASHBOARD_CRYPTO_PERIOD":"DASHBOARD_NOT_RECONCILED",severity:"warning",date:"2026-10-15",reported:dashboardTotal,corrected:calculated,difference,
+   message:matched?"O dashboard mantém saldos de cripto de setembro. A posição de outubro utiliza os saldos de outubro.":"O valor do dashboard difere da soma das últimas posições identificáveis; verifique competências e fórmulas.",
+   cell:"Dashboard!B6"});
+ }
  const latestPension=positions.filter(x=>x.type==="pension").map(x=>x.asOf).sort().at(-1);
  if(latestPension&&latestPension<latestOverall)quality.push({code:"STALE_PENSION",severity:"warning",date:latestOverall,pensionDate:latestPension,message:"Previdência de competência anterior ao último saldo doméstico."});
  const history=[...totals.values()].filter(x=>x.date<="2026-09-30").sort((a,b)=>a.date.localeCompare(b.date));
- return{version:2,schema:"wealth-data-engine-v2",importedFrom:"Excel local: 2024, 2025, 2026",reportedContributions,reportedDistributions,sourceMetadata:{filename:"Papel.xlsx",latestDate:latestOverall,latestFullMonth:history.at(-1)?.date,latestPensionDate:latestPension,partial:true},
+ return{version:2,schema:"wealth-data-engine-v2",importedFrom:"Excel local: 2024, 2025, 2026",reportedContributions,reportedDistributions,sourceMetadata:{filename:"Papel.xlsx",latestDate:latestOverall,latestFullMonth:history.at(-1)?.date,latestPensionDate:latestPension,partial:true,
+ dashboardTotal,calculatedTotal:calculated,difference,cryptoPrevious,cryptoOctober,dashboardCell:"Dashboard!B6",reconciliationKnown:dashboardTotal!==null},
  assetHistory:deduped,positions,history,quality,sourceRates:sortedRates,metrics:{assets:deduped.length,positions:positions.length,observations:deduped.reduce((s,a)=>s+a.observations.length,0),months:history.length,flags:quality.length,contributions:reportedContributions.length,distributions:reportedDistributions.length}};
 }
 async function parseFile(file){if(!file||file.size>LIMIT.file)bad("arquivo muito grande");const model=await workbook(await file.arrayBuffer());return analyze(model);}
