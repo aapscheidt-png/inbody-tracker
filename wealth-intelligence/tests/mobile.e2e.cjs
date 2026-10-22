@@ -116,6 +116,13 @@ const { chromium } = require("playwright-core");
   assert.ok((await page.locator("#reconcileStatus").textContent()).includes("SUBTOTAIS VERIFICADOS"));
   assert.equal(await page.locator("#reconcileSources .reconcile-bucket").count(),4);
   assert.ok((await page.locator("#dataFileFingerprint").textContent()).includes("SHA-256"));
+  await page.locator("#importXlsx").setInputFiles({
+    name:"synthetic-divergent.xlsx",
+    mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",buffer:fixture(true)
+  });
+  await page.locator("#importStatus").waitFor({state:"attached"});
+  await page.waitForFunction(()=>document.querySelector("#importStatus")?.textContent?.includes("Importação interrompida"),null,{timeout:10000});
+  assert.ok((await page.locator("#heroTotal").textContent()).includes("1.037,50"),"A planilha divergente não deve substituir os valores válidos");
   await page.screenshot({path:"artifacts/07-reconciliation-home.png",fullPage:true});
   await page.locator(".tabbar [data-go='portfolio']").click();
   assert.ok(await page.locator("#portfolioBreakdown").isVisible());
