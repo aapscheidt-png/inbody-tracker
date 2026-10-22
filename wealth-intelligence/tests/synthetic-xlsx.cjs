@@ -30,8 +30,9 @@ function fixture(){
  [116,0,"Santander Previ"],[116,10,700],[117,0,"Banesprev"],[117,10,150],
  [121,0,"Mercado BTC"],[121,10,3],[121,11,3],[122,0,"Binance"],[122,10,2],[122,11,2],
  [126,0,"Saldos Total"],[126,10,1400]];
- const main='<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+["2024","2025","2026"].map((n,i)=>'<sheet name="'+n+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join("")+'</sheets></workbook>';
- const rel='<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+[1,2,3].map(i=>'<Relationship Id="rId'+i+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+i+'.xml"/>').join("")+'</Relationships>';
- return zip({"xl/workbook.xml":main,"xl/_rels/workbook.xml.rels":rel,"xl/worksheets/sheet1.xml":sheet(f2024),"xl/worksheets/sheet2.xml":sheet(f2025),"xl/worksheets/sheet3.xml":sheet(f2026)});
+ const fDashboard=[[6,1,2500]];
+ const main='<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+["2024","2025","2026","Dashboard"].map((n,i)=>'<sheet name="'+n+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join("")+'</sheets></workbook>';
+ const rel='<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+[1,2,3,4].map(i=>'<Relationship Id="rId'+i+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+i+'.xml"/>').join("")+'</Relationships>';
+ return zip({"xl/workbook.xml":main,"xl/_rels/workbook.xml.rels":rel,"xl/worksheets/sheet1.xml":sheet(f2024),"xl/worksheets/sheet2.xml":sheet(f2025),"xl/worksheets/sheet3.xml":sheet(f2026),"xl/worksheets/sheet4.xml":sheet(fDashboard)});
 }
 module.exports={fixture};
