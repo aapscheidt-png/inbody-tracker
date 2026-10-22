@@ -171,8 +171,8 @@ function renderReconciliation(p){
   Math.abs(difference)<.02?"O valor do Dashboard confere com a soma das posições. Confira as datas de competência antes de interpretar como fechamento de outubro.":
   "Os dois valores não fecham. O número original da planilha foi preservado; a diferença deve ser investigada antes de tratar o patrimônio como consolidado.");
  const gain=el("heroGain");
- gain.textContent=difference!==null?"Conciliação: "+money(Math.abs(difference),2):"Base parcial";
- gain.classList.remove("negative");
+ gain.textContent=difference!==null?(Math.abs(difference)<.02?"Dashboard e posições conferem":"Diferença para o Dashboard: "+money(Math.abs(difference),2)):"Fonte sem conferência";
+ gain.classList.remove("negative");gain.classList.toggle("reconcile-warning",difference===null||Math.abs(difference)>=.02);
 }
 function renderPortfolioBreakdown(p){
  const pension=p.classes.find(c=>c.id==="pension")?.value||0,other=p.total-pension;
