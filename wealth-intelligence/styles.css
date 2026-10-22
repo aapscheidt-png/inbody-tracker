@@ -183,3 +183,13 @@ button,.position{touch-action:manipulation}
 .asset-line-actions button{border:0;background:transparent;color:#8faab8;font-size:11px;padding:6px 3px}
 .asset-line-actions button:first-child{color:#74c8c7}
 @media(max-width:400px){.reconcile-grid strong{font-size:16px}.portfolio-breakdown{gap:8px}.portfolio-segment{padding:12px 10px}.portfolio-tools{grid-template-columns:1fr}.group-title strong{font-size:12px}.group-amount{font-size:12px}.asset-group>summary{gap:7px;padding:13px 9px}.asset-line-amount strong{font-size:13px}}
+
+
+/* V2.1 readable history navigation and post-import demo guard */
+#demoNotice:not(.is-demo){display:none!important}
+.history-panel-hidden{display:none!important}
+.history-view-nav{display:flex;overflow-x:auto;scrollbar-width:none;gap:7px;margin:20px 0 10px;padding:5px 0 8px;-webkit-overflow-scrolling:touch}
+.history-view-nav::-webkit-scrollbar{display:none}
+.history-view-nav button{flex:0 0 auto;border:1px solid #335163;background:#102637;color:#9fb9c6;border-radius:14px;padding:11px 13px;font-size:11px;font-weight:740}
+.history-view-nav button.active{background:rgba(42,143,129,.22);border-color:#37b69d;color:#8df6d4}
+.history-view-hint{font-size:11px;line-height:1.65;margin:0 0 16px}
