@@ -29,7 +29,7 @@ function normalizeAudit(raw){if(!raw||typeof raw!=="object")return null;
  cell:String(q.cell||"").slice(0,35),reported:n(q.reported,0),corrected:n(q.corrected,0),difference:n(q.difference,0),message:String(q.message||"").slice(0,300)
  }));
  const m=raw.sourceMetadata&&typeof raw.sourceMetadata==="object"?raw.sourceMetadata:{};
- const sourceMetadata={filename:String(m.filename||"Excel importado").slice(0,95),latestDate:String(m.latestDate||"").slice(0,10),latestFullMonth:String(m.latestFullMonth||"").slice(0,10),latestPensionDate:String(m.latestPensionDate||"").slice(0,10),partial:m.partial===true};
+ const sourceMetadata={filename:String(m.filename||"Excel importado").slice(0,95),latestDate:String(m.latestDate||"").slice(0,10),latestFullMonth:String(m.latestFullMonth||"").slice(0,10),latestPensionDate:String(m.latestPensionDate||"").slice(0,10),partial:m.partial===true,dashboardTotal:Number.isFinite(+m.dashboardTotal)&&m.dashboardTotal!==null?+m.dashboardTotal:null,calculatedTotal:Number.isFinite(+m.calculatedTotal)&&m.calculatedTotal!==null?+m.calculatedTotal:null,difference:Number.isFinite(+m.difference)&&m.difference!==null?+m.difference:null,cryptoPrevious:Number.isFinite(+m.cryptoPrevious)?+m.cryptoPrevious:null,cryptoOctober:Number.isFinite(+m.cryptoOctober)?+m.cryptoOctober:null,dashboardCell:String(m.dashboardCell||"").slice(0,35),reconciliationKnown:m.reconciliationKnown===true};
  let totalObs=0;
  const assetHistory=(Array.isArray(raw.assetHistory)?raw.assetHistory:[]).slice(0,500).map(asset=>{
  const observations=(Array.isArray(asset.observations)?asset.observations:[]).slice(0,1500).map(o=>({

@@ -11,6 +11,13 @@ const d2026=sheet([[1,1,46022],[1,22,46295],[1,23,46310],[3,0,"ABCB4"],[3,22,90]
 [116,0,"Santander Previ"],[116,10,700],[117,0,"Banesprev"],[117,10,150],[121,0,"Mercado BTC"],[121,10,3],[121,11,3],[122,0,"Binance"],[122,10,2],[122,11,2],[126,10,1400]]);
 const parsed=X.analyze({sheets:{"2024":d2024,"2025":d2025,"2026":d2026}});
 assert.equal(parsed.schema,"wealth-data-engine-v2");
+const expectedCalculated=Math.round(parsed.positions.reduce((v,x)=>v+x.price,0)*100)/100;
+const withDashboard=X.analyze({sheets:{"2024":d2024,"2025":d2025,"2026":d2026,"Dashboard":{6:{1:expectedCalculated+500.18}}}});
+assert.ok(Math.abs(withDashboard.sourceMetadata.dashboardTotal-(expectedCalculated+500.18))<.02);
+assert.equal(withDashboard.sourceMetadata.calculatedTotal,expectedCalculated);
+assert.ok(Math.abs(withDashboard.sourceMetadata.difference-500.18)<.02);
+assert.ok(withDashboard.quality.some(x=>x.code==="DASHBOARD_NOT_RECONCILED"));
+assert.equal(withDashboard.sourceMetadata.dashboardCell,"Dashboard!B6");
 assert.equal(parsed.history.find(x=>x.date==="2024-12-31").total,765000);
 assert.equal(parsed.history.find(x=>x.date==="2024-11-30").total,768103.39);
 assert.equal(parsed.history.find(x=>x.date==="2025-12-31").total,1170732.39);
