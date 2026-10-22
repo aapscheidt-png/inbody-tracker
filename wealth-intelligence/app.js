@@ -44,7 +44,7 @@ function renderDataQuality(){
  const meta=state.dataEngine?.sourceMetadata,bar=el("dataQualityStrip");bar.hidden=!meta;
  if(!meta)return;
  text("dataQualityHeadline",meta.partial?"Patrimônio provisório · datas diferentes":"Patrimônio conciliado por competência");
- text("dataQualitySubtitle","Último fechamento: "+(meta.latestFullMonth||"não disponível")+" · Previdência: "+(meta.latestPensionDate||"sem data"));
+ text("dataQualitySubtitle",(meta.filename||"Arquivo não identificado")+" · "+(meta.importedAt?"importado "+new Date(meta.importedAt).toLocaleString("pt-BR"):"importação anterior, sem data de conferência")+" · Previdência até "+(meta.latestPensionDate||"sem data"));
 }
 function renderReportedFlows(){
  const data=state.dataEngine,panel=el("reportedFlowsPanel");panel.hidden=!data;if(!data)return;
@@ -108,6 +108,10 @@ async function importExcel(file){
  if(!file)return;pendingXlsx=null;el("confirmXlsx").disabled=true;notify("Analisando planilha localmente...");
  try{
   const parsed=await X.parseFile(file);parsed.sourceMetadata.filename=String(file.name||"Excel importado").slice(0,95);
+  parsed.sourceMetadata.importedAt=new Date().toISOString();
+  parsed.sourceMetadata.fileSize=file.size;
+  if(globalThis.crypto?.subtle){const hash=await globalThis.crypto.subtle.digest("SHA-256",await file.arrayBuffer());parsed.sourceMetadata.sha256=[...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,"0")).join("");}
+  if(parsed.sourceMetadata.sourceVerified!==true)throw Error("Subtotais do Excel divergem das posições importadas. Esta carga foi interrompida para evitar valores incorretos.");
   if(!parsed.positions.length||!parsed.history.length)throw Error("A importação não identificou posições e históricos válidos.");
   const next=E.emptyData();next.positions=parsed.positions;next.history=parsed.history;
   const fx=parsed.sourceRates.filter(x=>x.rate>0).at(-1)?.rate;
@@ -116,7 +120,7 @@ async function importExcel(file){
   next.dataEngine={quality:parsed.quality,sourceMetadata:parsed.sourceMetadata,assetHistory:parsed.assetHistory,sourceRates:parsed.sourceRates,reportedContributions:parsed.reportedContributions,reportedDistributions:parsed.reportedDistributions};
   const candidate=E.normalize(next);pendingXlsx=candidate;
   const worth=E.portfolio(candidate).total;
-  el("xlsxPreview").innerHTML='<div class="xlsx-summary"><div><small>POSIÇÕES COM SALDO</small><strong>'+candidate.positions.length+'</strong></div><div><small>OBSERVAÇÕES POR ATIVO</small><strong>'+parsed.metrics.observations+'</strong></div><div><small>MESES CONSOLIDADOS</small><strong>'+candidate.history.length+'</strong></div><div><small>PATRIMÔNIO PROVISÓRIO</small><strong>'+money(worth)+'</strong></div></div><p class="xlsx-warning"><strong>Competências diferentes.</strong> Última posição doméstica '+esc(parsed.sourceMetadata.latestDate)+', último fechamento '+esc(parsed.sourceMetadata.latestFullMonth)+', previdência '+esc(parsed.sourceMetadata.latestPensionDate)+'. Saldos, não preços unitários ou custos de compra.</p><p class="muted paragraph">'+parsed.quality.filter(q=>q.severity==="warning").length+' alertas de divergência. Importar substitui os dados do navegador, mas não altera o Excel original.</p>';
+  el("xlsxPreview").innerHTML='<p class="xlsx-check-ok">Conferência aprovada: Brasil, exterior, previdência e cripto coincidem com os quatro subtotais do Excel. O Dashboard pode continuar divergente porque usa competências diferentes.</p><div class="xlsx-summary"><div><small>POSIÇÕES COM SALDO</small><strong>'+candidate.positions.length+'</strong></div><div><small>OBSERVAÇÕES POR ATIVO</small><strong>'+parsed.metrics.observations+'</strong></div><div><small>MESES CONSOLIDADOS</small><strong>'+candidate.history.length+'</strong></div><div><small>PATRIMÔNIO PROVISÓRIO</small><strong>'+money(worth)+'</strong></div></div><p class="xlsx-warning"><strong>Competências diferentes.</strong> Última posição doméstica '+esc(parsed.sourceMetadata.latestDate)+', último fechamento '+esc(parsed.sourceMetadata.latestFullMonth)+', previdência '+esc(parsed.sourceMetadata.latestPensionDate)+'. Saldos, não preços unitários ou custos de compra.</p><p class="muted paragraph">'+parsed.quality.filter(q=>q.severity==="warning").length+' alertas de divergência. Importar substitui os dados do navegador, mas não altera o Excel original.</p>';
   el("settingsDialog").close();el("xlsxDialog").showModal();el("confirmXlsx").disabled=false;
  }catch(error){pendingXlsx=null;notify("Falha na leitura: "+error.message);}
 }
@@ -133,21 +137,21 @@ function renderReconciliation(p){
  panel.hidden=!has;
  if(!has){text("heroEyebrow","PATRIMÔNIO CONSOLIDADO");text("heroGainCaption","resultado não realizado sobre custo atual");text("heroCostLabel","CAPITAL ALOCADO*");return;}
  const reported=meta.dashboardTotal,calculated=p.total,difference=reported===null?null:reported-calculated;
- text("heroEyebrow",reported!==null?"TOTAL EXIBIDO NO EXCEL":"PATRIMÔNIO PROVISÓRIO");
+ text("heroEyebrow","SOMA DOS SALDOS DISPONÍVEIS · PROVISÓRIO");
  text("heroGainCaption","Diferença entre origens e competências dos saldos");
  text("heroCostLabel","CUSTO DE AQUISIÇÃO");
- text("heroTotal",money(reported===null?calculated:reported,2));
+ text("heroTotal",money(calculated,2));
  text("reconcileReported",reported===null?"Importe o Excel atualizado":money(reported,2));
  text("reconcileCalculated",money(calculated,2));
  text("reconcileDifference",difference===null?"Não disponível":money(Math.abs(difference),2));
  text("reconcileReportedSource",meta.dashboardCell||"Dashboard do Excel");
- text("reconcileStatus",meta.partial?"DATAS MISTAS":"CONFERÊNCIA");
+ text("reconcileStatus",meta.sourceVerified?"SUBTOTAIS VERIFICADOS · DATAS MISTAS":"BASE NÃO VALIDADA");
  const last=state.history.at(-1);
  text("reconcileMonthTotal",last?money(last.total,2):"—");
  text("reconcileMonthDate",last?observedDate(last.date,"month"):"Sem fechamento");
  text("reconcilePensionDate",meta.latestPensionDate?observedDate(meta.latestPensionDate,"month"):"—");
  const matchesCrypto=difference!==null&&meta.cryptoPrevious!==null&&meta.cryptoOctober!==null&&Math.abs(difference-(meta.cryptoPrevious-meta.cryptoOctober))<.02;
- text("reconcileExplanation",reported===null?
+ text("reconcileExplanation",!meta.sourceVerified?"Esta importação não possui conferência dos quatro subtotais do Excel. Reimporte o arquivo original para validar as posições e suas competências.":reported===null?
   "Os dados históricos carregados não incluem a referência original do Dashboard. Importe novamente o Excel para reconciliar ambos os totais.":
   matchesCrypto?"A diferença de "+money(Math.abs(difference),2)+" corresponde a saldos de cripto de setembro ainda usados pelo Dashboard. A soma das posições considera os valores de outubro. Previdência permanece com fechamento de setembro.":
   Math.abs(difference)<.02?"O valor do Dashboard confere com a soma das posições. Confira as datas de competência antes de interpretar como fechamento de outubro.":
