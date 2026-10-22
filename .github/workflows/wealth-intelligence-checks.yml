@@ -1,4 +1,7 @@
 name: Wealth Intelligence checks
+concurrency:
+  group: wealth-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
   push:
     branches:
