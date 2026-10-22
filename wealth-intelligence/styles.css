@@ -226,3 +226,6 @@ button,.position{touch-action:manipulation}
 .xlsx-check-ok{border-radius:12px;padding:13px;background:#13382f;border:1px solid #347c69;color:#b9e8d5;font-size:12px;line-height:1.6;margin:14px 0 4px}
 .xlsx-import-status{padding:10px 12px;border:1px solid #b78b59;border-radius:11px;background:#3a291f;color:#f6d4ab;line-height:1.6;font-size:11px;margin:8px 0}
 @media(max-width:370px){.reconcile-source-list{grid-template-columns:1fr}}
+
+/* V2.3.1: a source discrepancy is never presented as investment profit */
+.gain-pill.reconcile-warning{color:#f0c98d!important;background:rgba(219,164,82,.13)!important;border-color:rgba(219,164,82,.4)!important;max-width:100%;white-space:normal;line-height:1.5}
