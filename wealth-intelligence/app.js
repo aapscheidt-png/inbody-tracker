@@ -20,7 +20,7 @@ function renderHeroPeriod(){
   document.querySelectorAll("[data-period]").forEach(b=>{const on=b.dataset.period===activePeriod;b.classList.toggle("active",on);b.setAttribute("aria-pressed",on?"true":"false");});
 }
 function renderGrowthBridge(){
-  const rows=A.periodHistory(state.history,activePeriod),g=A.growthBridge(rows);
+  const rows=A.periodHistory(state.history,activePeriod),g=A.growthBridge(rows);const growthCard=document.querySelector(".growth-panel");if(growthCard)growthCard.hidden=!g.ready&&!!state.dataEngine;
   text("growthPeriod",g.ready?isoDate(g.from)+" – "+isoDate(g.to):"SEM HISTÓRICO");
   text("growthTotal",g.ready?(g.change>=0?"+":"")+money(g.change):"—");
   text("growthFlows",g.ready?(g.netFlows>=0?"+":"")+money(g.netFlows):"—");
@@ -104,9 +104,72 @@ function confirmExcelImport(){
  pendingXlsx=null;el("xlsxDialog").close();simulationKey="";render();go("home");notify("Histórico Excel importado com origem e ressalvas de conciliação.");
 }
 function persistCandidate(candidate){try{E.save(candidate);state=candidate;return true;}catch(e){notify("Armazenamento local insuficiente ou indisponível. Tente exportar seu histórico.");return false;}}
-function renderHome(p){text("modeBadge",state.mode==="demo"?"DEMO":"LOCAL");el("demoNotice").hidden=state.mode!=="demo";text("heroTotal",money(p.total,2));text("heroCost",p.costComplete?compact(p.basis):"—");text("heroCount",p.items.length);text("heroClasses",p.classes.length);const gain=el("heroGain");gain.textContent=p.costComplete?(p.profit>=0?"+":"")+money(p.profit)+" ("+E.signedPercent(p.profitPct)+")":"Custo de aquisição indisponível";gain.classList.toggle("negative",p.costComplete&&p.profit<0);let dates=p.items.map(x=>x.asOf).sort();text("heroAsOf",state.dataEngine?.sourceMetadata?.partial?"PARCIAL · "+isoDate(state.dataEngine.sourceMetadata.latestDate):dates.length?"PREÇOS ATÉ "+isoDate(dates[dates.length-1]):"SEM POSIÇÕES");renderDataQuality();renderHeroPeriod();const score=A.portfolioRisk(p).score;text("divScore",score+"/100");text("divHint",score>=80?"Concentração controlada na heurística":score>=60?"Alguns pontos merecem atenção":"Reveja composição e atualização");text("topExposure",E.percent(p.topAssetShare));text("topExposureName",p.items.length?p.items[0].name:"Cadastre ativos");renderDonut(p);renderGrowthBridge();const insight=E.insights(state,p).find(x=>x.severity!=="good")||E.insights(state,p)[0];text("homeInsightTitle",insight.title);text("homeInsightText",insight.text);}
-function renderDonut(p){const box=el("allocationDonut"),legend=el("allocationLegend");if(!p.total){box.innerHTML='<div class="donut-center"><strong>0</strong><span>CLASSES</span></div>';legend.innerHTML='<p class="muted">Cadastre ativos para visualizar a distribuição.</p>';return;}const r=70,c=2*Math.PI*r;let offset=0;const rings=p.classes.map(k=>{const len=k.value/p.total*c,arc='<circle cx="90" cy="90" r="'+r+'" stroke="'+k.color+'" stroke-width="16" fill="none" stroke-dasharray="'+len+" "+(c-len)+'" stroke-dashoffset="'+(-offset)+'" />';offset+=len;return arc;}).join("");box.innerHTML='<svg viewBox="0 0 180 180" role="img" aria-label="Distribuição por classe"><circle cx="90" cy="90" r="70" fill="none" stroke="#233440" stroke-width="16"/>'+rings+'</svg><div class="donut-center"><strong>'+p.classes.length+'</strong><span>CLASSES</span></div>';legend.innerHTML=p.classes.map(k=>'<div class="legend-row"><i class="dot" data-color-key="'+esc(k.id)+'"></i><span>'+esc(k.label)+'</span><strong>'+E.percent(k.value/p.total*100)+'</strong></div>').join("");}
-function renderPortfolio(p){text("portfolioTotal",money(p.total,2));text("positionsCounter",p.items.length);text("portfolioSubtitle",p.items.length+" posições · "+p.classes.length+" classes · preços manuais");const list=el("positionsList");if(!p.items.length){list.innerHTML='<div class="empty"><strong>Sua carteira começa aqui.</strong><p>Adicione ativos com quantidade, custo médio e valor atual.</p><button class="primary small" data-action="add-position">+ Primeiro ativo</button></div>';return;}list.innerHTML=p.items.map(x=>{const change=x.basis===null?null:x.basis?(x.value/x.basis-1)*100:0;return '<article class="position"><div class="asset-icon" data-color-key="'+esc(x.type)+'">'+esc(E.TYPES[x.type].icon)+'</div><div class="position-main"><h3>'+esc(x.name)+'</h3><p>'+esc(x.ticker||E.TYPES[x.type].label)+' · '+esc(x.currency)+' · '+E.percent(p.total?x.value/p.total*100:0)+' da carteira</p></div><div class="position-side"><strong>'+compact(x.value)+'</strong><small>'+observedDate(x.asOf,x.datePrecision)+'</small></div><div class="position-bottom"><div><span>Var. s/ custo: </span><b class="'+colorGain(change)+'">'+(change===null?'N/D':E.signedPercent(change))+'</b></div><div class="position-actions"><button data-edit="'+esc(x.id)+'">Editar</button><button data-remove="'+esc(x.id)+'" aria-label="Excluir ativo">Excluir</button></div></div></article>';}).join("");}
+
+function renderReconciliation(p){
+ const meta=state.dataEngine?.sourceMetadata,panel=el("reconciliationPanel"),has=!!meta;
+ panel.hidden=!has;
+ if(!has){text("heroEyebrow","PATRIMÔNIO CONSOLIDADO");text("heroGainCaption","resultado não realizado sobre custo atual");text("heroCostLabel","CAPITAL ALOCADO*");return;}
+ const reported=meta.dashboardTotal,calculated=p.total,difference=reported===null?null:reported-calculated;
+ text("heroEyebrow",reported!==null?"TOTAL EXIBIDO NO EXCEL":"PATRIMÔNIO PROVISÓRIO");
+ text("heroGainCaption","Diferença entre origens e competências dos saldos");
+ text("heroCostLabel","CUSTO DE AQUISIÇÃO");
+ text("heroTotal",money(reported===null?calculated:reported,2));
+ text("reconcileReported",reported===null?"Importe o Excel atualizado":money(reported,2));
+ text("reconcileCalculated",money(calculated,2));
+ text("reconcileDifference",difference===null?"Não disponível":money(Math.abs(difference),2));
+ text("reconcileReportedSource",meta.dashboardCell||"Dashboard do Excel");
+ text("reconcileStatus",meta.partial?"DATAS MISTAS":"CONFERÊNCIA");
+ const last=state.history.at(-1);
+ text("reconcileMonthTotal",last?money(last.total,2):"—");
+ text("reconcileMonthDate",last?observedDate(last.date,"month"):"Sem fechamento");
+ text("reconcilePensionDate",meta.latestPensionDate?observedDate(meta.latestPensionDate,"month"):"—");
+ const matchesCrypto=difference!==null&&meta.cryptoPrevious!==null&&meta.cryptoOctober!==null&&Math.abs(difference-(meta.cryptoPrevious-meta.cryptoOctober))<.02;
+ text("reconcileExplanation",reported===null?
+  "Os dados históricos carregados não incluem a referência original do Dashboard. Importe novamente o Excel para reconciliar ambos os totais.":
+  matchesCrypto?"A diferença de "+money(Math.abs(difference),2)+" corresponde a saldos de cripto de setembro ainda usados pelo Dashboard. A soma das posições considera os valores de outubro. Previdência permanece com fechamento de setembro.":
+  Math.abs(difference)<.02?"O valor do Dashboard confere com a soma das posições. Confira as datas de competência antes de interpretar como fechamento de outubro.":
+  "Os dois valores não fecham. O número original da planilha foi preservado; a diferença deve ser investigada antes de tratar o patrimônio como consolidado.");
+ const gain=el("heroGain");
+ gain.textContent=difference!==null?"Conciliação: "+money(Math.abs(difference),2):"Base parcial";
+ gain.classList.remove("negative");
+}
+function renderPortfolioBreakdown(p){
+ const pension=p.classes.find(c=>c.id==="pension")?.value||0,other=p.total-pension;
+ el("portfolioBreakdown").innerHTML='<div class="portfolio-segment"><span>PREVIDÊNCIA</span><strong>'+money(pension,2)+'</strong><small>'+E.percent(p.total?pension/p.total*100:0)+' do total · posição de competência própria</small></div><div class="portfolio-segment"><span>DEMAIS INVESTIMENTOS</span><strong>'+money(other,2)+'</strong><small>'+E.percent(p.total?other/p.total*100:0)+' do total · liquidez varia por ativo</small></div>';
+}
+function renderGroupedPortfolio(p){
+ const query=el("portfolioSearch").value.trim().toLocaleLowerCase("pt-BR"),sort=el("portfolioSort").value;
+ const groups=p.classes.map(cls=>{
+ let holdings=p.items.filter(x=>x.type===cls.id);
+ if(query)holdings=holdings.filter(x=>(x.name+" "+x.ticker).toLocaleLowerCase("pt-BR").includes(query));
+ if(sort==="name")holdings.sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
+ else holdings.sort((a,b)=>b.value-a.value);
+ return{cls,holdings};
+ }).filter(g=>g.holdings.length);
+ const totalMatches=groups.reduce((n,g)=>n+g.holdings.length,0);
+ text("positionsCounter",query?totalMatches:p.items.length);
+ text("portfolioHelp",query?totalMatches+" posição(ões) encontrada(s). Grupos relevantes abertos para conferência.":"Toque numa classe para consultar as posições, os valores completos e as datas.");
+ if(!groups.length){el("positionsList").innerHTML='<p class="empty">Nenhum investimento corresponde à busca.</p>';return;}
+ el("positionsList").innerHTML=groups.map((g,i)=>{
+  const cls=g.cls,items=g.holdings,groupValue=items.reduce((sum,x)=>sum+x.value,0),clsLabel=E.TYPES[cls.id].label;
+  const positions=items.map(x=>{
+   const share=p.total?x.value/p.total*100:0;
+   const valuation=x.valuationOnly||x.costKnown===false;
+   return '<article class="asset-line"><div class="asset-line-name"><strong>'+esc(x.name)+'</strong><span>'+esc(x.account||clsLabel)+'</span></div><div class="asset-line-amount"><strong>'+money(x.value,2)+'</strong><span>'+E.percent(share)+' do patrimônio</span></div><div class="asset-line-meta"><span>'+esc(observedDate(x.asOf,x.datePrecision))+'</span>'+(valuation?'<span>Saldo informado no extrato</span>':'<span>Preço unitário cadastrado</span>')+'</div><div class="asset-line-actions"><button data-edit="'+esc(x.id)+'">Editar</button><button data-remove="'+esc(x.id)+'">Excluir</button></div></article>';
+  }).join("");
+  return '<details class="asset-group"'+((query||i===0)?' open':'')+'><summary><span class="group-icon" data-color-key="'+esc(cls.id)+'">'+esc(E.TYPES[cls.id].icon)+'</span><span class="group-title"><strong>'+esc(clsLabel)+'</strong><small>'+items.length+' ativo(s) · '+E.percent(p.total?cls.value/p.total*100:0)+' do patrimônio</small></span><span class="group-amount">'+money(cls.value,2)+'</span><span class="group-chevron" aria-hidden="true">⌄</span></summary><div class="asset-group-body">'+positions+'</div></details>';
+ }).join("");
+}
+
+function renderHome(p){text("modeBadge",state.mode==="demo"?"DEMO":"LOCAL");el("demoNotice").hidden=state.mode!=="demo";text("heroTotal",money(p.total,2));text("heroCost",p.costComplete?compact(p.basis):"—");text("heroCount",p.items.length);text("heroClasses",p.classes.length);const gain=el("heroGain");gain.textContent=p.costComplete?(p.profit>=0?"+":"")+money(p.profit)+" ("+E.signedPercent(p.profitPct)+")":"Custo de aquisição indisponível";gain.classList.toggle("negative",p.costComplete&&p.profit<0);let dates=p.items.map(x=>x.asOf).sort();text("heroAsOf",state.dataEngine?.sourceMetadata?.partial?"PARCIAL · "+isoDate(state.dataEngine.sourceMetadata.latestDate):dates.length?"PREÇOS ATÉ "+isoDate(dates[dates.length-1]):"SEM POSIÇÕES");renderDataQuality();renderReconciliation(p);renderHeroPeriod();const score=A.portfolioRisk(p).score;text("divScore",score+"/100");text("divHint",score>=80?"Concentração controlada na heurística":score>=60?"Alguns pontos merecem atenção":"Reveja composição e atualização");text("topExposure",E.percent(p.topAssetShare));text("topExposureName",p.items.length?p.items[0].name:"Cadastre ativos");renderDonut(p);renderGrowthBridge();const insight=E.insights(state,p).find(x=>x.severity!=="good")||E.insights(state,p)[0];text("homeInsightTitle",insight.title);text("homeInsightText",insight.text);}
+function renderDonut(p){const box=el("allocationDonut"),legend=el("allocationLegend");if(!p.total){box.innerHTML='<div class="donut-center"><strong>0</strong><span>CLASSES</span></div>';legend.innerHTML='<p class="muted">Cadastre ativos para visualizar a distribuição.</p>';return;}const r=70,c=2*Math.PI*r;let offset=0;const rings=p.classes.map(k=>{const len=k.value/p.total*c,arc='<circle cx="90" cy="90" r="'+r+'" stroke="'+k.color+'" stroke-width="16" fill="none" stroke-dasharray="'+len+" "+(c-len)+'" stroke-dashoffset="'+(-offset)+'" />';offset+=len;return arc;}).join("");box.innerHTML='<svg viewBox="0 0 180 180" role="img" aria-label="Distribuição por classe"><circle cx="90" cy="90" r="70" fill="none" stroke="#233440" stroke-width="16"/>'+rings+'</svg><div class="donut-center"><strong>'+p.classes.length+'</strong><span>CLASSES</span></div>';legend.innerHTML=p.classes.map(k=>'<div class="legend-row"><i class="dot" data-color-key="'+esc(k.id)+'"></i><span>'+esc(k.label)+'</span><strong>'+money(k.value,2)+'<small>'+E.percent(k.value/p.total*100)+'</small></strong></div>').join("");}
+function renderPortfolio(p){
+ text("portfolioTotal",money(p.total,2));
+ text("portfolioSubtitle",p.items.length+" posições · "+p.classes.length+" classes · "+(state.dataEngine?"extrato Excel com competências diferentes":"atualização manual"));
+ renderPortfolioBreakdown(p);
+ if(!p.items.length){text("positionsCounter",0);el("positionsList").innerHTML='<div class="empty"><strong>Sua carteira começa aqui.</strong><p>Adicione seus ativos ou importe uma planilha.</p><button class="primary small" data-action="add-position">+ Primeiro ativo</button></div>';return;}
+ renderGroupedPortfolio(p);
+}
 function renderInsights(){const p=viewSnapshot(),s=A.portfolioRisk(p).score;text("scoreNumber",s);el("scoreNumber").parentElement.style.setProperty("--score",String(s));text("scoreLabel",A.portfolioRisk(p).label);el("insightsList").innerHTML=E.insights(state,p).map(x=>'<article class="insight-item '+(x.severity==="warn"?"warn":x.severity==="critical"?"critical":"")+'"><div class="insight-label"><span>'+esc(x.tag)+'</span><span>'+ (x.severity==="good"?"✓":x.severity==="critical"?"!":"•")+'</span></div><h3>'+esc(x.title)+'</h3><p>'+esc(x.text)+'</p></article>').join("");}
 function renderPerformance(){
   const rate=state.benchmarkAnnualPct,irr=P.annualizedMoneyWeightedReturn(state.history),ref=P.referenceScenario(state.history,rate);
@@ -140,6 +203,8 @@ function importCsv(file){if(!file)return;if(file.size>2000000){notify("CSV exced
 function importJson(file){if(!file)return;if(file.size>3000000){notify("Backup excede 3 MB.");return;}const reader=new FileReader();reader.onload=()=>{try{const candidate=E.normalize(JSON.parse(reader.result));if(!confirm("Importar o backup e substituir todos os dados locais atuais?"))return;state=candidate;simulationKey="";persist();el("settingsDialog").close();render();go("home");notify("Backup importado com sucesso.");}catch(err){notify("Importação recusada: "+err.message);}};reader.onerror=()=>notify("Não foi possível ler o arquivo.");reader.readAsText(file);}
 document.addEventListener("click",ev=>{const periodBtn=ev.target.closest("[data-period]");if(periodBtn){activePeriod=periodBtn.dataset.period;renderHeroPeriod();renderGrowthBridge();return;}const goBtn=ev.target.closest("[data-go]");if(goBtn){go(goBtn.dataset.go);return;}const close=ev.target.closest("[data-close]");if(close){el(close.dataset.close).close();return;}const edit=ev.target.closest("[data-edit]");if(edit){positionModal(edit.dataset.edit);return;}const remove=ev.target.closest("[data-remove]");if(remove){const id=remove.dataset.remove,p=state.positions.find(x=>x.id===id);if(p&&confirm("Excluir "+p.name+" da carteira?")){state.positions=state.positions.filter(x=>x.id!==id);persist();simulationKey="";render();notify("Ativo excluído.");}return;}const deleteSnapshot=ev.target.closest("[data-delete-snapshot]");if(deleteSnapshot){const date=deleteSnapshot.dataset.deleteSnapshot;if(confirm("Excluir registro de "+isoDate(date)+"?")){state.history=state.history.filter(x=>x.date!==date);persist();render();renderHistory();notify("Registro excluído.");}return;}const action=ev.target.closest("[data-action]");if(action){if(action.dataset.action==="start")startPortfolio();if(action.dataset.action==="add-position")positionModal();if(action.dataset.action==="add-snapshot")addSnapshotModal();}});
 el("positionForm").addEventListener("submit",handlePositionSubmit);
+el("portfolioSearch").addEventListener("input",()=>renderGroupedPortfolio(viewSnapshot()));
+el("portfolioSort").addEventListener("change",()=>renderGroupedPortfolio(viewSnapshot()));
 el("assetHistorySelect").addEventListener("change",updateAssetHistory);
 el("confirmXlsx").addEventListener("click",confirmExcelImport);
 el("importXlsx").addEventListener("change",ev=>{const file=ev.target.files[0];ev.target.value="";importExcel(file);});
