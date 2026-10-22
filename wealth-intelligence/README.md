@@ -10,6 +10,15 @@ Aplicativo independente de inteligência patrimonial com interface mobile-first/
 - Ao importar backup, os dados locais existentes serão substituídos. Recomenda-se exportar backup antes.
 - Dados do extrato de maio de 2026 são históricos; atualizar com extrato atual antes de considerar as informações vigentes.
 
+## V2.2: Proventos históricos e conferência rastreável
+
+- A aba Histórico › Aportes e proventos apresenta **proventos por ano**, totais separados de dividendos de ações e rendimentos de FIIs e distribuição por mês, sem transformar os lançamentos em rentabilidade auditada.
+- Registros detalhados de ações não são somados novamente quando existe total consolidado da mesma competência. Lançamentos repetidos de ano anterior são deduplicados com origem preservada.
+- **Exportar conferência do Excel CSV**, na tela inicial ou em Configurações, gera no próprio dispositivo valores originais do Dashboard, valores recalculados, os 35 meses, investimentos atuais, referências de células e alertas. Esse arquivo é privado e não é enviado ao GitHub.
+- Exportação/importação de posições CSV preserva **custo de aquisição desconhecido**, posição valorizada por saldo contábil, data de competência, classe previdência ou metais e conta/agrupamento. Não usar custo zero como substituto de custo desconhecido.
+- A consolidação de pagamentos registrados **não comprova caixa recebido ou liquidez** nem determina se dividendos foram reinvestidos.
+- Indicadores de retorno continuam indisponíveis até conciliar aportes externos e custos de aquisição.
+
 ## Wealth Data Engine V2 (importação Excel nativa, somente local)
 
 O importador de arquivos `.xlsx` reconhece o formato de acompanhamento do usuário com abas patrimoniais `2024`, `2025` e `2026`. O processamento usa os recursos nativos ZIP/XML do navegador, **sem enviar o arquivo a um servidor**. Ignora inteiramente abas externas ao escopo de investimentos (p.ex., pagamentos, folha ou dados de terceiros).
