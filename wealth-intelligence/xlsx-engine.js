@@ -142,6 +142,23 @@ function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new M
  id:"xlsx"+String(i+1).padStart(3,"0"),name:a.name,ticker:a.ticker,type:a.type,currency:"BRL",units:1,cost:0,costKnown:false,price:a.currency==="USD"?currency(a.current.value*(lastFX?.rate||1)):a.current.value,asOf:a.current.date,datePrecision:a.current.datePrecision,source:a.current.source,account:a.account,valuationOnly:true,
  originalCurrency:a.currency,originalValue:a.current.value,fxRate:a.currency==="USD"?(lastFX?.rate||null):null
  }));
+ 
+ const workbookBuckets=[
+  {key:"domestic",label:"Brasil, inclusive fundos e poupança",excelValue:get(s26,72,23),excelCell:"2026!X72",asOf:"2026-10-15",accounts:["Carteira de ações","Carteira doméstica"]},
+  {key:"international",label:"Exterior convertido em reais",excelValue:get(s26,86,11),excelCell:"2026!L86",asOf:"2026-10-01",accounts:["Investimentos internacionais"]},
+  {key:"pension",label:"Previdência, último mês disponível",excelValue:isReal(get(s26,116,10))&&isReal(get(s26,117,10))?get(s26,116,10)+get(s26,117,10):null,excelCell:"2026!K116+K117",asOf:"2026-09-30",accounts:["Previdência"]},
+  {key:"crypto",label:"Criptoativos de outubro",excelValue:isReal(get(s26,121,11))&&isReal(get(s26,122,11))?get(s26,121,11)+get(s26,122,11):null,excelCell:"2026!L121+L122",asOf:"2026-10-01",accounts:["Cripto"]}
+ ];
+ const sourceBuckets=workbookBuckets.map(b=>{
+  const imported=currency(positions.filter(p=>b.accounts.includes(p.account)).reduce((acc,p)=>acc+p.price,0));
+  const expected=isReal(b.excelValue)?currency(b.excelValue):null;
+  return{key:b.key,label:b.label,excelValue:expected,importedValue:imported,excelCell:b.excelCell,asOf:b.asOf,
+   matched:expected!==null&&Math.abs(expected-imported)<=.02};
+ });
+ const sourceVerified=sourceBuckets.length===4&&sourceBuckets.every(b=>b.matched);
+ for(const b of sourceBuckets){if(!b.matched)quality.push({code:"SOURCE_BUCKET_MISMATCH",severity:"critical",date:b.asOf,cell:b.excelCell,reported:b.excelValue,corrected:b.importedValue,
+   message:b.label+": valor importado difere do subtotal da aba. Verifique o modelo antes de importar."});}
+ const sourceTotal=sourceBuckets.every(b=>b.excelValue!==null)?currency(sourceBuckets.reduce((sum,b)=>sum+b.excelValue,0)):null;
  const reportedDashboard=Number(get(book.sheets["Dashboard"]||{},6,1));
  const calculated=currency(positions.reduce((sum,p)=>sum+p.price,0));
  const dashboardTotal=isReal(reportedDashboard)&&reportedDashboard>0?currency(reportedDashboard):null;
@@ -159,7 +176,7 @@ function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new M
  if(latestPension&&latestPension<latestOverall)quality.push({code:"STALE_PENSION",severity:"warning",date:latestOverall,pensionDate:latestPension,message:"Previdência de competência anterior ao último saldo doméstico."});
  const history=[...totals.values()].filter(x=>x.date<="2026-09-30").sort((a,b)=>a.date.localeCompare(b.date));
  return{version:2,schema:"wealth-data-engine-v2",importedFrom:"Excel local: 2024, 2025, 2026",reportedContributions,reportedDistributions,sourceMetadata:{filename:"Papel.xlsx",latestDate:latestOverall,latestFullMonth:history.at(-1)?.date,latestPensionDate:latestPension,partial:true,
- dashboardTotal,calculatedTotal:calculated,difference,cryptoPrevious,cryptoOctober,dashboardCell:"Dashboard!B6",reconciliationKnown:dashboardTotal!==null},
+ dashboardTotal,calculatedTotal:calculated,difference,cryptoPrevious,cryptoOctober,dashboardCell:"Dashboard!B6",reconciliationKnown:dashboardTotal!==null,sourceBuckets,sourceTotal,sourceVerified},
  assetHistory:deduped,positions,history,quality,sourceRates:sortedRates,metrics:{assets:deduped.length,positions:positions.length,observations:deduped.reduce((s,a)=>s+a.observations.length,0),months:history.length,flags:quality.length,contributions:reportedContributions.length,distributions:reportedDistributions.length}};
 }
 async function parseFile(file){if(!file||file.size>LIMIT.file)bad("arquivo muito grande");const model=await workbook(await file.arrayBuffer());return analyze(model);}
