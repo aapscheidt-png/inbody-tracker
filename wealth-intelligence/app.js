@@ -1,6 +1,6 @@
 (function(){"use strict";
-const E=window.WealthEngine,A=window.WealthAnalytics,P=window.WealthPerformance,I=window.WealthImporter,X=window.WealthXlsx;
-let state=E.read(),activePage="home",simulation=null,simulationKey="",activePreset="base",activePeriod="all",historyView="assets",toastTimer=null,pendingXlsx=null;
+const E=window.WealthEngine,A=window.WealthAnalytics,P=window.WealthPerformance,I=window.WealthImporter,X=window.WealthXlsx,L=window.WealthLedger;
+let state=E.read(),activePage="home",simulation=null,simulationKey="",activePreset="base",activePeriod="all",historyView="assets",incomeYear="2026",toastTimer=null,pendingXlsx=null;
 const el=(id)=>document.getElementById(id);
 const text=(id,val)=>{const e=el(id);if(e)e.textContent=val;};
 const esc=(x)=>String(x==null?"":x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -47,16 +47,39 @@ function renderDataQuality(){
  text("dataQualitySubtitle","Último fechamento: "+(meta.latestFullMonth||"não disponível")+" · Previdência: "+(meta.latestPensionDate||"sem data"));
 }
 function renderReportedFlows(){
- const data=state.dataEngine,panel=el("reportedFlowsPanel");
- const contrib=data?.reportedContributions||[],income=data?.reportedDistributions||[];
- panel.hidden=!data;if(!data)return;
- const total=contrib.reduce((t,x)=>t+x.amount,0),currentIncome=income.filter(x=>x.source.startsWith("2026!")&&x.date>="2026-01-01"&&x.date<="2026-09-30");
- text("reportedTotalFlows",money(total,2));text("reportedCountFlows",contrib.length+" lançamentos, sem comprovação de fluxo externo");
- text("reportedTotalIncome",money(currentIncome.reduce((t,x)=>t+x.amount,0),2));
- text("reportedCountIncome",currentIncome.length+" lançamentos de jan–set/26");
- const latest=[...contrib.map(x=>({...x,label:"Aporte informado"})),...currentIncome.map(x=>({...x,label:x.kind==="fii_income_total"?"Rendimento FII":"Dividendo"}))]
- .sort((a,b)=>b.date.localeCompare(a.date)).slice(0,12);
- el("reportedFlowsList").innerHTML=latest.map(x=>'<div class="reported-row"><span>'+isoDate(x.date)+' · '+esc(x.label)+'</span><strong>'+money(x.amount,2)+'</strong><small>'+esc(x.source)+'</small></div>').join("");
+ const data=state.dataEngine,panel=el("reportedFlowsPanel");panel.hidden=!data;if(!data)return;
+ const years=L.yearList(data),selector=el("incomeYear");
+ const desired=years.includes(incomeYear)?incomeYear:(years[0]||"2026");
+ incomeYear=desired;
+ selector.innerHTML=years.map(y=>'<option value="'+esc(y)+'">'+esc(y)+'</option>').join("");
+ selector.value=desired;
+ const contributions=data.reportedContributions||[],report=L.incomeByYear(data,desired);
+ const grandTotal=contributions.reduce((s,x)=>s+Number(x.amount),0);
+ text("reportedTotalFlows",money(grandTotal,2));
+ text("reportedCountFlows",contributions.length+" lançamentos declarados, 2023–2026 · sem conciliação bancária");
+ text("reportedTotalIncome",money(report.total,2));
+ text("reportedCountIncome",report.sourceCount+" lançamento(s) "+desired+" · consolidado sem sobreposição conhecida");
+ el("incomeAnnualSummary").innerHTML='<div><span>DIVIDENDOS DE AÇÕES</span><strong>'+money(report.stocks,2)+'</strong></div><div><span>RENDIMENTOS DE FIIs</span><strong>'+money(report.fiis,2)+'</strong></div>';
+ const box=el("incomeMonthly");box.innerHTML="";
+ const max=Math.max(1,...report.months.map(x=>x.total));
+ if(!report.months.length){box.innerHTML='<p class="muted">Não há proventos registrados para este ano.</p>';}
+ else{
+  for(const row of report.months){
+   const item=document.createElement("div");item.className="income-month-row";
+   const month=document.createElement("strong");month.className="income-month-name";month.textContent=new Date(row.month+"-01T12:00:00").toLocaleDateString("pt-BR",{month:"short"}).replace(".","");
+   const track=document.createElement("div");track.className="income-month-track";
+   const stock=document.createElement("span");stock.className="income-month-stock";stock.style.width=(100*row.stock/max).toFixed(2)+"%";
+   const fii=document.createElement("span");fii.className="income-month-fii";fii.style.width=(100*row.fiis/max).toFixed(2)+"%";
+   track.append(stock,fii);
+   const value=document.createElement("span");value.className="income-month-value";value.textContent=money(row.total,2);
+   item.append(month,track,value);box.append(item);
+  }
+ }
+ const filteredContributions=contributions.filter(x=>x.date.startsWith(desired+"-"));
+ const filteredIncome=(data.reportedDistributions||[]).filter(x=>x.date.startsWith(desired+"-"));
+ const latest=[...filteredContributions.map(x=>({...x,label:"Aporte declarado"})),...filteredIncome.map(x=>({...x,label:x.kind==="fii_income_total"?"Rendimento FII":"Dividendo informado"}))]
+ .sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+ el("reportedFlowsList").innerHTML=latest.length?latest.map(x=>'<div class="reported-row"><span>'+isoDate(x.date)+' · '+esc(x.label)+'</span><strong>'+money(x.amount,2)+'</strong><small>'+esc(x.source)+'</small></div>').join(""):'<p class="muted">Sem lançamentos neste ano.</p>';
 }
 function renderAssetHistory(){
  const data=state.dataEngine,series=data?.assetHistory||[],panel=el("assetHistoryPanel");panel.hidden=!series.length;if(!series.length)return;
@@ -209,7 +232,19 @@ function handlePositionSubmit(ev){ev.preventDefault();try{const id=el("posId").v
 function handleSnapshotSubmit(ev){ev.preventDefault();try{const record={date:el("snapDate").value,total:validateFinite(Number(el("snapTotal").value),0,1e15,"Patrimônio"),flow:validateFinite(Number(el("snapFlow").value),-1e15,1e15,"Fluxo")};if(state.history.some(x=>x.date===record.date)){if(!confirm("Já existe um registro nesta data. Substituir?"))return;state.history=state.history.filter(x=>x.date!==record.date);}state.history.push(record);state=E.normalize(state);persist();el("snapshotDialog").close();render();renderHistory();notify("Registro salvo.");}catch(error){notify(error.message);}}
 function exportFile(name,data,mime){const blob=new Blob([data],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
 function exportJson(){exportFile("wealth-intelligence-backup-"+E.asDate()+".json",JSON.stringify(state,null,2),"application/json");notify("Backup exportado. Guarde-o em local seguro.");}
-function exportCsv(){const head=["nome","codigo","classe","moeda","quantidade","custo_unitario","preco_atual","data_preco"];const rows=[head].concat(state.positions.map(p=>[p.name,p.ticker,E.TYPES[p.type].label,p.currency,p.units,p.cost,p.price,p.asOf]));exportFile("wealth-posicoes-"+E.asDate()+".csv","\ufeff"+rows.map(row=>row.map(I.escapeCell).join(";")).join("\r\n"),"text/csv;charset=utf-8");notify("Posições exportadas em CSV.");}
+function exportCsv(){
+ const head=["nome","codigo","classe","moeda","quantidade","custo_unitario","preco_atual","data_preco","custo_conhecido","saldo_historico","conta","precisao_data"];
+ const rows=[head].concat(state.positions.map(p=>[p.name,p.ticker,E.TYPES[p.type].label,p.currency,p.units,p.costKnown===false?"":p.cost,p.price,p.asOf,p.costKnown===false?"nao":"sim",p.valuationOnly===true?"sim":"nao",p.account||"",p.datePrecision==="month"?"mes":"dia"]));
+ exportFile("wealth-posicoes-"+E.asDate()+".csv",L.csv(rows,I.escapeCell),"text/csv;charset=utf-8");
+ notify("Posições exportadas sem inventar custos de aquisição.");
+}
+function exportReconciliation(){
+ if(!state.dataEngine){notify("Importe sua planilha Excel antes de exportar a conferência detalhada.");return;}
+ const rows=L.auditLines(state);
+ exportFile("wealth-conferencia-fontes-"+E.asDate()+".csv",L.csv(rows,I.escapeCell),"text/csv;charset=utf-8");
+ notify("Relatório privado de conciliação gerado no dispositivo.");
+}
+
 function importCsv(file){if(!file)return;if(file.size>2000000){notify("CSV excede o limite de 2 MB.");return;}const reader=new FileReader();reader.onload=()=>{try{const positions=I.rowsToPositions(String(reader.result||""),E.asDate());if(!confirm("Importar "+positions.length+" posições? Isso substituirá suas posições e seu histórico local. Exporte um backup antes de continuar."))return;const next=E.emptyData();next.positions=positions;if(state.mode==="personal"){next.fx=state.fx;next.assumptions={...state.assumptions};next.benchmarkAnnualPct=state.benchmarkAnnualPct;}state=E.normalize(next);simulationKey="";if(!persist())return;el("settingsDialog").close();render();go("portfolio");notify(positions.length+" posições importadas. Confira a cotação do dólar, se houver ativos em USD.");}catch(error){notify("CSV recusado: "+error.message);}};reader.onerror=()=>notify("Não foi possível ler o CSV.");reader.readAsText(file);}
 
 function importJson(file){if(!file)return;if(file.size>3000000){notify("Backup excede 3 MB.");return;}const reader=new FileReader();reader.onload=()=>{try{const candidate=E.normalize(JSON.parse(reader.result));if(!confirm("Importar o backup e substituir todos os dados locais atuais?"))return;state=candidate;simulationKey="";persist();el("settingsDialog").close();render();go("home");notify("Backup importado com sucesso.");}catch(err){notify("Importação recusada: "+err.message);}};reader.onerror=()=>notify("Não foi possível ler o arquivo.");reader.readAsText(file);}
@@ -227,6 +262,9 @@ el("saveFx").addEventListener("click",()=>{const fx=Number(el("fxInput").value);
 el("saveBenchmark").addEventListener("click",()=>{const rate=Number(el("benchmarkRateInput").value);if(!Number.isFinite(rate)||rate < -95||rate > 500){notify("Insira uma referência anual entre -95% e 500%.");return;}state.benchmarkAnnualPct=rate;persist();renderHistory();notify("Taxa hipotética atualizada. Não é CDI oficial.");});
 el("exportBackup").addEventListener("click",exportJson);
 el("exportCsv").addEventListener("click",exportCsv);
+el("exportAuditCsv").addEventListener("click",exportReconciliation);
+el("exportAuditCsvSettings").addEventListener("click",exportReconciliation);
+el("incomeYear").addEventListener("change",next=>{incomeYear=el("incomeYear").value;renderReportedFlows();});
 el("downloadTemplate").addEventListener("click",()=>exportFile("wealth-modelo-posicoes.csv",I.template(),"text/csv;charset=utf-8"));
 el("importCsv").addEventListener("change",ev=>{importCsv(ev.target.files[0]);ev.target.value="";});
 el("importBackup").addEventListener("change",ev=>{importJson(ev.target.files[0]);ev.target.value="";});
