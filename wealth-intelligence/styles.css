@@ -229,3 +229,12 @@ button,.position{touch-action:manipulation}
 
 /* V2.3.1: a source discrepancy is never presented as investment profit */
 .gain-pill.reconcile-warning{color:#f0c98d!important;background:rgba(219,164,82,.13)!important;border-color:rgba(219,164,82,.4)!important;max-width:100%;white-space:normal;line-height:1.5}
+
+/* V2.4 — make local data recovery explicit, never substitute fake amounts */
+.local-data-warning{border:1px solid #b88362;border-radius:17px;background:linear-gradient(160deg,#3b2a26,#271b20);padding:16px 15px;margin:18px 0;display:flex;flex-direction:column;gap:12px;color:#f9d9c1}
+.local-data-warning[hidden]{display:none!important}
+.local-data-warning>strong{display:flex;align-items:center;gap:9px;font-size:14px;line-height:1.5}
+.local-data-warning>p{font-size:12px;color:#e7c5b8;line-height:1.65;margin:0}
+.local-data-warning>div{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.local-data-warning button{min-height:43px;font-size:11px;padding:9px;white-space:normal}
+@media(max-width:370px){.local-data-warning>div{grid-template-columns:1fr}}
