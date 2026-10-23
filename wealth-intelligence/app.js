@@ -272,11 +272,11 @@ function importJson(file){
    const candidate=E.normalize(JSON.parse(reader.result)),check=G.check(candidate);
    if(check.status==="invalid")throw Error(check.message);
    let warning="";
-   if(check.status==="modified"){warning="A soma das posições NÃO confere com os subtotais do Excel deste backup. A conferência será removida. Verifique as posições antes de usar os valores.\\n\\n";candidate.dataEngine.sourceMetadata.sourceVerified=false;}
-   if(check.status==="unverified")warning="Este backup não contém comprovação completa dos quatro subtotais do Excel.\\n\\n";
+   if(check.status==="modified"){warning="A soma das posições NÃO confere com os subtotais do Excel deste backup. A conferência será removida. Verifique as posições antes de usar os valores.\n\n";candidate.dataEngine.sourceMetadata.sourceVerified=false;}
+   if(check.status==="unverified")warning="Este backup não contém comprovação completa dos quatro subtotais do Excel.\n\n";
    const source=candidate.dataEngine?.sourceMetadata?.filename||"backup local";
-   const summary="Arquivo de origem: "+source+"\\nSoma das posições: "+money(check.total,2)+"\\nQuantidade de posições: "+candidate.positions.length+"\\nSituação: "+({verified:"4 grupos conferidos",modified:"alterado após conferência",unverified:"sem conferência",manual:"carteira manual",demo:"demonstração"}[check.status]||check.status);
-   if(!confirm(warning+summary+"\\n\\nSubstituir os dados atuais deste dispositivo?"))return;
+   const summary="Arquivo de origem: "+source+"\nSoma das posições: "+money(check.total,2)+"\nQuantidade de posições: "+candidate.positions.length+"\nSituação: "+({verified:"4 grupos conferidos",modified:"alterado após conferência",unverified:"sem conferência",manual:"carteira manual",demo:"demonstração"}[check.status]||check.status);
+   if(!confirm(warning+summary+"\n\nSubstituir os dados atuais deste dispositivo?"))return;
    if(candidate.dataEngine?.sourceMetadata)candidate.dataEngine.sourceMetadata.importedAt=new Date().toISOString();
    E.save(candidate);
    state=candidate;simulationKey="";el("settingsDialog").close();render();go("home");
