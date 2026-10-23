@@ -196,6 +196,7 @@ const { chromium } = require("playwright-core");
   assert.ok(fs.readFileSync(await raw.path(),"utf8").includes('{"truncated":'));
   page.once("dialog",dialog=>dialog.accept());
   await page.locator("#importBackup").setInputFiles({name:"restore.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(unknown))});
+  await page.locator("#localStorageWarning").waitFor({state:"hidden",timeout:10000});
   assert.equal(await page.locator("#localStorageWarning").isVisible(),false,"Recovered backup clears error");
   assert.ok((await page.locator("#heroTotal").textContent()).includes("75.000"));
   await page.screenshot({path:"artifacts/10-local-recovery.png",fullPage:true});
