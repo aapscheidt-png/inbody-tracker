@@ -10,6 +10,16 @@ Aplicativo independente de inteligência patrimonial com interface mobile-first/
 - Ao importar backup, os dados locais existentes serão substituídos. Recomenda-se exportar backup antes.
 - Dados do extrato de maio de 2026 são históricos; atualizar com extrato atual antes de considerar as informações vigentes.
 
+## V2.4 · Integridade do backup e recuperação no iPhone
+
+- **Nunca apresentar valores fictícios por acidente:** quando o armazenamento local estiver ilegível, o aplicativo inicia sem carteira e exibe alerta explícito, em vez de apresentar o modo demonstração como se fosse patrimônio real.
+- A pessoa pode baixar uma cópia dos dados brutos do armazenamento local e importar um backup JSON privado, sem envio remoto.
+- Importação JSON verifica novamente os quatro subtotais do Excel e a integridade das posições. Quando houver valores alterados, exige confirmação explícita e remove o selo de conferido.
+- Importações são gravadas primeiro no armazenamento local; somente após o salvamento bem-sucedido o aplicativo substitui a carteira exibida.
+- Após carregar um backup, o app identifica nome do arquivo original, data de importação local, soma e número de posições.
+- Testes automatizados simulam corrupção do armazenamento, restauração do backup e ausência de troca silenciosa para carteira fictícia.
+- **Atenção:** backups e armazenamento local não são criptografados pelo próprio aplicativo. Guarde os arquivos privados em local seguro, sem anexá-los ao GitHub público.
+
 ## Correção V2.3 · Fontes conferidas por subtotal
 
 - O painel principal exibe a **soma dos últimos saldos disponíveis**, não a célula `Dashboard!B6`, que utiliza criptoativos de setembro e outros saldos de outubro.
