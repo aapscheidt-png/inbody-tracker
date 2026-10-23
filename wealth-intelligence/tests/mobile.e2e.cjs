@@ -189,7 +189,7 @@ const { chromium } = require("playwright-core");
   await page.locator("#localStorageWarning").waitFor({state:"visible"});
   assert.ok((await page.locator("#localStorageWarning").textContent()).includes("Não foi possível abrir"));
   assert.equal(await page.locator("#demoNotice").isVisible(),false,"Corrupted personal data must not show demo");
-  assert.ok((await page.locator("#heroTotal").textContent()).includes("R$ 0,00"));
+  assert.ok((await page.locator("#heroTotal").textContent()).includes("0,00"),"Wallet with unreadable storage must have zero value");
   const brokenBackup=page.waitForEvent("download");
   await page.locator("#exportRawLocal").click();
   const raw=await brokenBackup;
