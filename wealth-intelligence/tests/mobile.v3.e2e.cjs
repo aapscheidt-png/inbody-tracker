@@ -113,7 +113,7 @@ const {chromium}=require("playwright-core");
  await page.reload({waitUntil:"networkidle"});
  assert.ok((await page.locator(".v3-integrity").textContent()).includes("Carteira diferente do Excel"));
  assert.ok((await page.locator("#v3Home").textContent()).includes("Previdência divergente"));
- assert.ok((await page.locator("#v3Home").textContent()).includes("R$ 0,00"),"Zero pension must trigger visible warning against source subtotal");
+ assert.ok((await page.locator("#v3Home .v3-key-figures strong").first().textContent()).includes("0,00"),"Zero pension must remain explicitly visible, regardless of currency spacing");
  // Restore a clean synthetic fixture before continuing standard flow.
  await page.locator("#openSettings").click();
  page.once("dialog",d=>d.accept());
