@@ -21,7 +21,7 @@ function optionsWithLabels(groups,chosen,all="Todas as categorias"){
  return'<option value="">'+esc(all)+'</option>'+groups.map(g=>'<option value="'+esc(g.id)+'"'+(chosen===g.id?' selected':'')+'>'+esc(g.label)+'</option>').join("");
 }
 function navChoices(){
- return Object.keys(M.dimensions).map(d=>'<button type="button" data-v3-facet="'+d+'" class="'+(facet===d?"chosen":"")+'" aria-pressed="'+(facet===d)+'">'+esc(M.dimensions[d].label)+'</button>').join("");
+ return Object.keys(M.dimensions).filter(d=>d!=="liquidity"||M.entries(getState()).some(x=>x.facets.liquidity!=="not_reported")).map(d=>'<button type="button" data-v3-facet="'+d+'" class="'+(facet===d?"chosen":"")+'" aria-pressed="'+(facet===d)+'">'+esc(M.dimensions[d].label)+'</button>').join("");
 }
 function showDetail(id){
  const data=getState(),item=M.entries(data).find(x=>x.id===id);if(!item)return;
