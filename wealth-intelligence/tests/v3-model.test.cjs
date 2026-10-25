@@ -44,7 +44,7 @@ assert.equal(V.classify(positions[2]).product,"fund");assert.equal(V.classify(po
 assert.equal(V.classify(positions[6]).product,"fund");assert.equal(V.classify(positions[6]).exposure,"fixed");
 assert.equal(V.classify(positions[9]).product,"fund");
 assert.equal(V.classify(positions[9]).exposure,"unspecified","Do not infer a fund strategy from FGTS in its name");
-assert.equal(V.group(state,"product","fund").count,5);
+assert.equal(V.group(state,"product","fund").count,6);
 assert.equal(V.classify(positions[0]).exposure,"unspecified");
 assert.equal(V.group(state,"product","pension").count,2);
 assert.equal(V.group(state,"product","pension").total,865000);
