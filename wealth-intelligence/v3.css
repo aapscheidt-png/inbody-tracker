@@ -126,3 +126,15 @@
  .v3-key-figures strong{font-size:15px}
  .v3-income-row{grid-template-columns:40px minmax(0,1fr) 88px}
 }
+
+/* V3 QA: compact subpage headings and high-signal data discrepancies */
+.v3-ready section[data-page="portfolio"] .page-heading.compact,
+.v3-ready section[data-page="history"] .page-heading.compact,
+.v3-ready section[data-page="income"] .page-heading.compact{margin:3px 0 12px}
+.v3-ready section[data-page="portfolio"] .page-heading h1,
+.v3-ready section[data-page="history"] .page-heading h1,
+.v3-ready section[data-page="income"] .page-heading h1{font-size:clamp(28px,6vw,40px);line-height:1.12}
+.v3-ready section[data-page="portfolio"] .page-heading p.muted,
+.v3-ready section[data-page="history"] .page-heading p.muted,
+.v3-ready section[data-page="income"] .page-heading p.muted{font-size:12px;line-height:1.45}
+.v3-critical{border:1px solid #d29c63;border-radius:15px;padding:15px;background:#33261f;color:#ffe2bd;font-size:12px;line-height:1.65}
