@@ -169,5 +169,5 @@ function mount(options){
  document.body.classList.add("v3-ready");
  render();
 }
-root.WealthV3View={mount,render,openDetail:showDetail};
+root.WealthV3View={mount,render,openDetail:showDetail,renderChart:chart};
 })(window);
