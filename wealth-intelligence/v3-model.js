@@ -58,6 +58,27 @@ function group(state,dim="product",category="",query=""){
    items:g.items.sort((a,b)=>b.amount-a.amount)})).sort((a,b)=>b.amount-a.amount),
   filtered};
 }
+// The 2024 workbook calls this same fund "FUNDO ELET FGTS" while 2025+
+// calls it "FUNDO FGTS". Both carry exactly R$ 7,813.94 on 31 Dec 2024.
+// Map only this audited alias, not all products containing "FGTS".
+function historyKey(item){
+ const n=String(item.name||"").trim().toUpperCase().replace(/\s+/g," ");
+ const isLegacyFund=n==="FUNDO ELET FGTS"||n==="FUNDO FGTS";
+ return isLegacyFund&&(item.type==="funds"||item.type==="fixed_income")?
+  "FGTS_FUND_AUDITED_ALIAS":String(item.id||item.name||"")+"|"+String(item.account||"");
+}
+function historyForAsset(data,item){
+ const reference=historyKey(item);
+ const matching=(data?.assetHistory||[]).filter(x=>
+   x.account===item.account&&(x.name===item.name||historyKey(x)===reference));
+ const byDay=new Map();
+ for(const series of matching)for(const o of series.observations||[]){
+  const d=String(o.date||"");if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||!Number.isFinite(o.value))continue;
+  const prev=byDay.get(d);
+  if(!prev||String(o.source?.sheet||"")>String(prev.source?.sheet||""))byDay.set(d,o);
+ }
+ return [...byDay.values()].sort((a,b)=>a.date.localeCompare(b.date));
+}
 function historicalRates(data){
  const map=new Map();
  for(const r of data?.sourceRates||[])if(Number(r.rate)>0)map.set(String(r.date).slice(0,7),Number(r.rate));
@@ -86,8 +107,11 @@ function trend(state,options={}){
    for(const [month,obs] of byMonth){
     const fx=item.currency==="USD"?(rate.get(month)||null):1;
     if(fx===null)continue;
-    const key=item.id||item.name,rec=buckets.get(month)||new Map();
-    rec.set(key,{value:obs.value*fx,date:obs.date});buckets.set(month,rec);
+    const key=historyKey(item),rec=buckets.get(month)||new Map();
+    const existing=rec.get(key),value=obs.value*fx;
+    if(!existing||obs.date>existing.date||(obs.date===existing.date&&String(obs.source?.sheet||"")>String(existing.sheet||"")))
+      rec.set(key,{value,date:obs.date,sheet:obs.source?.sheet||""});
+    buckets.set(month,rec);
    }
   }
   values=[...buckets.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([month,rec])=>({
@@ -109,5 +133,5 @@ function makeDonut(groups,total){
  let cursor=0;const palette=relevant.map(g=>{const from=cursor;cursor+=100*g.amount/sum;return(g.color||"#61aeb3")+" "+from.toFixed(3)+"% "+cursor.toFixed(3)+"%";});
  return"conic-gradient("+palette.join(",")+")";
 }
-root.WealthV3Model={PRODUCT,EXPOSURE,dimensions,classify,entries,group,trend,label,makeDonut};
+root.WealthV3Model={PRODUCT,EXPOSURE,dimensions,classify,entries,group,trend,label,makeDonut,historyKey,historyForAsset};
 })(window);
