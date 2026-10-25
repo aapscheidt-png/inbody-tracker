@@ -6,14 +6,14 @@ const $=id=>document.getElementById(id),esc=v=>String(v??"").replace(/[&<>"']/g,
 const brl=(v)=>Number(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:2,maximumFractionDigits:2});
 const pct=(v)=>Number(v).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:2})+"%";
 const fmt=v=>hidden?"••••••":brl(v),monthDate=s=>s.slice(5,7)+"/"+s.slice(0,4);
-function chart(series,title){
+function chart(series,title,currency="BRL"){
  if(!series.length)return'<p class="v3-empty">Não há observações para este período.</p>';
- const w=360,h=180,l=61,r=11,t=15,b=30,vals=series.map(x=>x.value),lo=Math.min(...vals),hi=Math.max(...vals);
+ const w=360,h=160,l=20,r=11,t=15,b=16,vals=series.map(x=>x.value),lo=Math.min(...vals),hi=Math.max(...vals);
  const spread=Math.max(1,hi-lo),ymin=Math.max(0,lo-spread*.12),ymax=hi+spread*.12;
  const y=v=>t+(ymax-v)/Math.max(1,ymax-ymin)*(h-t-b),x=i=>l+i/Math.max(1,series.length-1)*(w-l-r);
  const pts=series.map((v,i)=>[x(i),y(v.value)]),path=pts.map(([px,py],i)=>(i?"L":"M")+px.toFixed(1)+" "+py.toFixed(1)).join(" ");
  const ticks=[0,1,2,3].map(i=>{const yy=t+i*(h-t-b)/3;return '<line x1="'+l+'" x2="'+(w-r)+'" y1="'+yy+'" y2="'+yy+'" stroke="#324653" stroke-opacity=".65"/>';}).join("");
- const dots=series.map((s,i)=>'<circle cx="'+pts[i][0]+'" cy="'+pts[i][1]+'" r="'+(i===series.length-1?3.5:2)+'" fill="#8ae8cf"><title>'+esc(monthDate(s.month)+" · "+brl(s.value)+(s.complete?"":" · parcial"))+'</title></circle>').join("");
+ const dots=series.map((s,i)=>'<circle cx="'+pts[i][0]+'" cy="'+pts[i][1]+'" r="'+(i===series.length-1?3.5:2)+'" fill="#8ae8cf"><title>'+esc(monthDate(s.month)+" · "+(hidden?"••••••":Number(s.value).toLocaleString("pt-BR",{style:"currency",currency}))+ (s.complete?"":" · parcial"))+'</title></circle>').join("");
  return'<div class="v3-chart-area"><svg viewBox="0 0 360 160" role="img" aria-label="'+esc(title)+'">'+ticks+'<path d="'+path+'" fill="none" stroke="#8ae8cf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+dots+'</svg></div>';
 }
 function optionsWithLabels(groups,chosen,all="Todas as categorias"){
@@ -24,16 +24,20 @@ function navChoices(){
 }
 function showDetail(id){
  const data=getState(),item=M.entries(data).find(x=>x.id===id);if(!item)return;
- const dlg=$("v3DetailDialog"),series=(data.dataEngine?.assetHistory||[]).find(x=>x.name===item.name&&x.account===item.account);
- const obs=series?.observations||[],source=item.source?.sheet&&item.source?.cell?item.source.sheet+"!"+item.source.cell:"Cadastro manual";
+ const dlg=$("v3DetailDialog"),obs=M.historyForAsset(data.dataEngine,item);
+ const monthly=new Map();
+ for(const o of obs){const m=o.date.slice(0,7),prev=monthly.get(m);if(!prev||o.date>prev.date)monthly.set(m,o);}
+ const plotted=[...monthly.values()].sort((a,b)=>a.date.localeCompare(b.date)).slice(-36);
+ const isLegacyFund=M.historyKey(item).startsWith("FGTS_FUND_AUDITED_ALIAS");
+ const source=item.source?.sheet&&item.source?.cell?item.source.sheet+"!"+item.source.cell:"Cadastro manual";
  $("v3DetailContent").innerHTML=
  '<div class="v3-detail-heading"><span class="v3-eyebrow">'+esc(M.PRODUCT[item.facets.product]?.label||"Investimento")+'</span><h2>'+esc(item.name)+'</h2><strong class="v3-big-amount" data-v3-money>'+fmt(item.amount)+'</strong></div>'+
  '<dl class="v3-facts"><div><dt>Exposição</dt><dd>'+esc(M.EXPOSURE[item.facets.exposure])+'</dd></div><div><dt>Conta</dt><dd>'+esc(item.facets.account)+'</dd></div><div><dt>Data de referência</dt><dd>'+esc(item.asOf)+'</dd></div><div><dt>Origem no Excel</dt><dd>'+esc(source)+'</dd></div>'+
  (item.originalCurrency==="USD"?'<div><dt>Saldo em US$ informado</dt><dd>'+(hidden?"••••••":"US$ "+Number(item.originalValue||0).toLocaleString("pt-BR",{minimumFractionDigits:2}))+'</dd></div>':'')+
  '<div><dt>Liquidez</dt><dd>Não informada</dd></div><div><dt>Rentabilidade</dt><dd>Não calculável sem fluxos e custos</dd></div></dl>'+
  '<h3 class="v3-h3">Histórico de saldos observados</h3>'+
- (obs.length?chart(obs.slice(-14).map(o=>({value:o.value,month:o.date.slice(0,7),complete:false})),"Evolução observada"): '<p class="v3-empty">Não há série específica neste arquivo.</p>')+
- '<p class="v3-note">Saldos registrados, não rentabilidade. Histórico original: '+obs.length+' observação(ões).</p>';
+ (plotted.length?chart(plotted.map(o=>({value:o.value,month:o.date.slice(0,7),complete:false})),"Evolução mensal observada",item.originalCurrency==="USD"?"USD":"BRL"): '<p class="v3-empty">Não há série específica neste arquivo.</p>')+
+ '<p class="v3-note">Saldos registrados, não rentabilidade. '+plotted.length+' competência(s) mensal(is) com observações; '+obs.length+' registros de origem.'+(isLegacyFund?' A série histórica unifica os nomes FUNDO ELET FGTS (2024) e FUNDO FGTS (2025–2026), sem duplicar o fechamento de 31/12/2024.':'')+'</p>';
  dlg.showModal();
 }
 function renderHome(){
