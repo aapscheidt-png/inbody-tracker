@@ -59,6 +59,8 @@ const {chromium}=require("playwright-core");
  assert.equal(chooser.isMultiple(),false);
  await chooser.setFiles([]);
  await page.locator("#settingsDialog").evaluate(x=>x.open&&x.close());
+ // Capture the actual layout after temporary import confirmation disappears.
+ await page.waitForFunction(()=>!document.querySelector("#toast")?.classList.contains("show"),null,{timeout:6000});
  await page.screenshot({path:"artifacts/v3-01-summary.png",fullPage:true});
  await page.locator("[data-v3-openpension]").click();
  assert.equal(await page.locator("#v3HistoryCategory").inputValue(),"pension");
