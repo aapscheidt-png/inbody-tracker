@@ -11,7 +11,7 @@ function chart(series,title,currency="BRL"){
  const w=360,h=160,l=20,r=11,t=15,b=16,vals=series.map(x=>x.value),lo=Math.min(...vals),hi=Math.max(...vals);
  const spread=Math.max(1,hi-lo),ymin=Math.max(0,lo-spread*.12),ymax=hi+spread*.12;
  const y=v=>t+(ymax-v)/Math.max(1,ymax-ymin)*(h-t-b);
- const monthIndex=month=>{const match=/^(\\d{4})-(\\d{2})$/.exec(month);return match?Number(match[1])*12+Number(match[2]):null;};
+ const monthIndex=month=>{const match=/^(\d{4})-(\d{2})$/.exec(month);return match?Number(match[1])*12+Number(match[2]):null;};
  const months=series.map(v=>monthIndex(v.month));
  const axisValid=months.every(x=>Number.isFinite(x)),minIndex=Math.min(...months),maxIndex=Math.max(...months);
  const x=i=>axisValid&&maxIndex>minIndex?l+(months[i]-minIndex)/(maxIndex-minIndex)*(w-l-r):l+i/Math.max(1,series.length-1)*(w-l-r);
