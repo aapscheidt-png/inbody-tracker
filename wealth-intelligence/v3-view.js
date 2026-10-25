@@ -1,6 +1,6 @@
 (function(root){
 "use strict";
-const M=root.WealthV3Model,L=root.WealthLedger;
+const M=root.WealthV3Model,L=root.WealthLedger,G=root.WealthIntegrity;
 let getState=()=>null,navigate=()=>{},facet="product",selection="",search="",period=0,annual=false,historySelection="",historyDimension="product",incomeYear="2026",hidden=false;
 const $=id=>document.getElementById(id),esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const brl=(v)=>Number(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:2,maximumFractionDigits:2});
@@ -41,10 +41,21 @@ function showDetail(id){
  dlg.showModal();
 }
 function renderHome(){
- const data=getState(),all=M.group(data),pension=M.group(data,"product","pension");
+ const data=getState(),all=M.group(data),pension=M.group(data,"product","pension"),integrity=G?.check(data)||{status:"unverified"};
+ const metadata=data.dataEngine?.sourceMetadata||{};
+ const status={
+  verified:{title:"Subtotais conferidos com o Excel",detail:"Quatro origens de saldo conciliadas. Não significa cotação em tempo real.",style:"verified"},
+  demo:{title:"Demonstração fictícia",detail:"Valores de exemplo, não representam sua carteira.",style:"unverified"},
+  modified:{title:"Carteira diferente do Excel",detail:"Algum valor foi alterado após a última conferência. Reimporte para restaurar a referência.",style:"danger"},
+  unverified:{title:"Base ainda não conferida",detail:"Importe o Excel original para validar os saldos antes de utilizá-los.",style:"danger"},
+  manual:{title:"Carteira manual",detail:"Não há reconciliação com uma planilha de origem.",style:"unverified"},
+  invalid:{title:"Dados inválidos",detail:"Verifique o armazenamento local ou importe um backup.",style:"danger"}
+ }[integrity.status]||{title:"Conferência indisponível",detail:"Confira o arquivo original.",style:"danger"};
  const expectedPension=data.dataEngine?.sourceMetadata?.sourceBuckets?.find(x=>x.key==="pension")?.excelValue;
  const mismatch=Number.isFinite(expectedPension)&&Math.abs(expectedPension-pension.total)>.02;
  $("v3Home").innerHTML=
+ '<section class="v3-integrity v3-'+status.style+'" role="status"><div><span class="v3-integrity-title">'+esc(status.title)+'</span><p>'+esc(status.detail)+'</p><small>'+esc(metadata.filename||"Nenhum arquivo Excel identificado")+
+ (metadata.importedAt?" · carregado "+esc(new Date(metadata.importedAt).toLocaleDateString("pt-BR")):"")+'</small></div><button type="button" data-v3-reimport>Importar Excel</button></section>'+
  (mismatch?'<div class="v3-critical" role="alert">Previdência divergente: o último Excel informa '+brl(expectedPension)+', mas esta carteira está exibindo '+brl(pension.total)+'. Reimporte o arquivo e confira os dados antes de usar o saldo.</div>':"")+
  '<section class="v3-key-figures"><div><span>Previdência</span><strong data-v3-money>'+fmt(pension.total)+'</strong><small>'+pct(all.total?pension.total/all.total*100:0)+' do patrimônio</small></div>'+
  '<div><span>Demais investimentos</span><strong data-v3-money>'+fmt(all.total-pension.total)+'</strong><small>Não significa valor disponível para saque</small></div></section>'+
@@ -122,7 +133,7 @@ function render(){
 function mount(options){
  getState=options.getState;navigate=options.navigate;
  document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-v3-facet],[data-v3-detail],[data-v3-product],[data-v3-months],[data-v3-annual],[data-v3-reset],[data-v3-private],[data-v3-openportfolio],[data-v3-openhistory]");
+  const t=e.target.closest("[data-v3-facet],[data-v3-detail],[data-v3-product],[data-v3-months],[data-v3-annual],[data-v3-reset],[data-v3-private],[data-v3-openportfolio],[data-v3-openhistory],[data-v3-reimport]");
   if(!t)return;
   if(t.hasAttribute("data-v3-facet")){facet=t.dataset.v3Facet;selection="";renderPortfolio();}
   else if(t.hasAttribute("data-v3-detail"))showDetail(t.dataset.v3Detail);
@@ -133,6 +144,7 @@ function mount(options){
   else if(t.hasAttribute("data-v3-private")){hidden=!hidden;document.body.classList.toggle("v3-private",hidden);render();}
   else if(t.hasAttribute("data-v3-openportfolio"))navigate("portfolio");
   else if(t.hasAttribute("data-v3-openhistory"))navigate("history");
+  else if(t.hasAttribute("data-v3-reimport")){document.getElementById("openSettings")?.click();document.getElementById("importXlsx")?.click();}
  });
  $("v3PortfolioCategory").addEventListener("change",e=>{selection=e.target.value;renderPortfolio();});
  $("v3PortfolioSearch").addEventListener("input",e=>{search=e.target.value;renderPortfolio();});
