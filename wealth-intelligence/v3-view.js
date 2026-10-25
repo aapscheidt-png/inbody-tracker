@@ -30,7 +30,7 @@ function showDetail(id){
  $("v3DetailContent").innerHTML=
  '<div class="v3-detail-heading"><span class="v3-eyebrow">'+esc(M.PRODUCT[item.facets.product]?.label||"Investimento")+'</span><h2>'+esc(item.name)+'</h2><strong class="v3-big-amount" data-v3-money>'+fmt(item.amount)+'</strong></div>'+
  '<dl class="v3-facts"><div><dt>Exposição</dt><dd>'+esc(M.EXPOSURE[item.facets.exposure])+'</dd></div><div><dt>Conta</dt><dd>'+esc(item.facets.account)+'</dd></div><div><dt>Data de referência</dt><dd>'+esc(item.asOf)+'</dd></div><div><dt>Origem no Excel</dt><dd>'+esc(source)+'</dd></div>'+
- (item.originalCurrency==="USD"?'<div><dt>Saldo em US$ informado</dt><dd>US$ '+Number(item.originalValue||0).toLocaleString("pt-BR",{minimumFractionDigits:2})+'</dd></div>':'')+
+ (item.originalCurrency==="USD"?'<div><dt>Saldo em US$ informado</dt><dd>'+(hidden?"••••••":"US$ "+Number(item.originalValue||0).toLocaleString("pt-BR",{minimumFractionDigits:2}))+'</dd></div>':'')+
  '<div><dt>Liquidez</dt><dd>Não informada</dd></div><div><dt>Rentabilidade</dt><dd>Não calculável sem fluxos e custos</dd></div></dl>'+
  '<h3 class="v3-h3">Histórico de saldos observados</h3>'+
  (obs.length?chart(obs.slice(-14).map(o=>({value:o.value,month:o.date.slice(0,7),complete:false})),"Evolução observada"): '<p class="v3-empty">Não há série específica neste arquivo.</p>')+
@@ -39,7 +39,10 @@ function showDetail(id){
 }
 function renderHome(){
  const data=getState(),all=M.group(data),pension=M.group(data,"product","pension");
+ const expectedPension=data.dataEngine?.sourceMetadata?.sourceBuckets?.find(x=>x.key==="pension")?.excelValue;
+ const mismatch=Number.isFinite(expectedPension)&&Math.abs(expectedPension-pension.total)>.02;
  $("v3Home").innerHTML=
+ (mismatch?'<div class="v3-critical" role="alert">Previdência divergente: o último Excel informa '+brl(expectedPension)+', mas esta carteira está exibindo '+brl(pension.total)+'. Reimporte o arquivo e confira os dados antes de usar o saldo.</div>':"")+
  '<section class="v3-key-figures"><div><span>Previdência</span><strong data-v3-money>'+fmt(pension.total)+'</strong><small>'+pct(all.total?pension.total/all.total*100:0)+' do patrimônio</small></div>'+
  '<div><span>Demais investimentos</span><strong data-v3-money>'+fmt(all.total-pension.total)+'</strong><small>Não significa valor disponível para saque</small></div></section>'+
  '<article class="v3-card"><div class="v3-card-top"><div><span class="v3-eyebrow">DISTRIBUIÇÃO</span><h3>Por produto</h3></div><button type="button" class="v3-text-button" data-v3-openportfolio>Ver carteira</button></div>'+
@@ -50,7 +53,8 @@ function renderHome(){
  chart(M.trend(data,{months:12}),"Últimos 12 meses do patrimônio")+
  '<p class="v3-note">Variação do patrimônio registrado, não retorno financeiro ajustado por aportes.</p></article>'+
  '<p class="v3-file-info">Fonte: '+esc(data.dataEngine?.sourceMetadata?.filename||"Cadastro manual")+
- ' · último fechamento: '+esc(data.dataEngine?.sourceMetadata?.latestFullMonth||"não informado")+'</p>';
+ ' · último fechamento: '+esc(data.dataEngine?.sourceMetadata?.latestFullMonth||"não informado")+
+ ' · posição de outubro parcial, não incluída na linha histórica</p>';
  $("v3Donut").style.background=M.makeDonut(all.groups,all.total);
  document.querySelectorAll("#v3Home [data-v3-color]").forEach(x=>x.style.background=x.dataset.v3Color);
  $("v3PrivacyToggle").textContent=hidden?"Mostrar valores":"Ocultar valores";
@@ -83,7 +87,7 @@ function renderHistory(){
  const first=values[0],last=values.at(-1);
  $("v3HistoryFirst").textContent=first?fmt(first.value):"—";
  $("v3HistoryLast").textContent=last?fmt(last.value):"—";
- $("v3HistoryDelta").textContent=first&&last?fmt(last.value-first.value):"—";
+ $("v3HistoryDelta").textContent=historySelection?"N/D (cobertura parcial)":first&&last?fmt(last.value-first.value):"—";
  $("v3HistoryDescription").textContent=historySelection?
   "Série por categoria construída de saldos observados individualmente. A cobertura é parcial, podendo faltar ativos ou datas. Não corresponde necessariamente ao fechamento mensal completo.":
   "Fechamentos mensais informados na planilha. Outubro é provisório e reúne competências diferentes. Crescimento não equivale à rentabilidade.";
