@@ -43,14 +43,16 @@ function renderHome(){
  '<section class="v3-key-figures"><div><span>Previdência</span><strong data-v3-money>'+fmt(pension.total)+'</strong><small>'+pct(all.total?pension.total/all.total*100:0)+' do patrimônio</small></div>'+
  '<div><span>Demais investimentos</span><strong data-v3-money>'+fmt(all.total-pension.total)+'</strong><small>Não significa valor disponível para saque</small></div></section>'+
  '<article class="v3-card"><div class="v3-card-top"><div><span class="v3-eyebrow">DISTRIBUIÇÃO</span><h3>Por produto</h3></div><button type="button" class="v3-text-button" data-v3-openportfolio>Ver carteira</button></div>'+
- '<div class="v3-donut-layout"><div class="v3-donut" style="background:'+M.makeDonut(all.groups,all.total)+'"><div class="v3-hole">'+all.groups.length+'<small>categorias</small></div></div><div class="v3-donut-list">'+
- all.groups.map(g=>'<button type="button" class="v3-donut-row" data-v3-product="'+esc(g.id)+'"><span class="v3-bullet" style="background:'+g.color+'"></span><span>'+esc(g.label)+'</span><strong>'+pct(g.share)+'</strong></button>').join("")+'</div></div>'+
+ '<div class="v3-donut-layout"><div id="v3Donut" class="v3-donut"><div class="v3-hole">'+all.groups.length+'<small>categorias</small></div></div><div class="v3-donut-list">'+
+ all.groups.map(g=>'<button type="button" class="v3-donut-row" data-v3-product="'+esc(g.id)+'"><span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span>'+esc(g.label)+'</span><strong>'+pct(g.share)+'</strong></button>').join("")+'</div></div>'+
  '<p class="v3-note">Valores da última observação de cada conta. Competências diferentes podem coexistir.</p></article>'+
  '<article class="v3-card"><div class="v3-card-top"><div><span class="v3-eyebrow">EVOLUÇÃO DO PATRIMÔNIO</span><h3>Histórico mensal</h3></div><button type="button" class="v3-text-button" data-v3-openhistory>Ver evolução</button></div>'+
  chart(M.trend(data,{months:12}),"Últimos 12 meses do patrimônio")+
  '<p class="v3-note">Variação do patrimônio registrado, não retorno financeiro ajustado por aportes.</p></article>'+
  '<p class="v3-file-info">Fonte: '+esc(data.dataEngine?.sourceMetadata?.filename||"Cadastro manual")+
  ' · último fechamento: '+esc(data.dataEngine?.sourceMetadata?.latestFullMonth||"não informado")+'</p>';
+ $("v3Donut").style.background=M.makeDonut(all.groups,all.total);
+ document.querySelectorAll("#v3Home [data-v3-color]").forEach(x=>x.style.background=x.dataset.v3Color);
  $("v3PrivacyToggle").textContent=hidden?"Mostrar valores":"Ocultar valores";
  $("v3PrivacyToggle").setAttribute("aria-pressed",String(hidden));
 }
@@ -64,10 +66,11 @@ function renderPortfolio(){
  $("v3PortfolioReset").hidden=!selection&&!search&&facet==="product";
  if(!out.groups.length){$("v3PortfolioCategories").innerHTML='<div class="v3-empty">Nenhum investimento encontrado para os filtros escolhidos.</div>';return;}
  $("v3PortfolioCategories").innerHTML=out.groups.map((g,i)=>'<details class="v3-group" '+((selection||search||i===0)?"open":"")+'><summary>'+
- '<span class="v3-bullet" style="background:'+g.color+'"></span><span class="v3-group-name"><strong>'+esc(g.label)+'</strong><small>'+g.count+' posição(ões) • '+pct(all.total?100*g.amount/all.total:0)+' do total</small></span>'+
+ '<span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span class="v3-group-name"><strong>'+esc(g.label)+'</strong><small>'+g.count+' posição(ões) • '+pct(all.total?100*g.amount/all.total:0)+' do total</small></span>'+
  '<strong class="v3-group-amount" data-v3-money>'+fmt(g.amount)+'</strong><span class="v3-chevron">⌄</span></summary><div class="v3-group-items">'+g.items.map(item=>
  '<button type="button" data-v3-detail="'+esc(item.id)+'" class="v3-item"><span><strong>'+esc(item.name)+'</strong><small>'+esc(item.asOf)+' · '+esc(M.EXPOSURE[item.facets.exposure])+'</small></span><strong data-v3-money>'+fmt(item.amount)+'</strong><span class="v3-chevron">›</span></button>'
  ).join("")+'</div></details>').join("");
+ document.querySelectorAll("#v3PortfolioCategories [data-v3-color]").forEach(x=>x.style.background=x.dataset.v3Color);
 }
 function renderHistory(){
  const data=getState();
@@ -93,7 +96,12 @@ function renderIncome(){
  $("v3IncomeTotal").textContent=fmt(report.total);
  $("v3IncomeSplit").innerHTML='<div><span>Dividendos ações</span><strong data-v3-money>'+fmt(report.stocks)+'</strong></div><div><span>Rendimentos FIIs</span><strong data-v3-money>'+fmt(report.fiis)+'</strong></div>';
  const max=Math.max(1,...report.months.map(m=>m.total));
- $("v3IncomeMonths").innerHTML=report.months.length?report.months.map(row=>'<div class="v3-income-row"><span>'+esc(monthDate(row.month))+'</span><span class="v3-income-track"><i style="width:'+Math.min(100,100*row.stock/max).toFixed(1)+'%"></i><b style="width:'+Math.min(100,100*row.fiis/max).toFixed(1)+'%"></b></span><strong data-v3-money>'+fmt(row.total)+'</strong></div>').join(""):'<p class="v3-empty">Sem proventos registrados para este ano.</p>';
+ $("v3IncomeMonths").innerHTML=report.months.length?report.months.map(row=>'<div class="v3-income-row"><span>'+esc(monthDate(row.month))+'</span><span class="v3-income-track"><i></i><b></b></span><strong data-v3-money>'+fmt(row.total)+'</strong></div>').join(""):'<p class="v3-empty">Sem proventos registrados para este ano.</p>';
+ document.querySelectorAll("#v3IncomeMonths .v3-income-track").forEach((x,i)=>{
+  const row=report.months[i];if(!row)return;
+  x.children[0].style.width=Math.min(100,100*row.stock/max).toFixed(1)+"%";
+  x.children[1].style.width=Math.min(100,100*row.fiis/max).toFixed(1)+"%";
+ });
 }
 function render(){
  if(!$("v3Home"))return;
