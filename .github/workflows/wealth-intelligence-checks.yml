@@ -37,6 +37,8 @@ jobs:
           node --check importer.js
           node --check performance.js
           node --check analytics.js
+          node --check v3-model.js
+          node --check v3-view.js
           node --check app.js
           node --check server.js
           node --check sw.js
@@ -54,7 +56,7 @@ jobs:
           grep -q '"ok":true' /tmp/wealth-health.json
           curl --fail --silent http://127.0.0.1:3000/ > /tmp/wealth-index.html
           grep -q 'Wealth Intelligence AI' /tmp/wealth-index.html
-          for file in app.js engine.js analytics.js performance.js importer.js xlsx-engine.js ledger.js integrity.js styles.css sw.js manifest.webmanifest; do
+          for file in app.js engine.js analytics.js performance.js importer.js xlsx-engine.js ledger.js integrity.js v3-model.js v3-view.js v3.css styles.css sw.js manifest.webmanifest; do
             curl --fail --silent -o /dev/null "http://127.0.0.1:3000/$file"
           done
           echo 'Production HTTP smoke test passed'
@@ -87,7 +89,7 @@ jobs:
             if curl --fail --silent http://127.0.0.1:3000/health > /dev/null; then break; fi
             sleep 1
           done
-          node tests/mobile.e2e.cjs
+          node tests/mobile.v3.e2e.cjs
       - name: Preserve mobile screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -108,7 +110,7 @@ jobs:
             code=$(curl --location --silent --show-error --output /tmp/wealth-site.html --write-out '%{http_code}' "$URL/" || true)
             if [ "$code" = "200" ] && grep -q '<title>Wealth Intelligence AI</title>' /tmp/wealth-site.html; then
               echo "Live mobile app verified at $URL/"
-              for asset in engine.js analytics.js performance.js importer.js xlsx-engine.js ledger.js integrity.js app.js styles.css manifest.webmanifest sw.js; do
+              for asset in engine.js analytics.js performance.js importer.js xlsx-engine.js ledger.js integrity.js v3-model.js v3-view.js v3.css app.js styles.css manifest.webmanifest sw.js; do
                 curl --fail --location --silent --show-error --output /dev/null "$URL/$asset"
               done
               exit 0
