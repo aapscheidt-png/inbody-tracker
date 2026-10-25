@@ -65,7 +65,7 @@ function renderHome(){
  '<section class="v3-integrity v3-'+status.style+'" role="status"><div><span class="v3-integrity-title">'+esc(status.title)+'</span><p>'+esc(status.detail)+'</p><small>'+esc(metadata.filename||"Nenhum arquivo Excel identificado")+
  (metadata.importedAt?" · carregado "+esc(new Date(metadata.importedAt).toLocaleDateString("pt-BR")):"")+'</small></div><button type="button" data-v3-reimport>Importar Excel</button></section>'+
  (mismatch?'<div class="v3-critical" role="alert">Previdência divergente: o último Excel informa '+fmt(expectedPension)+', mas esta carteira está exibindo '+fmt(pension.total)+'. Reimporte o arquivo e confira os dados antes de usar o saldo.</div>':"")+
- '<section class="v3-key-figures"><div><span>Previdência</span><strong data-v3-money>'+fmt(pension.total)+'</strong><small>'+pct(all.total?pension.total/all.total*100:0)+' do patrimônio</small></div>'+
+ '<section class="v3-key-figures"><div><span>Previdência</span><strong data-v3-money>'+fmt(pension.total)+'</strong><small>'+pct(all.total?pension.total/all.total*100:0)+' do patrimônio</small><button type="button" class="v3-text-button" data-v3-openpension>Ver evolução mensal</button></div>'+
  '<div><span>Demais investimentos</span><strong data-v3-money>'+fmt(all.total-pension.total)+'</strong><small>Não significa valor disponível para saque</small></div></section>'+
  '<article class="v3-card"><div class="v3-card-top"><div><span class="v3-eyebrow">DISTRIBUIÇÃO</span><h3>Por produto</h3></div><button type="button" class="v3-text-button" data-v3-openportfolio>Ver carteira</button></div>'+
  '<div class="v3-donut-layout"><div id="v3Donut" class="v3-donut"><div class="v3-hole">'+all.groups.length+'<small>categorias</small></div></div><div class="v3-donut-list">'+
@@ -146,7 +146,7 @@ function render(){
 function mount(options){
  getState=options.getState;navigate=options.navigate;
  document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-v3-facet],[data-v3-detail],[data-v3-product],[data-v3-months],[data-v3-annual],[data-v3-reset],[data-v3-private],[data-v3-openportfolio],[data-v3-openhistory],[data-v3-reimport]");
+  const t=e.target.closest("[data-v3-facet],[data-v3-detail],[data-v3-product],[data-v3-months],[data-v3-annual],[data-v3-reset],[data-v3-private],[data-v3-openportfolio],[data-v3-openhistory],[data-v3-reimport],[data-v3-openpension]");
   if(!t)return;
   if(t.hasAttribute("data-v3-facet")){facet=t.dataset.v3Facet;selection="";renderPortfolio();}
   else if(t.hasAttribute("data-v3-detail"))showDetail(t.dataset.v3Detail);
@@ -158,6 +158,7 @@ function mount(options){
   else if(t.hasAttribute("data-v3-openportfolio"))navigate("portfolio");
   else if(t.hasAttribute("data-v3-openhistory"))navigate("history");
   else if(t.hasAttribute("data-v3-reimport")){document.getElementById("openSettings")?.click();document.getElementById("importXlsx")?.click();}
+  else if(t.hasAttribute("data-v3-openpension")){historyDimension="product";historySelection="pension";annual=false;period=0;renderHistory();navigate("history");}
  });
  $("v3PortfolioCategory").addEventListener("change",e=>{selection=e.target.value;renderPortfolio();});
  $("v3PortfolioSearch").addEventListener("input",e=>{search=e.target.value;renderPortfolio();});
