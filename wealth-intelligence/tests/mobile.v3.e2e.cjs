@@ -37,7 +37,9 @@ const {chromium}=require("playwright-core");
    sourceRates:[{date:"2026-08-01",rate:5},{date:"2026-09-01",rate:5},{date:"2026-10-01",rate:5}],
    assetHistory:[
     {id:"santander",name:"Santander Previ",type:"pension",currency:"BRL",account:"Previdência",observations:[{date:"2026-08-01",value:150000},{date:"2026-09-01",value:160000}]},
-    {id:"banes",name:"Banesprev",type:"pension",currency:"BRL",account:"Previdência",observations:[{date:"2026-09-01",value:50000}]}
+    {id:"banes",name:"Banesprev",type:"pension",currency:"BRL",account:"Previdência",observations:[{date:"2026-09-01",value:50000}]},
+    {id:"old-fgts",name:"FUNDO ELET FGTS",type:"funds",currency:"BRL",account:"Carteira doméstica",observations:[{date:"2024-11-29",value:8100,source:{sheet:"2024",cell:"AT47"}},{date:"2024-12-31",value:7813.94,source:{sheet:"2024",cell:"AW47"}}]},
+    {id:"new-fgts",name:"FUNDO  FGTS",type:"funds",currency:"BRL",account:"Carteira doméstica",observations:[{date:"2024-12-31",value:7813.94,source:{sheet:"2025",cell:"B55"}},{date:"2025-01-31",value:8282.04,source:{sheet:"2025",cell:"E55"}}]}
    ],
    reportedDistributions:[{date:"2026-01-01",kind:"stock_dividends_total",amount:360,source:"2026!C76"},{date:"2026-02-01",kind:"fii_income_total",amount:100,source:"2026!D79"}],
    reportedContributions:[],quality:[]}
@@ -64,6 +66,11 @@ const {chromium}=require("playwright-core");
  await page.locator("#v3PortfolioCategory").selectOption("fund");
  assert.equal(await page.locator("#v3PortfolioCategories .v3-item").count(),6);
  assert.ok((await page.locator("#v3PortfolioCategories").textContent()).includes("FUNDO  FGTS"));
+ await page.locator("#v3PortfolioCategories .v3-item").filter({hasText:"FUNDO  FGTS"}).click();
+ await page.locator("#v3DetailDialog").waitFor({state:"visible"});
+ assert.ok((await page.locator("#v3DetailContent").textContent()).includes("série histórica unifica"));
+ assert.ok((await page.locator("#v3DetailContent").textContent()).includes("3 registros de origem"));
+ await page.locator("[data-v3-close]").click();
  assert.ok((await page.locator("#v3PortfolioTotal").textContent()).includes("204.000,00"));
  assert.ok((await page.locator("#v3PortfolioCategories").textContent()).includes("ARX FUJI RF"));
  await page.locator("[data-v3-facet=exposure]").click();
@@ -74,6 +81,7 @@ const {chromium}=require("playwright-core");
  assert.equal(await page.locator("#v3PortfolioCategories .v3-group").count(),7);
  await page.locator(".tabbar [data-go='history']").click();
  assert.ok(await page.locator("#v3HistoryChart svg").isVisible());
+ assert.equal(await page.locator("#v3HistoryChart svg text").count(),0,"No overlapping labels inside small mobile SVG");
  assert.equal(await page.locator("#v3HistoryRows .v3-history-row").count(),35);
  await page.locator("[data-v3-annual='1']").click();
  assert.equal(await page.locator("#v3HistoryRows .v3-history-row").count(),4);
