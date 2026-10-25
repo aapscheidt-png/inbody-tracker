@@ -33,7 +33,7 @@ const {chromium}=require("playwright-core");
  const history=Array.from({length:35},(_,i)=>({date:new Date(Date.UTC(2023,i+11,0)).toISOString().slice(0,10),total:320000+12500*i,flow:0,flowKnown:false,source:"synthetic"}));
  const synthetic={version:1,mode:"personal",fx:5,benchmarkAnnualPct:10,positions,history,
   assumptions:{target:1500000,monthly:10000,years:12,rate:8,vol:10,inflation:4},
-  dataEngine:{sourceMetadata:{filename:"V3-synthetic.xlsx",latestDate:"2026-10-15",latestFullMonth:"2026-09-30",latestPensionDate:"2026-09-30",partial:true,sourceVerified:false},
+  dataEngine:{sourceMetadata:{filename:"V3-synthetic.xlsx",latestDate:"2026-10-15",latestFullMonth:"2026-09-30",latestPensionDate:"2026-09-30",partial:true,sourceVerified:true,sourceTotal:485700,calculatedTotal:485700,sourceBuckets:[{key:"domestic",excelValue:264200,importedValue:264200,matched:true},{key:"international",excelValue:10500,importedValue:10500,matched:true},{key:"pension",excelValue:210000,importedValue:210000,matched:true},{key:"crypto",excelValue:1000,importedValue:1000,matched:true}]},
    sourceRates:[{date:"2026-08-01",rate:5},{date:"2026-09-01",rate:5},{date:"2026-10-01",rate:5}],
    assetHistory:[
     {id:"santander",name:"Santander Previ",type:"pension",currency:"BRL",account:"Previdência",observations:[{date:"2026-08-01",value:150000},{date:"2026-09-01",value:160000}]},
@@ -51,6 +51,14 @@ const {chromium}=require("playwright-core");
  await page.locator(".tabbar [data-go='home']").click();
  assert.ok((await page.locator("#v3Home").textContent()).includes("Previdência"));
  assert.ok((await page.locator("#v3Home").textContent()).includes("210.000,00"));
+ assert.ok((await page.locator(".v3-integrity").textContent()).includes("Subtotais conferidos com o Excel"));
+ // Direct reconciliation CTA must open the existing local Excel picker.
+ const chooserPromise=page.waitForEvent("filechooser");
+ await page.locator("[data-v3-reimport]").click();
+ const chooser=await chooserPromise;
+ assert.equal(chooser.isMultiple(),false);
+ await chooser.setFiles([]);
+ await page.locator("#settingsDialog").evaluate(x=>x.open&&x.close());
  await page.screenshot({path:"artifacts/v3-01-summary.png",fullPage:true});
  await page.locator(".tabbar [data-go='portfolio']").click();
  await page.locator("#v3PortfolioCategories .v3-group").first().waitFor();
@@ -96,6 +104,20 @@ const {chromium}=require("playwright-core");
  await page.locator("#v3HistoryDimension").selectOption("product");
  await page.locator("#v3HistoryCategory").selectOption("pension");
  await page.screenshot({path:"artifacts/v3-04-history.png",fullPage:true});
+ // Stale or edited wallet must never keep the source-verified banner.
+ await page.evaluate(()=>{
+  const key="wealth-intelligence-ai.v1",raw=JSON.parse(localStorage.getItem(key));
+  raw.positions.find(x=>x.name==="Santander Previ").price=159000;
+  localStorage.setItem(key,JSON.stringify(raw));
+ });
+ await page.reload({waitUntil:"networkidle"});
+ assert.ok((await page.locator(".v3-integrity").textContent()).includes("Carteira diferente do Excel"));
+ assert.ok((await page.locator("#v3Home").textContent()).includes("Previdência divergente"));
+ // Restore a clean synthetic fixture before continuing standard flow.
+ await page.locator("#openSettings").click();
+ page.once("dialog",d=>d.accept());
+ await page.locator("#importBackup").setInputFiles({name:"synthetic-restored.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(synthetic))});
+ await page.waitForFunction(()=>document.querySelector(".v3-integrity")?.textContent.includes("Subtotais conferidos"));
  await page.locator(".tabbar [data-go='income']").click();
  assert.ok((await page.locator("#v3IncomeTotal").textContent()).includes("460,00"));
  await page.screenshot({path:"artifacts/v3-05-proventos.png",fullPage:true});
