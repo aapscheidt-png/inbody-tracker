@@ -75,6 +75,7 @@ const {chromium}=require("playwright-core");
  assert.equal(await page.locator("#v3HistoryRows .v3-history-row").count(),36);
  await page.locator("[data-v3-annual='1']").click();
  assert.equal(await page.locator("#v3HistoryRows .v3-history-row").count(),4);
+ await page.locator("[data-v3-annual='0']").click();
  await page.locator("#v3HistoryCategory").selectOption("pension");
  assert.ok((await page.locator("#v3HistoryDescription").textContent()).includes("cobertura é parcial"));
  assert.equal(await page.locator("#v3HistoryRows .v3-history-row").count(),2);
