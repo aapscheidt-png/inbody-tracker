@@ -121,9 +121,18 @@ function trend(state,options={}){
  }
  if(months>0)values=values.slice(-months);
  if(annual){
-  const byYear=new Map();
-  for(const row of values){const year=row.month.slice(0,4),old=byYear.get(year);if(!old||old.month<row.month)byYear.set(year,row);}
-  values=[...byYear.values()].sort((a,b)=>a.month.localeCompare(b.month));
+  const byYear=new Map(),availableMonths=new Map();
+  for(const row of values){
+   const year=row.month.slice(0,4),old=byYear.get(year);
+   if(!old||old.month<row.month)byYear.set(year,row);
+   if(!availableMonths.has(year))availableMonths.set(year,new Set());
+   availableMonths.get(year).add(row.month.slice(5,7));
+  }
+  values=[...byYear.values()].sort((a,b)=>a.month.localeCompare(b.month)).map(row=>{
+   const monthsObserved=availableMonths.get(row.month.slice(0,4)).size;
+   return {...row,yearComplete:row.month.endsWith("-12")&&monthsObserved===12,
+     monthsObserved,annualReferenceMonth:row.month};
+  });
  }
  return values.map(x=>({...x,value:Math.round(x.value*100)/100}));
 }
