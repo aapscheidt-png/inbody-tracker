@@ -10,8 +10,16 @@ function chart(series,title,currency="BRL"){
  if(!series.length)return'<p class="v3-empty">Não há observações para este período.</p>';
  const w=360,h=160,l=20,r=11,t=15,b=16,vals=series.map(x=>x.value),lo=Math.min(...vals),hi=Math.max(...vals);
  const spread=Math.max(1,hi-lo),ymin=Math.max(0,lo-spread*.12),ymax=hi+spread*.12;
- const y=v=>t+(ymax-v)/Math.max(1,ymax-ymin)*(h-t-b),x=i=>l+i/Math.max(1,series.length-1)*(w-l-r);
- const pts=series.map((v,i)=>[x(i),y(v.value)]),path=pts.map(([px,py],i)=>(i?"L":"M")+px.toFixed(1)+" "+py.toFixed(1)).join(" ");
+ const y=v=>t+(ymax-v)/Math.max(1,ymax-ymin)*(h-t-b);
+ const monthIndex=month=>{const match=/^(\\d{4})-(\\d{2})$/.exec(month);return match?Number(match[1])*12+Number(match[2]):null;};
+ const months=series.map(v=>monthIndex(v.month));
+ const axisValid=months.every(x=>Number.isFinite(x)),minIndex=Math.min(...months),maxIndex=Math.max(...months);
+ const x=i=>axisValid&&maxIndex>minIndex?l+(months[i]-minIndex)/(maxIndex-minIndex)*(w-l-r):l+i/Math.max(1,series.length-1)*(w-l-r);
+ const pts=series.map((v,i)=>[x(i),y(v.value)]);
+ const path=pts.map(([px,py],i)=>{
+  const connected=i>0&&(months[i]===months[i-1]+(series[i].yearComplete!==undefined?12:1));
+  return (connected?"L":"M")+px.toFixed(1)+" "+py.toFixed(1);
+ }).join(" ");
  const ticks=[0,1,2,3].map(i=>{const yy=t+i*(h-t-b)/3;return '<line x1="'+l+'" x2="'+(w-r)+'" y1="'+yy+'" y2="'+yy+'" stroke="#324653" stroke-opacity=".65"/>';}).join("");
  const dots=series.map((s,i)=>'<circle cx="'+pts[i][0]+'" cy="'+pts[i][1]+'" r="'+(i===series.length-1?3.5:2)+'" fill="#8ae8cf"><title>'+esc(monthDate(s.month)+" · "+(hidden?"••••••":Number(s.value).toLocaleString("pt-BR",{style:"currency",currency}))+ (s.complete?"":" · parcial"))+'</title></circle>').join("");
  return'<div class="v3-chart-area"><svg viewBox="0 0 360 160" role="img" aria-label="'+esc(title)+'">'+ticks+'<path d="'+path+'" fill="none" stroke="#8ae8cf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+dots+'</svg></div>';
@@ -70,7 +78,7 @@ function renderHome(){
  '<p class="v3-note">Variação do patrimônio registrado, não retorno financeiro ajustado por aportes.</p></article>'+
  '<p class="v3-file-info">Fonte: '+esc(data.dataEngine?.sourceMetadata?.filename||"Cadastro manual")+
  ' · último fechamento: '+esc(data.dataEngine?.sourceMetadata?.latestFullMonth||"não informado")+
- ' · posição de outubro parcial, não incluída na linha histórica</p>';
+ (data.dataEngine?.sourceMetadata?.partial?' · saldo mais recente provisório ('+esc(monthDate(data.dataEngine.sourceMetadata.latestDate.slice(0,7)))+') não incluído na linha de fechamentos':'')+'</p>';
  $("v3Donut").style.background=M.makeDonut(all.groups,all.total);
  document.querySelectorAll("#v3Home [data-v3-color]").forEach(x=>x.style.background=x.dataset.v3Color);
  $("v3PrivacyToggle").textContent=hidden?"Mostrar valores":"Ocultar valores";
@@ -95,6 +103,7 @@ function renderPortfolio(){
 function renderHistory(){
  const data=getState();
  const values=M.trend(data,{dimension:historyDimension,category:historySelection,months:period,annual});
+ const cohort=historySelection?M.group(data,historyDimension,historySelection).count:0;
  const groups=M.group(data,historyDimension).groups;
  $("v3HistoryDimension").value=historyDimension;
  $("v3HistoryCategory").innerHTML=optionsWithLabels(groups,historySelection,"Todo o patrimônio");
@@ -108,9 +117,13 @@ function renderHistory(){
  $("v3HistoryLast").textContent=last?fmt(last.value):"—";
  $("v3HistoryDelta").textContent=historySelection?"N/D (cobertura parcial)":first&&last?fmt(last.value-first.value):"—";
  $("v3HistoryDescription").textContent=historySelection?
-  "Série por categoria construída de saldos observados individualmente. A cobertura é parcial, podendo faltar ativos ou datas. Não corresponde necessariamente ao fechamento mensal completo.":
-  "Fechamentos mensais informados na planilha. Outubro é provisório e reúne competências diferentes. Crescimento não equivale à rentabilidade.";
- $("v3HistoryRows").innerHTML=values.slice().reverse().map(x=>'<div class="v3-history-row"><span>'+esc(monthDate(x.month))+(x.complete?"":' <small>parcial</small>')+'</span><strong data-v3-money>'+fmt(x.value)+'</strong></div>').join("");
+  "Série por categoria construída de saldos observados individualmente. Referência: "+cohort+" posição(ões) da carteira atual. A cobertura histórica varia por mês e não corresponde necessariamente a um fechamento completo.":
+  "Fechamentos mensais registrados no Excel. Os saldos mais recentes de outras competências não são conectados à curva. Variação patrimonial não equivale à rentabilidade.";
+ $("v3HistoryRows").innerHTML=values.slice().reverse().map(x=>{
+  const periodLabel=annual?x.month.slice(0,4):monthDate(x.month);
+  const note=annual?(x.yearComplete?" · ano completo":" · até "+monthDate(x.month)+" · parcial"):(historySelection?" · "+x.samples+" registro(s)":"");
+  return '<div class="v3-history-row"><span>'+esc(periodLabel)+' <small>'+esc(note)+'</small></span><strong data-v3-money>'+fmt(x.value)+'</strong></div>';
+ }).join("");
 }
 function renderIncome(){
  const data=getState().dataEngine||{},years=L.yearList(data);if(!years.includes(incomeYear))incomeYear=years[0]||"2026";
