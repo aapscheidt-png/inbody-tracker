@@ -54,7 +54,12 @@ for(const dim of ["product","exposure","geo","account","liquidity"]){
  const grouped=V.group(state,dim);assert.ok(Math.abs(grouped.groups.reduce((s,g)=>s+g.amount,0)-all.total)<.001,"grouping "+dim);
 }
 const historySeries=V.trend(state);assert.equal(historySeries.length,35);assert.equal(historySeries[0].month,"2023-11");assert.equal(historySeries.at(-1).month,"2026-09");assert.equal(historySeries.at(-1).complete,true);
-assert.equal(V.trend(state,{annual:true}).length,4);
+const annualHistory=V.trend(state,{annual:true});
+assert.equal(annualHistory.length,4);
+assert.deepEqual(annualHistory.map(x=>x.month),["2023-12","2024-12","2025-12","2026-09"]);
+assert.deepEqual(annualHistory.map(x=>x.yearComplete),[false,true,true,false]);
+assert.deepEqual(annualHistory.map(x=>x.monthsObserved),[2,12,12,9]);
+assert.equal(annualHistory.at(-1).complete,true,"September is a recorded monthly close, not a complete year");
 assert.equal(V.trend(state,{months:6}).length,6);
 assert.equal(V.trend(state,{category:"pension"}).length,0,"Cannot invent missing pension historical points");
 const obs=[{date:"2026-08-01",value:680000},{date:"2026-09-01",value:700000}];
