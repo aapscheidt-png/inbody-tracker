@@ -14,7 +14,7 @@ Aplicativo independente de inteligência patrimonial com interface mobile-first/
 
 Este conjunto de mudanças **não foi publicado no GitHub Pages**. A versão anterior continua disponível até revisão do fluxo no iPhone e validação do usuário.
 
-- Modelo derivado sem mutações na base financeira original: classificação independente por **produto, exposição, conta, localização e liquidez informada**. Fundos Trend Ouro, Trend Prata, Trend IA e ARX Fuji RF são fundos na vista *Produto*, com exposições econômicas separadas; o FGTS permanece agrupamento próprio.
+- Modelo derivado sem mutações na base financeira original: classificação independente por **produto, exposição, conta, localização e liquidez informada**. Fundos Trend Ouro, Trend Prata, Trend IA e ARX Fuji RF são fundos na vista *Produto*, com exposições econômicas separadas; o investimento identificado como `FUNDO  FGTS` é exibido em **Fundos de investimento**, mantendo o nome original e sem supor sua exposição econômica. O filtro de liquidez é oculto enquanto a base não informar condições de resgate.
 - Quatro entradas principais no mobile: **Resumo, Carteira, Evolução, Proventos**. Filtros reais de produto/exposição/conta/localização/liquidez na Carteira, com subtotais consistentes e detalhamento por investimento.
 - Evolução usa os **35 fechamentos mensais históricos** sem conectar saldos provisórios de outubro à linha de setembro. Filtragens por classe geram séries marcadas como **parciais** e não calculam rentabilidade nem suposta variação completa com cobertura incompleta.
 - A previdência aparece em destaque, com a soma dos dois contratos; se a base carregada não corresponder ao subtotal do Excel, um alerta explícito substitui qualquer indicação de saldo validado.
