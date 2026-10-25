@@ -14,8 +14,7 @@ function chart(series,title){
  const pts=series.map((v,i)=>[x(i),y(v.value)]),path=pts.map(([px,py],i)=>(i?"L":"M")+px.toFixed(1)+" "+py.toFixed(1)).join(" ");
  const ticks=[0,1,2,3].map(i=>{const yy=t+i*(h-t-b)/3;return '<line x1="'+l+'" x2="'+(w-r)+'" y1="'+yy+'" y2="'+yy+'" stroke="#324653" stroke-opacity=".65"/>';}).join("");
  const dots=series.map((s,i)=>'<circle cx="'+pts[i][0]+'" cy="'+pts[i][1]+'" r="'+(i===series.length-1?3.5:2)+'" fill="#8ae8cf"><title>'+esc(monthDate(s.month)+" · "+brl(s.value)+(s.complete?"":" · parcial"))+'</title></circle>').join("");
- const a=pts[0],z=pts.at(-1);
- return'<div class="v3-chart-area"><svg viewBox="0 0 360 180" role="img" aria-label="'+esc(title)+'">'+ticks+'<path d="'+path+'" fill="none" stroke="#8ae8cf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+dots+'<text x="'+l+'" y="174" font-size="11" fill="#93aeb8">'+esc(monthDate(series[0].month))+'</text><text x="'+(w-r)+'" y="174" text-anchor="end" font-size="11" fill="#93aeb8">'+esc(monthDate(series.at(-1).month))+'</text></svg></div>';
+ return'<div class="v3-chart-area"><svg viewBox="0 0 360 160" role="img" aria-label="'+esc(title)+'">'+ticks+'<path d="'+path+'" fill="none" stroke="#8ae8cf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+dots+'</svg></div>';
 }
 function optionsWithLabels(groups,chosen,all="Todas as categorias"){
  return'<option value="">'+esc(all)+'</option>'+groups.map(g=>'<option value="'+esc(g.id)+'"'+(chosen===g.id?' selected':'')+'>'+esc(g.label)+'</option>').join("");
@@ -88,6 +87,8 @@ function renderHistory(){
  $("v3HistoricalMode").innerHTML=['Mensal','Anual'].map((label,i)=>'<button type="button" data-v3-annual="'+i+'" class="'+(annual===!!i?"chosen":"")+'">'+label+'</button>').join("");
  $("v3HistoryChart").innerHTML=chart(values,"Evolução patrimonial baseada nos registros do Excel");
  const first=values[0],last=values.at(-1);
+ const metricCaptions=$("v3History").querySelectorAll(".v3-historical-metrics span");
+ if(metricCaptions.length>=2){metricCaptions[0].textContent=first?"Início · "+monthDate(first.month):"Início";metricCaptions[1].textContent=last?"Final · "+monthDate(last.month):"Final";}
  $("v3HistoryFirst").textContent=first?fmt(first.value):"—";
  $("v3HistoryLast").textContent=last?fmt(last.value):"—";
  $("v3HistoryDelta").textContent=historySelection?"N/D (cobertura parcial)":first&&last?fmt(last.value-first.value):"—";
