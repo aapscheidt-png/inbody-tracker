@@ -12,7 +12,7 @@ function chart(series,title){
  const spread=Math.max(1,hi-lo),ymin=Math.max(0,lo-spread*.12),ymax=hi+spread*.12;
  const y=v=>t+(ymax-v)/Math.max(1,ymax-ymin)*(h-t-b),x=i=>l+i/Math.max(1,series.length-1)*(w-l-r);
  const pts=series.map((v,i)=>[x(i),y(v.value)]),path=pts.map(([px,py],i)=>(i?"L":"M")+px.toFixed(1)+" "+py.toFixed(1)).join(" ");
- const ticks=[0,1,2,3].map(i=>{let val=ymin+(ymax-ymin)*i/3,yy=y(val);return '<line x1="'+l+'" x2="'+(w-r)+'" y1="'+yy+'" y2="'+yy+'" stroke="#324653" stroke-opacity=".65"/><text x="2" y="'+(yy+3)+'" font-size="10" fill="#9aafb9">'+esc((val/1000).toLocaleString("pt-BR",{maximumFractionDigits:0})+" mil")+'</text>';}).join("");
+ const ticks=[0,1,2,3].map(i=>{const yy=t+i*(h-t-b)/3;return '<line x1="'+l+'" x2="'+(w-r)+'" y1="'+yy+'" y2="'+yy+'" stroke="#324653" stroke-opacity=".65"/>';}).join("");
  const dots=series.map((s,i)=>'<circle cx="'+pts[i][0]+'" cy="'+pts[i][1]+'" r="'+(i===series.length-1?3.5:2)+'" fill="#8ae8cf"><title>'+esc(monthDate(s.month)+" · "+brl(s.value)+(s.complete?"":" · parcial"))+'</title></circle>').join("");
  const a=pts[0],z=pts.at(-1);
  return'<div class="v3-chart-area"><svg viewBox="0 0 360 180" role="img" aria-label="'+esc(title)+'">'+ticks+'<path d="'+path+'" fill="none" stroke="#8ae8cf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+dots+'<text x="'+l+'" y="174" font-size="11" fill="#93aeb8">'+esc(monthDate(series[0].month))+'</text><text x="'+(w-r)+'" y="174" text-anchor="end" font-size="11" fill="#93aeb8">'+esc(monthDate(series.at(-1).month))+'</text></svg></div>';
@@ -50,6 +50,8 @@ function renderHome(){
  all.groups.map(g=>'<button type="button" class="v3-donut-row" data-v3-product="'+esc(g.id)+'"><span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span>'+esc(g.label)+'</span><strong>'+pct(g.share)+'</strong></button>').join("")+'</div></div>'+
  '<p class="v3-note">Valores da última observação de cada conta. Competências diferentes podem coexistir.</p></article>'+
  '<article class="v3-card"><div class="v3-card-top"><div><span class="v3-eyebrow">EVOLUÇÃO DO PATRIMÔNIO</span><h3>Histórico mensal</h3></div><button type="button" class="v3-text-button" data-v3-openhistory>Ver evolução</button></div>'+
+ '<div class="v3-chart-range">'+(M.trend(data,{months:12})[0]?'<span>'+esc(monthDate(M.trend(data,{months:12})[0].month))+'<strong data-v3-money>'+fmt(M.trend(data,{months:12})[0].value)+'</strong></span>':'')+
+ (M.trend(data,{months:12}).at(-1)?'<span>'+esc(monthDate(M.trend(data,{months:12}).at(-1).month))+'<strong data-v3-money>'+fmt(M.trend(data,{months:12}).at(-1).value)+'</strong></span>':'')+'</div>'+
  chart(M.trend(data,{months:12}),"Últimos 12 meses do patrimônio")+
  '<p class="v3-note">Variação do patrimônio registrado, não retorno financeiro ajustado por aportes.</p></article>'+
  '<p class="v3-file-info">Fonte: '+esc(data.dataEngine?.sourceMetadata?.filename||"Cadastro manual")+
