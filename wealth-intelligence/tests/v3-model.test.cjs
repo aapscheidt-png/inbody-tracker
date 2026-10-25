@@ -63,4 +63,20 @@ state.dataEngine.assetHistory=[{name:"Santander Previ",type:"pension",account:"P
 const pension=V.trend(state,{category:"pension"});
 assert.equal(pension.length,2);assert.equal(pension[0].value,680000);assert.equal(pension[1].value,865000);
 assert.equal(pension[0].complete,false);
+// Verified spreadsheet rollover: identical FGTS-fund balance on 2024-12-31 in both year sheets.
+state.dataEngine.assetHistory=[
+ {id:"old-fgts",name:"FUNDO ELET FGTS",type:"funds",account:"Carteira doméstica",currency:"BRL",
+  observations:[{date:"2024-11-29",value:8112.83,source:{sheet:"2024",cell:"AT47"}},{date:"2024-12-31",value:7813.94,source:{sheet:"2024",cell:"AW47"}}]},
+ {id:"new-fgts",name:"FUNDO  FGTS",type:"funds",account:"Carteira doméstica",currency:"BRL",
+  observations:[{date:"2024-12-31",value:7813.94,source:{sheet:"2025",cell:"B55"}},{date:"2025-01-31",value:8282.04,source:{sheet:"2025",cell:"E55"}}]}
+];
+const roll=V.trend(state,{dimension:"product",category:"fund"});
+assert.deepEqual(roll.map(x=>x.month),["2024-11","2024-12","2025-01"]);
+assert.deepEqual(roll.map(x=>x.value),[8112.83,7813.94,8282.04]);
+assert.equal(roll[1].samples,1,"Old and new fund names are a single holding at rollover");
+const stitched=V.historyForAsset(state.dataEngine,positions[9]);
+assert.equal(stitched.length,3,"Merge fund history across year sheets, deduplicating identical December");
+assert.equal(stitched[0].date,"2024-11-29");
+assert.equal(stitched[1].source.sheet,"2025","Prefer newer sheet for identical observation date");
+assert.equal(V.historyKey(state.dataEngine.assetHistory[0]),V.historyKey(state.dataEngine.assetHistory[1]));
 console.log("Wealth V3 product facets, filters and truthful history passed.");
