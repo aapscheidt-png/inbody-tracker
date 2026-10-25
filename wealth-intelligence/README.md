@@ -10,6 +10,18 @@ Aplicativo independente de inteligência patrimonial com interface mobile-first/
 - Ao importar backup, os dados locais existentes serão substituídos. Recomenda-se exportar backup antes.
 - Dados do extrato de maio de 2026 são históricos; atualizar com extrato atual antes de considerar as informações vigentes.
 
+## V3 em pesquisa: UX orientada a produto e tempo (sem produção)
+
+Este conjunto de mudanças **não foi publicado no GitHub Pages**. A versão anterior continua disponível até revisão do fluxo no iPhone e validação do usuário.
+
+- Modelo derivado sem mutações na base financeira original: classificação independente por **produto, exposição, conta, localização e liquidez informada**. Fundos Trend Ouro, Trend Prata, Trend IA e ARX Fuji RF são fundos na vista *Produto*, com exposições econômicas separadas; o FGTS permanece agrupamento próprio.
+- Quatro entradas principais no mobile: **Resumo, Carteira, Evolução, Proventos**. Filtros reais de produto/exposição/conta/localização/liquidez na Carteira, com subtotais consistentes e detalhamento por investimento.
+- Evolução usa os **35 fechamentos mensais históricos** sem conectar saldos provisórios de outubro à linha de setembro. Filtragens por classe geram séries marcadas como **parciais** e não calculam rentabilidade nem suposta variação completa com cobertura incompleta.
+- A previdência aparece em destaque, com a soma dos dois contratos; se a base carregada não corresponder ao subtotal do Excel, um alerta explícito substitui qualquer indicação de saldo validado.
+- Detalhes contextuais com origem, data e moeda original; sem inventar cotas, preços médios, liquidez, retorno ou instituições.
+- Reprodução/QA em navegador móvel com dados **inteiramente sintéticos** e captura das quatro telas. Nenhum valor financeiro privado é salvo no repositório.
+- A carteira permanece em localStorage e a importação pelo Excel/JSON exige ação do usuário. A V3 não sincroniza os saldos do iPhone automaticamente.
+
 ## V2.4 · Integridade do backup e recuperação no iPhone
 
 - **Nunca apresentar valores fictícios por acidente:** quando o armazenamento local estiver ilegível, o aplicativo inicia sem carteira e exibe alerta explícito, em vez de apresentar o modo demonstração como se fosse patrimônio real.
