@@ -72,11 +72,8 @@ function trend(state,options={}){
  if(!filtered){
   values=(state.history||[]).filter(r=>Number.isFinite(r.total)).map(r=>({date:r.date,month:r.date.slice(0,7),value:r.total,complete:true,source:r.source||"",samples:1}));
   values.sort((a,b)=>a.date.localeCompare(b.date));
-  // A provisional current-month value is not a verified closing-month total.
-  const latest=state.dataEngine?.sourceMetadata;
-  if(latest?.partial&&latest.latestDate&&latest.latestDate.slice(0,7)>(values.at(-1)?.month||"")){
-   values.push({date:latest.latestDate,month:latest.latestDate.slice(0,7),value:group(state).total,complete:false,source:"Saldos com competências distintas",samples:state.positions.length});
-  }
+  // Do not join provisional mixed-date holdings to the verified monthly-closing curve.
+  // Even if a separately labelled partial observation exists, it is not a monthly close.
  }else{
   const rate=historicalRates(state.dataEngine),buckets=new Map();
   for(const item of source){
