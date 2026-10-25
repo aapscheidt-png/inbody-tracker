@@ -8,10 +8,10 @@ const pct=(v)=>Number(v).toLocaleString("pt-BR",{minimumFractionDigits:1,maximum
 const fmt=v=>hidden?"••••••":brl(v),monthDate=s=>s.slice(5,7)+"/"+s.slice(0,4);
 function chart(series,title){
  if(!series.length)return'<p class="v3-empty">Não há observações para este período.</p>';
- const w=360,h=180,l=55,r=11,t=15,b=30,vals=series.map(x=>x.value),lo=Math.min(...vals),hi=Math.max(...vals);
- const spread=Math.max(1,hi-lo),y=v=>t+(hi-v)/spread*(h-t-b),x=i=>l+i/Math.max(1,series.length-1)*(w-l-r);
+ const w=360,h=180,l=61,r=11,t=15,b=30,vals=series.map(x=>x.value),lo=Math.min(...vals),hi=Math.max(...vals);
+ const spread=Math.max(1,hi-lo),ymin=Math.max(0,lo-spread*.12),ymax=hi+spread*.12;
+ const y=v=>t+(ymax-v)/Math.max(1,ymax-ymin)*(h-t-b),x=i=>l+i/Math.max(1,series.length-1)*(w-l-r);
  const pts=series.map((v,i)=>[x(i),y(v.value)]),path=pts.map(([px,py],i)=>(i?"L":"M")+px.toFixed(1)+" "+py.toFixed(1)).join(" ");
- const ymin=Math.max(0,lo-spread*.1),ymax=hi+spread*.1;
  const ticks=[0,1,2,3].map(i=>{let val=ymin+(ymax-ymin)*i/3,yy=y(val);return '<line x1="'+l+'" x2="'+(w-r)+'" y1="'+yy+'" y2="'+yy+'" stroke="#324653" stroke-opacity=".65"/><text x="2" y="'+(yy+3)+'" font-size="10" fill="#9aafb9">'+esc((val/1000).toLocaleString("pt-BR",{maximumFractionDigits:0})+" mil")+'</text>';}).join("");
  const dots=series.map((s,i)=>'<circle cx="'+pts[i][0]+'" cy="'+pts[i][1]+'" r="'+(i===series.length-1?3.5:2)+'" fill="#8ae8cf"><title>'+esc(monthDate(s.month)+" · "+brl(s.value)+(s.complete?"":" · parcial"))+'</title></circle>').join("");
  const a=pts[0],z=pts.at(-1);
