@@ -8,6 +8,8 @@ const PRODUCT={
  abroad:{label:"Investimentos internacionais",color:"#72b5f2"},
  crypto:{label:"Criptoativos",color:"#e79d8b"},
  savings:{label:"Poupança",color:"#92b7db"},
+ fixed_income:{label:"Renda fixa direta",color:"#8bc5ac"},
+ cash:{label:"Saldo em conta",color:"#a8b3c7"},
  other:{label:"Não classificado",color:"#98a7b5"}
 };
 const EXPOSURE={
@@ -23,9 +25,11 @@ function classify(x){
  else if(type==="international"){product="abroad";geo="global";exposure=n.includes("VARIÁVEL")||n.includes("VARIAVEL")?"equities":n.includes("FIXA")?"fixed":n.includes("SALDO")?"cash":"unspecified";}
  else if(type==="crypto"){product="crypto";exposure="crypto";}
  else if(n.startsWith("TREND ")||n.startsWith("ARX FUJI")){product="fund";exposure=n.includes("OURO")||n.includes("PRATA")?"metals":n.includes("FUJI")?"fixed":"alternatives";}
- else if(type==="funds"||type==="metals"){product="fund";exposure=type==="metals"?"metals":"unspecified";}
- else if(type==="cash"||n.includes("POUP")){product="savings";exposure="cash";}
- else if(type==="fixed_income"){product="other";exposure="fixed";}
+ else if(type==="funds"){product="fund";exposure="unspecified";}
+ else if(type==="metals"){product="other";exposure="metals";}
+ else if(n.includes("POUP")){product="savings";exposure="cash";}
+ else if(type==="cash"){product="cash";exposure="cash";}
+ else if(type==="fixed_income"){product="fixed_income";exposure="fixed";}
  return {product,exposure,account:String(x.account||"").trim()||"Conta não informada",
   geo,liquidity:"not_reported",currency:x.originalCurrency==="USD"?"USD":"BRL"};
 }
