@@ -6,7 +6,6 @@ const PRODUCT={
  stock:{label:"Ações brasileiras",color:"#ae8bee"},
  fii:{label:"Fundos imobiliários",color:"#f28a7a"},
  abroad:{label:"Investimentos internacionais",color:"#72b5f2"},
- fgts:{label:"FGTS",color:"#82b9af"},
  crypto:{label:"Criptoativos",color:"#e79d8b"},
  savings:{label:"Poupança",color:"#92b7db"},
  other:{label:"Não classificado",color:"#98a7b5"}
@@ -23,9 +22,8 @@ function classify(x){
  else if(type==="reits"||n.includes("FUND IMOB")){product="fii";exposure="property";}
  else if(type==="international"){product="abroad";geo="global";exposure=n.includes("VARIÁVEL")||n.includes("VARIAVEL")?"equities":n.includes("FIXA")?"fixed":n.includes("SALDO")?"cash":"unspecified";}
  else if(type==="crypto"){product="crypto";exposure="crypto";}
- else if(n.includes("FGTS")){product="fgts";}
  else if(n.startsWith("TREND ")||n.startsWith("ARX FUJI")){product="fund";exposure=n.includes("OURO")||n.includes("PRATA")?"metals":n.includes("FUJI")?"fixed":"alternatives";}
- else if(type==="funds"||type==="metals"){product="fund";exposure=type==="metals"?"metals":"alternatives";}
+ else if(type==="funds"||type==="metals"){product="fund";exposure=type==="metals"?"metals":"unspecified";}
  else if(type==="cash"||n.includes("POUP")){product="savings";exposure="cash";}
  else if(type==="fixed_income"){product="other";exposure="fixed";}
  return {product,exposure,account:String(x.account||"").trim()||"Conta não informada",
