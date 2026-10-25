@@ -107,12 +107,13 @@ const {chromium}=require("playwright-core");
  // Stale or edited wallet must never keep the source-verified banner.
  await page.evaluate(()=>{
   const key="wealth-intelligence-ai.v1",raw=JSON.parse(localStorage.getItem(key));
-  raw.positions.find(x=>x.name==="Santander Previ").price=159000;
+  raw.positions.filter(x=>x.type==="pension").forEach(x=>{x.price=0;});
   localStorage.setItem(key,JSON.stringify(raw));
  });
  await page.reload({waitUntil:"networkidle"});
  assert.ok((await page.locator(".v3-integrity").textContent()).includes("Carteira diferente do Excel"));
  assert.ok((await page.locator("#v3Home").textContent()).includes("Previdência divergente"));
+ assert.ok((await page.locator("#v3Home").textContent()).includes("R$ 0,00"),"Zero pension must trigger visible warning against source subtotal");
  // Restore a clean synthetic fixture before continuing standard flow.
  await page.locator("#openSettings").click();
  page.once("dialog",d=>d.accept());
