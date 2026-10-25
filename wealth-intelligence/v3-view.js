@@ -1,7 +1,7 @@
 (function(root){
 "use strict";
 const M=root.WealthV3Model,L=root.WealthLedger;
-let getState=()=>null,navigate=()=>{},facet="product",selection="",search="",period=0,annual=false,historySelection="",incomeYear="2026",hidden=false;
+let getState=()=>null,navigate=()=>{},facet="product",selection="",search="",period=0,annual=false,historySelection="",historyDimension="product",incomeYear="2026",hidden=false;
 const $=id=>document.getElementById(id),esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const brl=(v)=>Number(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:2,maximumFractionDigits:2});
 const pct=(v)=>Number(v).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:2})+"%";
@@ -80,8 +80,9 @@ function renderPortfolio(){
 }
 function renderHistory(){
  const data=getState();
- const values=M.trend(data,{dimension:"product",category:historySelection,months:period,annual});
- const groups=M.group(data).groups;
+ const values=M.trend(data,{dimension:historyDimension,category:historySelection,months:period,annual});
+ const groups=M.group(data,historyDimension).groups;
+ $("v3HistoryDimension").value=historyDimension;
  $("v3HistoryCategory").innerHTML=optionsWithLabels(groups,historySelection,"Todo o patrimônio");
  $("v3HistoryYears").innerHTML=['Tudo','12 meses','6 meses','3 meses'].map((label,i)=>'<button type="button" data-v3-months="'+[0,12,6,3][i]+'" class="'+(period===[0,12,6,3][i]?"chosen":"")+'">'+label+'</button>').join("");
  $("v3HistoricalMode").innerHTML=['Mensal','Anual'].map((label,i)=>'<button type="button" data-v3-annual="'+i+'" class="'+(annual===!!i?"chosen":"")+'">'+label+'</button>').join("");
@@ -130,6 +131,7 @@ function mount(options){
  });
  $("v3PortfolioCategory").addEventListener("change",e=>{selection=e.target.value;renderPortfolio();});
  $("v3PortfolioSearch").addEventListener("input",e=>{search=e.target.value;renderPortfolio();});
+ $("v3HistoryDimension").addEventListener("change",e=>{historyDimension=e.target.value;historySelection="";renderHistory();});
  $("v3HistoryCategory").addEventListener("change",e=>{historySelection=e.target.value;renderHistory();});
  $("v3IncomeYear").addEventListener("change",e=>{incomeYear=e.target.value;renderIncome();});
  $("v3DetailDialog").addEventListener("click",e=>{if(e.target.closest("[data-v3-close]"))$("v3DetailDialog").close();});
