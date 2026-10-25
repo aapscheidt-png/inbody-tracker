@@ -144,3 +144,15 @@
 .v3-chart-range span{display:flex;flex-direction:column;gap:4px;min-width:0}
 .v3-chart-range span:last-child{text-align:right}
 .v3-chart-range strong{font-size:13px;color:#e4f3f5;font-variant-numeric:tabular-nums}
+
+/* Audit status stays visible even when the old noisy insight cards are hidden */
+.v3-integrity{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border-radius:15px;padding:15px 13px;border:1px solid #336459;background:#12372f;margin-bottom:4px;min-width:0}
+.v3-integrity.unverified,.v3-integrity.v3-unverified{background:#1a303c;border-color:#3d5869}
+.v3-integrity.v3-danger{background:#382a24;border-color:#b37e52}
+.v3-integrity>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.v3-integrity-title{font-size:12px;font-weight:800;line-height:1.45;color:#dbf5ea}
+.v3-integrity.v3-danger .v3-integrity-title{color:#ffdaad}
+.v3-integrity p{font-size:10px;line-height:1.5;color:#aac1c8;margin:0}
+.v3-integrity small{font-size:9px;color:#94adbb;overflow-wrap:anywhere;line-height:1.4}
+.v3-integrity button{min-height:41px;border:1px solid #4a998b;background:#184d46;color:#c3f4e4;font-size:10px;font-weight:760;padding:8px 11px;border-radius:11px;white-space:nowrap}
+@media(max-width:370px){.v3-integrity{grid-template-columns:1fr}.v3-integrity button{width:100%}}
