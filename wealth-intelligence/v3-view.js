@@ -75,7 +75,7 @@ function chart(series,title,currency="BRL"){
    '" r="'+(i===valid.length-1?5:4)+'" fill="'+color+'"><title>'+esc(hint)+'</title></circle>';
  }).join("");
  const hasPartial=valid.some(x=>!complete(x));
- const partialLegend=hasPartial?'<span><i class="v3-legend-dash"></i> Cobertura parcial</span>':"";
+ const partialLegend=hasPartial?'<span><i class="v3-legend-dash"></i> '+(annual?"* Ano incompleto / cobertura parcial":"Cobertura parcial")+'</span>':"";
  return'<div class="v3-chart-area" data-v3-chart>'+
   '<div class="v3-chart-meta"><span>Saldo ('+(currency==="USD"?"US$":"R$")+')</span><span>'+cadence+' · '+(annual?"ano de referência":"competência (mês/ano)")+'</span></div>'+
   '<svg viewBox="0 0 '+w+' '+h+'" role="group" aria-label="'+esc(title+' · '+cadence+' · escala monetária em '+currency)+'">'+
