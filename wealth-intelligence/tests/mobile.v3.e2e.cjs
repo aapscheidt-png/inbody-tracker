@@ -203,6 +203,12 @@ const {chromium,webkit}=require("playwright-core");
  await page.locator("[data-v3-private]").click();
  assert.ok((await page.locator("#v3IncomeTotal").textContent()).includes("•••"));
  assert.ok((await page.locator(".v3-income-ticks").textContent()).includes("•••"),"Privacy also hides chart scales");
+ await page.locator(".tabbar [data-go='home']").click();
+ assert.ok(!(await page.locator("#v3Home").textContent()).match(/\d+[.,]\d+%/),"Private home hides allocation percentages");
+ assert.ok((await page.locator("#v3Home .v3-allocation-track span").first().getAttribute("title")).includes("•••"),"Allocation tooltip contains no exposed percentage");
+ await page.locator(".tabbar [data-go='portfolio']").click();
+ assert.ok(!(await page.locator("#v3PortfolioCategories").textContent()).match(/\d+[.,]\d+%/),"Private portfolio hides allocation percentages");
+ await page.locator(".tabbar [data-go='income']").click();
  await page.locator("[data-v3-private]").click();
  // Real workbook has 35 monthly balances for BOTH plans; test the same coverage pattern.
  await page.evaluate(()=>{
