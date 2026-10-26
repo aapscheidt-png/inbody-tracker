@@ -21,6 +21,7 @@ Este conjunto de mudanças **não foi publicado no GitHub Pages**. A versão ant
 - Detalhes contextuais com origem, data e moeda original; sem inventar cotas, preços médios, liquidez, retorno ou instituições.
 - Reprodução/QA em navegador móvel com dados **inteiramente sintéticos** e captura das quatro telas. Nenhum valor financeiro privado é salvo no repositório.
 - A carteira permanece em localStorage e a importação pelo Excel/JSON exige ação do usuário. A V3 não sincroniza os saldos do iPhone automaticamente.
+- A verificação V3 compara cada posição da importação Excel por uma impressão de consistência armazenada apenas no próprio dispositivo. Isso detecta alterações compensatórias que não modificariam os quatro subtotais; não é assinatura criptográfica nem substitui os extratos originais. Backups antigos sem essa impressão continuam importáveis, mas aparecem como não verificados até nova carga do Excel.
 
 ## V2.4 · Integridade do backup e recuperação no iPhone
 
