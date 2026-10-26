@@ -97,10 +97,11 @@ function renderHome(){
   '<p class="v3-note">Evolução dos saldos, sem descontar aportes ou retiradas.</p></article>'+
   '<article class="v3-card v3-home-allocation"><div class="v3-card-top"><div><span class="v3-eyebrow">DISTRIBUIÇÃO ATUAL</span><h3>Por produto</h3></div><button type="button" class="v3-text-button" data-v3-openportfolio>Ver carteira ›</button></div>'+
   '<div class="v3-allocation-track" role="img" aria-label="Distribuição do patrimônio por '+all.groups.length+' produtos">'+
-  all.groups.filter(g=>g.amount>0).map(g=>'<span data-v3-color="'+esc(g.color)+'" style="width:'+Math.max(0,g.share).toFixed(5)+'%" title="'+esc(g.label+" "+pct(g.share))+'"></span>').join("")+'</div>'+
+  all.groups.filter(g=>g.amount>0).map(g=>'<span data-v3-color="'+esc(g.color)+'" data-v3-share="'+Math.max(0,g.share).toFixed(5)+'" title="'+esc(g.label+" "+pct(g.share))+'"></span>').join("")+'</div>'+
   '<div class="v3-allocation-list">'+all.groups.map(g=>'<button type="button" class="v3-allocation-row" data-v3-product="'+esc(g.id)+'"><span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span class="v3-allocation-label">'+esc(g.label)+'</span><strong class="v3-allocation-amount" data-v3-money>'+fmt(g.amount)+'</strong><span class="v3-allocation-share">'+pct(g.share)+'</span><span aria-hidden="true" class="v3-chevron">›</span></button>').join("")+'</div></article>'+
   '<p class="v3-file-info">'+esc(sourceLine)+'. Valores da última observação por conta, não cotação em tempo real.</p>';
  document.querySelectorAll("#v3Home [data-v3-color]").forEach(x=>x.style.background=x.dataset.v3Color);
+ document.querySelectorAll("#v3Home .v3-allocation-track [data-v3-share]").forEach(x=>{x.style.width=x.dataset.v3Share+"%";});
 
  $("v3PrivacyToggle").textContent=hidden?"Mostrar valores":"Ocultar valores";
  $("v3PrivacyToggle").setAttribute("aria-pressed",String(hidden));
