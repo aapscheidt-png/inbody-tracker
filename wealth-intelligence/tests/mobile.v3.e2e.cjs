@@ -7,6 +7,13 @@ const {chromium,webkit}=require("playwright-core");
  try{
  const context=await browser.newContext({viewport:{width:393,height:852},deviceScaleFactor:3,isMobile:true,hasTouch:true,locale:"pt-BR",acceptDownloads:true});
  const page=await context.newPage();
+ // Playwright's WebKit screenshot machinery itself injects two temporary inline
+ // styles per capture; our production CSP correctly refuses those styles.
+ // Keep screenshots on Chrome; run WebKit with zero screenshot-side effects,
+ // preserving every functional / CSP assertion against the app itself.
+ const takeScreenshot=async path=>{
+  if(browserType!==webkit)await page.screenshot({path,fullPage:false,caret:"initial",animations:"allow"});
+ };
  page.on("pageerror",e=>errors.push(e.message));
  page.on("console",msg=>{if(msg.type()==="error"&& !msg.text().includes("favicon"))errors.push(msg.text());});
  await page.goto("http://127.0.0.1:3000/",{waitUntil:"networkidle"});
@@ -73,7 +80,7 @@ const {chromium,webkit}=require("playwright-core");
  // Capture the actual layout after temporary import confirmation disappears.
  await page.waitForFunction(()=>!document.querySelector("#toast")?.classList.contains("show"),null,{timeout:6000});
  await page.waitForTimeout(350);
- await page.screenshot({path:"artifacts/v3-01-summary.png",fullPage:false,caret:"initial",animations:"allow"});
+ await takeScreenshot("artifacts/v3-01-summary.png");
  await page.locator("[data-v3-openpension]").click();
  assert.equal(await page.locator("#v3HistoryCategory").inputValue(),"pension");
  assert.equal(await page.locator("#v3HistoryRows .v3-history-row").count(),2);
@@ -93,7 +100,7 @@ const {chromium,webkit}=require("playwright-core");
  await page.locator("#v3DetailDialog").waitFor({state:"visible"});
  assert.ok((await page.locator("#v3DetailContent").textContent()).includes("Previdência"));
  await page.locator("[data-v3-close]").click();
- await page.screenshot({path:"artifacts/v3-02-pension-filter.png",fullPage:false,caret:"initial",animations:"allow"});
+ await takeScreenshot("artifacts/v3-02-pension-filter.png");
  await page.locator("#v3PortfolioCategory").selectOption("fund");
  assert.equal(await page.locator("#v3PortfolioCategories .v3-item").count(),6);
  assert.ok((await page.locator("#v3PortfolioCategories").textContent()).includes("FUNDO  FGTS"));
@@ -107,7 +114,7 @@ const {chromium,webkit}=require("playwright-core");
  await page.locator("[data-v3-facet=exposure]").click();
  await page.locator("#v3PortfolioCategory").selectOption("metals");
  assert.equal(await page.locator("#v3PortfolioCategories .v3-item").count(),3);
- await page.screenshot({path:"artifacts/v3-03-fund-exposure.png",fullPage:false,caret:"initial",animations:"allow"});
+ await takeScreenshot("artifacts/v3-03-fund-exposure.png");
  await page.locator("[data-v3-reset]").click();
  assert.equal(await page.locator("#v3PortfolioCategories .v3-group").count(),7);
  await page.locator(".tabbar [data-go='history']").click();
@@ -175,7 +182,7 @@ const {chromium,webkit}=require("playwright-core");
  await page.locator("#v3HistoryDimension").selectOption("product");
  await page.locator("#v3HistoryCategory").selectOption("pension");
  await page.evaluate(()=>scrollTo(0,0));
- await page.screenshot({path:"artifacts/v3-04-history.png",fullPage:false,caret:"initial",animations:"allow"});
+ await takeScreenshot("artifacts/v3-04-history.png");
  // Stale or edited wallet must never keep the source-verified banner.
  await page.evaluate(()=>{
   const key="wealth-intelligence-ai.v1",raw=JSON.parse(localStorage.getItem(key));
@@ -202,7 +209,7 @@ const {chromium,webkit}=require("playwright-core");
  await page.waitForFunction(()=>!document.querySelector("#toast")?.classList.contains("show"),null,{timeout:6000});
  await page.evaluate(()=>scrollTo(0,0));
  await page.waitForTimeout(350);
- await page.screenshot({path:"artifacts/v3-05-proventos.png",fullPage:false,caret:"initial",animations:"allow"});
+ await takeScreenshot("artifacts/v3-05-proventos.png");
  await page.locator("[data-v3-private]").click();
  assert.ok((await page.locator("#v3IncomeTotal").textContent()).includes("•••"));
  assert.ok((await page.locator(".v3-income-ticks").textContent()).includes("•••"),"Privacy also hides chart scales");
@@ -236,7 +243,7 @@ const {chromium,webkit}=require("playwright-core");
  await page.locator("[data-v3-annual='1']").click();
  assert.ok((await page.locator("#v3HistoryRows").textContent()).includes("ano completo"),"2024 and 2025 pension years have full monthly coverage");
  assert.ok((await page.locator("#v3HistoryRows .v3-history-row").first().textContent()).includes("parcial"),"Sep-2026 is not a full calendar year");
- await page.screenshot({path:"artifacts/v3-06-pension-history-35-months.png",fullPage:false,caret:"initial",animations:"allow"});
+ await takeScreenshot("artifacts/v3-06-pension-history-35-months.png");
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
  assert.ok(overflow<=3,"Unexpected horizontal page overflow: "+overflow);
  // Simulate common iPhone narrow/standard/large CSS viewports on the same private wallet.
