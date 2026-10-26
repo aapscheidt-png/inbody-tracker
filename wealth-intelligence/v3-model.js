@@ -83,6 +83,15 @@ function historyForAsset(data,item){
  }
  return [...byDay.values()].sort((a,b)=>a.date.localeCompare(b.date));
 }
+function historyFacets(state,dim="product"){
+ const categories=new Map();
+ const assets=[...(state?.positions||[]),...(state?.dataEngine?.assetHistory||[])];
+ for(const asset of assets){
+  const f=classify(asset),id=f[dim]||"other";
+  if(!categories.has(id))categories.set(id,{id,label:label(dim,id)});
+ }
+ return [...categories.values()].sort((a,b)=>a.label.localeCompare(b.label,"pt-BR"));
+}
 function historicalRates(data){
  const map=new Map();
  for(const r of data?.sourceRates||[])if(Number(r.rate)>0)map.set(String(r.date).slice(0,7),Number(r.rate));
@@ -99,8 +108,10 @@ function trend(state,options={}){
   // Even if a separately labelled partial observation exists, it is not a monthly close.
  }else{
   const rate=historicalRates(state.dataEngine),buckets=new Map();
-  for(const item of source){
-   if(classify(item)[dim]!==cat)continue;
+  const cohort=source.filter(item=>classify(item)[dim]===cat);
+  const expected=new Set(cohort.map(historyKey)).size;
+  const verifiedPension=expected>0&&cohort.every(item=>classify(item).product==="pension");
+  for(const item of cohort){
    const byMonth=new Map();
    for(const obs of item.observations||[]){
     const month=String(obs.date||"").slice(0,7);
@@ -119,8 +130,10 @@ function trend(state,options={}){
    }
   }
   values=[...buckets.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([month,rec])=>({
-   date:month+"-01",month,value:[...rec.values()].reduce((sum,r)=>sum+r.value,0),complete:false,
-   source:"Saldos mensais observados (cobertura parcial)",samples:rec.size
+   date:month+"-01",month,value:[...rec.values()].reduce((sum,r)=>sum+r.value,0),
+   complete:verifiedPension&&rec.size===expected,
+   source:"Saldos históricos observados por ativo",samples:rec.size,expected,
+   coverage:expected?rec.size/expected:0
   }));
  }
  if(months>0)values=values.slice(-months);
@@ -132,9 +145,14 @@ function trend(state,options={}){
    if(!availableMonths.has(year))availableMonths.set(year,new Set());
    availableMonths.get(year).add(row.month.slice(5,7));
   }
+  const yearFullyObserved=new Map();
+  for(const row of values){
+   const yr=row.month.slice(0,4);
+   yearFullyObserved.set(yr,(yearFullyObserved.get(yr)??true)&&row.complete===true);
+  }
   values=[...byYear.values()].sort((a,b)=>a.month.localeCompare(b.month)).map(row=>{
-   const monthsObserved=availableMonths.get(row.month.slice(0,4)).size;
-   return {...row,yearComplete:!filtered&&row.month.endsWith("-12")&&monthsObserved===12,
+   const year=row.month.slice(0,4),monthsObserved=availableMonths.get(year).size;
+   return {...row,yearComplete:row.month.endsWith("-12")&&monthsObserved===12&&yearFullyObserved.get(year)===true,
      monthsObserved,annualReferenceMonth:row.month};
   });
  }
@@ -146,5 +164,5 @@ function makeDonut(groups,total){
  let cursor=0;const palette=relevant.map(g=>{const from=cursor;cursor+=100*g.amount/sum;return(g.color||"#61aeb3")+" "+from.toFixed(3)+"% "+cursor.toFixed(3)+"%";});
  return"conic-gradient("+palette.join(",")+")";
 }
-root.WealthV3Model={PRODUCT,EXPOSURE,dimensions,classify,entries,group,trend,label,makeDonut,historyKey,historyForAsset};
+root.WealthV3Model={PRODUCT,EXPOSURE,dimensions,classify,entries,group,trend,label,makeDonut,historyKey,historyForAsset,historyFacets};
 })(window);
