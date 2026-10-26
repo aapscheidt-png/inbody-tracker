@@ -16,13 +16,25 @@ function chart(series,title,currency="BRL"){
  const axisValid=months.every(x=>Number.isFinite(x)),minIndex=Math.min(...months),maxIndex=Math.max(...months);
  const x=i=>axisValid&&maxIndex>minIndex?l+(months[i]-minIndex)/(maxIndex-minIndex)*(w-l-r):l+i/Math.max(1,series.length-1)*(w-l-r);
  const pts=series.map((v,i)=>[x(i),y(v.value)]);
- const path=pts.map(([px,py],i)=>{
-  const connected=i>0&&(months[i]===months[i-1]+(series[i].yearComplete!==undefined?12:1));
-  return (connected?"L":"M")+px.toFixed(1)+" "+py.toFixed(1);
- }).join(" ");
+ // Never join gaps in the monthly calendar. A partial asset cohort is visually
+ // distinguished from a complete monthly closing by a dashed segment.
+ const verifiedPoint=row=>row.yearComplete!==undefined?row.yearComplete===true:row.complete===true;
+ const segments=pts.slice(1).map(([px,py],j)=>{
+  const i=j+1,prev=pts[i-1];
+  const adjacent=axisValid&&months[i]===months[i-1]+(series[i].yearComplete!==undefined?12:1);
+  if(!adjacent)return "";
+  const partial=!verifiedPoint(series[i])||!verifiedPoint(series[i-1]);
+  return '<path d="M'+prev[0].toFixed(1)+' '+prev[1].toFixed(1)+' L'+px.toFixed(1)+' '+py.toFixed(1)+
+    '" fill="none" stroke="'+(partial?"#c8a66c":"#8ae8cf")+'" stroke-width="2.5"'+(partial?' stroke-dasharray="5 5"':'')+' stroke-linecap="round" />';
+ }).join("");
  const ticks=[0,1,2,3].map(i=>{const yy=t+i*(h-t-b)/3;return '<line x1="'+l+'" x2="'+(w-r)+'" y1="'+yy+'" y2="'+yy+'" stroke="#324653" stroke-opacity=".65"/>';}).join("");
- const dots=series.map((s,i)=>'<circle cx="'+pts[i][0]+'" cy="'+pts[i][1]+'" r="'+(i===series.length-1?3.5:2)+'" fill="#8ae8cf"><title>'+esc(monthDate(s.month)+" · "+(hidden?"••••••":Number(s.value).toLocaleString("pt-BR",{style:"currency",currency}))+ (s.complete?"":" · parcial"))+'</title></circle>').join("");
- return'<div class="v3-chart-area"><svg viewBox="0 0 360 160" role="img" aria-label="'+esc(title)+'">'+ticks+'<path d="'+path+'" fill="none" stroke="#8ae8cf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+dots+'</svg></div>';
+ const dots=series.map((s,i)=>{
+  const confirmed=verifiedPoint(s),color=confirmed?"#8ae8cf":"#c8a66c";
+  return '<circle cx="'+pts[i][0]+'" cy="'+pts[i][1]+'" r="'+(i===series.length-1?3.5:2)+'" fill="'+color+'"><title>'+
+   esc(monthDate(s.month)+" · "+(hidden?"••••••":Number(s.value).toLocaleString("pt-BR",{style:"currency",currency}))+
+   (confirmed?" · período completo":" · cobertura parcial"))+'</title></circle>';
+ }).join("");
+ return'<div class="v3-chart-area"><svg viewBox="0 0 360 160" role="img" aria-label="'+esc(title)+'">'+ticks+segments+dots+'</svg></div>';
 }
 function optionsWithLabels(groups,chosen,all="Todas as categorias"){
  return'<option value="">'+esc(all)+'</option>'+groups.map(g=>'<option value="'+esc(g.id)+'"'+(chosen===g.id?' selected':'')+'>'+esc(g.label)+'</option>').join("");
@@ -119,11 +131,12 @@ function renderHistory(){
  $("v3HistoryDelta").textContent=first&&last&&(!historySelection||allObserved)?fmt(last.value-first.value):"N/D (cobertura parcial)";
  const deltaLabel=$("v3History").querySelector(".v3-historical-metrics>div:last-child>span");
  if(deltaLabel)deltaLabel.textContent=historySelection&&allObserved?"Variação dos saldos observados":"Variação do saldo";
- $("v3HistoryDescription").textContent=historySelection?
+ const hasPartial=values.some(x=>x.yearComplete!==undefined?!x.yearComplete:!x.complete);
+ $("v3HistoryDescription").textContent=(historySelection?
   (allObserved?
     "Dois planos de previdência identificados em todas as competências exibidas. Variação dos saldos não significa rentabilidade e pode incluir contribuições.":
     "Série por categoria construída de saldos observados individualmente. "+cohort+" posição(ões) na carteira atual; a cobertura histórica pode variar e há posições encerradas. Não é um fechamento completo."):
-  "Fechamentos mensais registrados no Excel. Os saldos mais recentes de outras competências não são conectados à curva. Variação patrimonial não equivale à rentabilidade.";
+  "Fechamentos mensais registrados no Excel. Os saldos mais recentes de outras competências não são conectados à curva. Variação patrimonial não equivale à rentabilidade.")+(hasPartial?" Linha tracejada: cobertura incompleta do período.":"");
  $("v3HistoryRows").innerHTML=values.slice().reverse().map(x=>{
   const periodLabel=annual?x.month.slice(0,4):monthDate(x.month);
   const note=annual?(x.yearComplete?" · ano completo":" · até "+monthDate(x.month)+" · parcial"):(historySelection?" · "+x.samples+"/"+(x.expected||"?")+" ativo(s)"+(x.complete?" · cobertura integral":" · parcial"):"");
