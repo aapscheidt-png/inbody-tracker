@@ -154,6 +154,7 @@ const {chromium}=require("playwright-core");
   localStorage.setItem(key,JSON.stringify(data));
  });
  await page.reload({waitUntil:"networkidle"});
+ await page.locator(".tabbar [data-go='home']").click();
  await page.locator("[data-v3-openpension]").click();
  assert.equal(await page.locator("#v3HistoryRows .v3-history-row").count(),35);
  assert.ok((await page.locator("#v3HistoryDescription").textContent()).includes("Dois planos de previdência"));
