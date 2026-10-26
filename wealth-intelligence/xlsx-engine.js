@@ -176,7 +176,7 @@ function analyze(book){const assets=new Map(),quality=[],sources=[],totals=new M
  if(latestPension&&latestPension<latestOverall)quality.push({code:"STALE_PENSION",severity:"warning",date:latestOverall,pensionDate:latestPension,message:"Previdência de competência anterior ao último saldo doméstico."});
  const history=[...totals.values()].filter(x=>x.date<="2026-09-30").sort((a,b)=>a.date.localeCompare(b.date));
  return{version:2,schema:"wealth-data-engine-v2",importedFrom:"Excel local: 2024, 2025, 2026",reportedContributions,reportedDistributions,sourceMetadata:{filename:"Papel.xlsx",latestDate:latestOverall,latestFullMonth:history.at(-1)?.date,latestPensionDate:latestPension,partial:true,
- dashboardTotal,calculatedTotal:calculated,difference,cryptoPrevious,cryptoOctober,dashboardCell:"Dashboard!B6",reconciliationKnown:dashboardTotal!==null,sourceBuckets,sourceTotal,sourceVerified},
+ dashboardTotal,calculatedTotal:calculated,difference,cryptoPrevious,cryptoOctober,dashboardCell:"Dashboard!B6",reconciliationKnown:dashboardTotal!==null,sourceBuckets,sourceTotal,sourceVerified,sourcePositionFingerprint:global.WealthEngine.positionFingerprint(positions)},
  assetHistory:deduped,positions,history,quality,sourceRates:sortedRates,metrics:{assets:deduped.length,positions:positions.length,observations:deduped.reduce((s,a)=>s+a.observations.length,0),months:history.length,flags:quality.length,contributions:reportedContributions.length,distributions:reportedDistributions.length}};
 }
 async function parseFile(file){if(!file||file.size>LIMIT.file)bad("arquivo muito grande");const model=await workbook(await file.arrayBuffer());return analyze(model);}
