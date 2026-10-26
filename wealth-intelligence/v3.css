@@ -389,3 +389,18 @@
 .v3-ready.v3-private .v3-allocation-track,
 .v3-ready.v3-private .v3-income-track{filter:blur(7px)}
 .v3-ready.v3-private .v3-allocation-track span{pointer-events:none}
+
+/* WebKit respects strict style-src: all chart widths are SVG geometry, not inline CSS. */
+.v3-ready .v3-allocation-track svg,
+.v3-ready .v3-income-track svg{display:block;width:100%;height:100%}
+.v3-ready [data-v3-color="#70d0ca"]{background-color:#70d0ca}
+.v3-ready [data-v3-color="#deb264"]{background-color:#deb264}
+.v3-ready [data-v3-color="#ae8bee"]{background-color:#ae8bee}
+.v3-ready [data-v3-color="#f28a7a"]{background-color:#f28a7a}
+.v3-ready [data-v3-color="#72b5f2"]{background-color:#72b5f2}
+.v3-ready [data-v3-color="#e79d8b"]{background-color:#e79d8b}
+.v3-ready [data-v3-color="#92b7db"]{background-color:#92b7db}
+.v3-ready [data-v3-color="#8bc5ac"]{background-color:#8bc5ac}
+.v3-ready [data-v3-color="#a8b3c7"]{background-color:#a8b3c7}
+.v3-ready [data-v3-color="#98a7b5"]{background-color:#98a7b5}
+.v3-ready [data-v3-color="#77c7b6"]{background-color:#77c7b6}
