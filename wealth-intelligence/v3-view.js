@@ -104,7 +104,7 @@ function renderHistory(){
  const data=getState();
  const values=M.trend(data,{dimension:historyDimension,category:historySelection,months:period,annual});
  const cohort=historySelection?M.group(data,historyDimension,historySelection).count:0;
- const groups=M.group(data,historyDimension).groups;
+ const groups=M.historyFacets(data,historyDimension);
  $("v3HistoryDimension").value=historyDimension;
  $("v3HistoryCategory").innerHTML=optionsWithLabels(groups,historySelection,"Todo o patrimônio");
  $("v3HistoryYears").innerHTML=['Tudo','12 meses','6 meses','3 meses'].map((label,i)=>'<button type="button" data-v3-months="'+[0,12,6,3][i]+'" class="'+(period===[0,12,6,3][i]?"chosen":"")+'">'+label+'</button>').join("");
@@ -115,13 +115,18 @@ function renderHistory(){
  if(metricCaptions.length>=2){metricCaptions[0].textContent=first?"Início · "+monthDate(first.month):"Início";metricCaptions[1].textContent=last?"Final · "+monthDate(last.month):"Final";}
  $("v3HistoryFirst").textContent=first?fmt(first.value):"—";
  $("v3HistoryLast").textContent=last?fmt(last.value):"—";
- $("v3HistoryDelta").textContent=historySelection?"N/D (cobertura parcial)":first&&last?fmt(last.value-first.value):"—";
+ const allObserved=values.length>=2&&values.every(row=>row.complete);
+ $("v3HistoryDelta").textContent=first&&last&&(!historySelection||allObserved)?fmt(last.value-first.value):"N/D (cobertura parcial)";
+ const deltaLabel=$("v3History").querySelector(".v3-historical-metrics>div:last-child>span");
+ if(deltaLabel)deltaLabel.textContent=historySelection&&allObserved?"Variação dos saldos observados":"Variação do saldo";
  $("v3HistoryDescription").textContent=historySelection?
-  "Série por categoria construída de saldos observados individualmente. Referência: "+cohort+" posição(ões) da carteira atual. A cobertura histórica varia por mês e não corresponde necessariamente a um fechamento completo.":
+  (allObserved?
+    "Dois planos de previdência identificados em todas as competências exibidas. Variação dos saldos não significa rentabilidade e pode incluir contribuições.":
+    "Série por categoria construída de saldos observados individualmente. "+cohort+" posição(ões) na carteira atual; a cobertura histórica pode variar e há posições encerradas. Não é um fechamento completo."):
   "Fechamentos mensais registrados no Excel. Os saldos mais recentes de outras competências não são conectados à curva. Variação patrimonial não equivale à rentabilidade.";
  $("v3HistoryRows").innerHTML=values.slice().reverse().map(x=>{
   const periodLabel=annual?x.month.slice(0,4):monthDate(x.month);
-  const note=annual?(x.yearComplete?" · ano completo":" · até "+monthDate(x.month)+" · parcial"):(historySelection?" · "+x.samples+" registro(s)":"");
+  const note=annual?(x.yearComplete?" · ano completo":" · até "+monthDate(x.month)+" · parcial"):(historySelection?" · "+x.samples+"/"+(x.expected||"?")+" ativo(s)"+(x.complete?" · cobertura integral":" · parcial"):"");
   return '<div class="v3-history-row"><span>'+esc(periodLabel)+' <small>'+esc(note)+'</small></span><strong data-v3-money>'+fmt(x.value)+'</strong></div>';
  }).join("");
 }
