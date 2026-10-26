@@ -110,6 +110,19 @@ const {chromium}=require("playwright-core");
  assert.equal(segmentChecks.dashed,true,"Partial observations must be visibly dashed");
  assert.equal(segmentChecks.complete,1);
  assert.equal(segmentChecks.solid,true,"Complete observed months use solid line");
+ const annualEdges=await page.evaluate(()=>{
+  const chart=window.WealthV3View.renderChart;
+  const base={month:"2025-12",value:200,complete:true,yearComplete:true,monthsObserved:12};
+  const current={month:"2026-09",value:220,complete:true,yearComplete:false,monthsObserved:9};
+  const contiguous=chart([base,current],"Year to date");
+  const missing=chart([base,{...current,monthsObserved:8}],"Incomplete year");
+  return{continuous:(contiguous.match(/<path d=/g)||[]).length,
+   dashed:contiguous.includes('stroke-dasharray="5 5"'),
+   missing:(missing.match(/<path d=/g)||[]).length};
+ });
+ assert.equal(annualEdges.continuous,1,"Nine consecutive 2026 months may connect to 2025 close");
+ assert.equal(annualEdges.dashed,true,"2026 is a partial year, never a solid annual return");
+ assert.equal(annualEdges.missing,0,"Annual series with a missing month must remain disconnected");
  assert.equal(await page.locator("#v3HistoryChart svg text").count(),0,"No overlapping labels inside small mobile SVG");
  assert.equal(await page.locator("#v3HistoryRows .v3-history-row").count(),35);
  await page.locator("[data-v3-annual='1']").click();
