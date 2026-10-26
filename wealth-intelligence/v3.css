@@ -332,3 +332,10 @@
  .v3-ready .v3-group-overview>strong{font-size:21px}
 }
 @media(prefers-reduced-motion:reduce){.v3-ready .page.active{animation:none}}
+
+/* Ensure audit-source note follows both visual summaries, not their flex order. */
+.v3-ready #v3Home>.v3-file-info{order:3}
+.v3-ready .v3-chart-picked{display:block;background:#17333f;color:#d9f6ed;border:1px solid #37625b;border-radius:9px;padding:8px 10px;margin:8px 1px 2px;font-size:11px;font-variant-numeric:tabular-nums}
+.v3-ready .v3-chart-picked[hidden]{display:none!important}
+.v3-ready [data-v3-chartpoint]{cursor:pointer;outline:0}
+.v3-ready [data-v3-chartpoint]:focus-visible{stroke:#fff;stroke-width:3px}
