@@ -97,6 +97,20 @@ function historicalRates(data){
  for(const r of data?.sourceRates||[])if(Number(r.rate)>0)map.set(String(r.date).slice(0,7),Number(r.rate));
  return map;
 }
+function monthNumber(month){
+ const match=/^(\\d{4})-(\\d{2})$/.exec(String(month||""));
+ if(!match)return null;
+ const m=Number(match[2]);
+ return m>=1&&m<=12?Number(match[1])*12+m:null;
+}
+function historyReferenceMonth(state,values){
+ const lastConfirmed=String(state?.dataEngine?.sourceMetadata?.latestFullMonth||"").slice(0,7);
+ const confirmed=monthNumber(lastConfirmed);
+ if(confirmed!==null)return lastConfirmed;
+ const fromHistory=(state?.history||[]).map(h=>String(h.date||"").slice(0,7)).filter(x=>monthNumber(x)!==null).sort().at(-1);
+ if(fromHistory)return fromHistory;
+ return values.at(-1)?.month||"";
+}
 function trend(state,options={}){
  const dim=options.dimension||"product",cat=options.category||"",months=options.months||0,annual=options.annual===true;
  const source=state.dataEngine?.assetHistory||[],filtered=cat!=="";
@@ -143,7 +157,14 @@ function trend(state,options={}){
    coverage:expected?rec.size/expected:0
   }));
  }
- if(months>0)values=values.slice(-months);
+ // A period filter counts calendar months, not the last N observed datapoints.
+ // A class-specific partial October observation must not extend the full
+ // portfolio's September closing series.
+ const reference=historyReferenceMonth(state,values),lastOrdinal=monthNumber(reference);
+ if(lastOrdinal!==null){
+  values=values.filter(row=>{const n=monthNumber(row.month);return n!==null&&n<=lastOrdinal&&(months<=0||n>=lastOrdinal-months+1);});
+ }else if(months>0)values=[];
+
  if(annual){
   const byYear=new Map(),availableMonths=new Map();
   for(const row of values){
