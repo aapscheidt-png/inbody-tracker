@@ -66,6 +66,18 @@ assert.deepEqual(annualHistory.map(x=>x.yearComplete),[false,true,true,false]);
 assert.deepEqual(annualHistory.map(x=>x.monthsObserved),[2,12,12,9]);
 assert.equal(annualHistory.at(-1).complete,true,"September is a recorded monthly close, not a complete year");
 assert.equal(V.trend(state,{months:6}).length,6);
+assert.deepEqual(V.trend(state,{months:6}).map(x=>x.month),["2026-04","2026-05","2026-06","2026-07","2026-08","2026-09"]);
+const sparse={...state,dataEngine:{sourceMetadata:{latestFullMonth:"2026-09-30"},assetHistory:[
+ {id:"trend-ouro",name:"TREND OURO",type:"metals",account:"Carteira doméstica",currency:"BRL",observations:[
+  {date:"2024-02-29",value:1000},{date:"2025-10-31",value:1050},
+  {date:"2025-11-30",value:1100},{date:"2026-02-28",value:1250},
+  {date:"2026-04-30",value:1350},{date:"2026-10-01",value:2000}]}]}};
+assert.deepEqual(V.trend(sparse,{category:"fund",months:6}).map(x=>x.month),["2026-04"],
+ "6-month filter means Apr–Sep calendar months, not last six available observations");
+assert.deepEqual(V.trend(sparse,{category:"fund",months:12}).map(x=>x.month),["2025-10","2025-11","2026-02","2026-04"],
+ "12-month filter does not invent missing months or include Oct provisional observations");
+assert.deepEqual(V.trend(sparse,{category:"fund"}).map(x=>x.month),["2024-02","2025-10","2025-11","2026-02","2026-04"]);
+
 assert.equal(V.trend(state,{category:"pension"}).length,0,"Cannot invent missing pension historical points");
 const obs=[{date:"2026-08-01",value:680000},{date:"2026-09-01",value:700000}];
 state.dataEngine.assetHistory=[{name:"Santander Previ",type:"pension",account:"Previdência",currency:"BRL",observations:obs},
