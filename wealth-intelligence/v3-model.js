@@ -134,7 +134,7 @@ function trend(state,options={}){
   }
   values=[...byYear.values()].sort((a,b)=>a.month.localeCompare(b.month)).map(row=>{
    const monthsObserved=availableMonths.get(row.month.slice(0,4)).size;
-   return {...row,yearComplete:row.month.endsWith("-12")&&monthsObserved===12,
+   return {...row,yearComplete:!filtered&&row.month.endsWith("-12")&&monthsObserved===12,
      monthsObserved,annualReferenceMonth:row.month};
   });
  }
