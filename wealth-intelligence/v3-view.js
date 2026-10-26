@@ -35,11 +35,11 @@ function chart(series,title,currency="BRL"){
  const ticks=[0,1,2,3].map(i=>{const yy=t+i*(h-t-b)/3;return '<line x1="'+l+'" x2="'+(w-r)+'" y1="'+yy+'" y2="'+yy+'" stroke="#324653" stroke-opacity=".65"/>';}).join("");
  const dots=series.map((s,i)=>{
   const confirmed=verifiedPoint(s),color=confirmed?"#8ae8cf":"#c8a66c";
-  return '<circle cx="'+pts[i][0]+'" cy="'+pts[i][1]+'" r="'+(i===series.length-1?3.5:2)+'" fill="'+color+'"><title>'+
-   esc(monthDate(s.month)+" · "+(hidden?"••••••":Number(s.value).toLocaleString("pt-BR",{style:"currency",currency}))+
-   (confirmed?" · período completo":" · cobertura parcial"))+'</title></circle>';
+  const hint=monthDate(s.month)+" · "+(hidden?"••••••":Number(s.value).toLocaleString("pt-BR",{style:"currency",currency}))+
+   (confirmed?" · observado":" · cobertura parcial");
+  return '<circle data-v3-chartpoint="'+esc(hint)+'" tabindex="0" role="button" aria-label="'+esc(hint)+'" cx="'+pts[i][0]+'" cy="'+pts[i][1]+'" r="'+(i===series.length-1?5:4)+'" fill="'+color+'"><title>'+esc(hint)+'</title></circle>';
  }).join("");
- return'<div class="v3-chart-area"><svg viewBox="0 0 360 160" role="img" aria-label="'+esc(title)+'">'+ticks+segments+dots+'</svg></div>';
+ return'<div class="v3-chart-area" data-v3-chart><svg viewBox="0 0 360 160" role="group" aria-label="'+esc(title)+'">'+ticks+segments+dots+'</svg><p class="v3-chart-picked" role="status" hidden></p></div>';
 }
 function optionsWithLabels(groups,chosen,all="Todas as categorias"){
  return'<option value="">'+esc(all)+'</option>'+groups.map(g=>'<option value="'+esc(g.id)+'"'+(chosen===g.id?' selected':'')+'>'+esc(g.label)+'</option>').join("");
@@ -180,6 +180,9 @@ function render(){
 function mount(options){
  getState=options.getState;navigate=options.navigate;
  document.addEventListener("click",e=>{
+  const point=e.target.closest("[data-v3-chartpoint]");
+  if(point){const info=point.closest("[data-v3-chart]")?.querySelector(".v3-chart-picked");
+   if(info){info.textContent=point.dataset.v3Chartpoint;info.hidden=false;}return;}
   const t=e.target.closest("[data-v3-togglefilters],[data-v3-facet],[data-v3-detail],[data-v3-product],[data-v3-months],[data-v3-annual],[data-v3-reset],[data-v3-private],[data-v3-openportfolio],[data-v3-openhistory],[data-v3-reimport],[data-v3-openpension]");
   if(!t)return;
   if(t.hasAttribute("data-v3-togglefilters")){filterOpen=!filterOpen;renderPortfolio();}
@@ -195,6 +198,7 @@ function mount(options){
   else if(t.hasAttribute("data-v3-reimport")){document.getElementById("openSettings")?.click();document.getElementById("importXlsx")?.click();}
   else if(t.hasAttribute("data-v3-openpension")){historyDimension="product";historySelection="pension";annual=false;period=0;renderHistory();navigate("history");}
  });
+ document.addEventListener("keydown",e=>{const point=e.target.closest?.("[data-v3-chartpoint]");if(point&&(e.key==="Enter"||e.key===" ")){e.preventDefault();point.dispatchEvent(new MouseEvent("click",{bubbles:true}));}});
  $("v3PortfolioCategory").addEventListener("change",e=>{selection=e.target.value;renderPortfolio();});
  $("v3PortfolioSearch").addEventListener("input",e=>{search=e.target.value;renderPortfolio();});
  $("v3HistoryDimension").addEventListener("change",e=>{historyDimension=e.target.value;historySelection="";renderHistory();});
