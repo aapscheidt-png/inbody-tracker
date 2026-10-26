@@ -89,4 +89,10 @@ assert.equal(stitched.length,3,"Merge fund history across year sheets, deduplica
 assert.equal(stitched[0].date,"2024-11-29");
 assert.equal(stitched[1].source.sheet,"2025","Prefer newer sheet for identical observation date");
 assert.equal(V.historyKey(state.dataEngine.assetHistory[0]),V.historyKey(state.dataEngine.assetHistory[1]));
+const yearSamples=Array.from({length:12},(_,i)=>({date:"2025-"+String(i+1).padStart(2,"0")+"-28",value:10000+i*50}));
+state.dataEngine.assetHistory=[{name:"Santander Previ",type:"pension",account:"Previdência",currency:"BRL",observations:yearSamples}];
+const pensionYear=V.trend(state,{category:"pension",annual:true});
+assert.equal(pensionYear.length,1);
+assert.equal(pensionYear[0].monthsObserved,12);
+assert.equal(pensionYear[0].yearComplete,false,"Twelve months of one pension plan do not prove full category coverage");
 console.log("Wealth V3 product facets, filters and truthful history passed.");
