@@ -21,7 +21,12 @@ function chart(series,title,currency="BRL"){
  const verifiedPoint=row=>row.yearComplete!==undefined?row.yearComplete===true:row.complete===true;
  const segments=pts.slice(1).map(([px,py],j)=>{
   const i=j+1,prev=pts[i-1];
-  const adjacent=axisValid&&months[i]===months[i-1]+(series[i].yearComplete!==undefined?12:1);
+  const annual=series[i].yearComplete!==undefined;
+  const currentMonth=Number(series[i].month.slice(5,7)),previousMonth=Number(series[i-1].month.slice(5,7));
+  const adjacent=axisValid&&(annual?
+   (Number(series[i].month.slice(0,4))===Number(series[i-1].month.slice(0,4))+1 &&
+    previousMonth===12 && Number(series[i].monthsObserved)===currentMonth):
+   months[i]===months[i-1]+1);
   if(!adjacent)return "";
   const partial=!verifiedPoint(series[i])||!verifiedPoint(series[i-1]);
   return '<path d="M'+prev[0].toFixed(1)+' '+prev[1].toFixed(1)+' L'+px.toFixed(1)+' '+py.toFixed(1)+
