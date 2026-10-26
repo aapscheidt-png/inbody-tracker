@@ -100,6 +100,11 @@ jobs:
 
   safari-webkit-e2e:
     runs-on: ubuntu-latest
+    # Official Playwright image includes WebKit + OS dependencies, avoiding
+    # repeated apt browser preparation while preserving the same test script.
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
     defaults:
       run:
         working-directory: wealth-intelligence
@@ -108,10 +113,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install WebKit browser engine
-        run: |
-          npm install --no-save playwright@1.56.1
-          npx playwright install --with-deps webkit
+      - name: Install WebKit runner
+        run: npm install --no-save playwright@1.56.1
       - name: Mobile WebKit journey (Safari-compatible engine)
         env:
           WEALTH_BROWSER: webkit
