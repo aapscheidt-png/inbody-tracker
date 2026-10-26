@@ -139,6 +139,29 @@ const {chromium}=require("playwright-core");
  await page.locator("[data-v3-private]").click();
  assert.ok((await page.locator("#v3IncomeTotal").textContent()).includes("•••"));
  await page.locator("[data-v3-private]").click();
+ // Real workbook has 35 monthly balances for BOTH plans; test the same coverage pattern.
+ await page.evaluate(()=>{
+  const key="wealth-intelligence-ai.v1",data=JSON.parse(localStorage.getItem(key));
+  const mk=(base,step)=>Array.from({length:35},(_,i)=>({
+   date:new Date(Date.UTC(2023,11+i,0)).toISOString().slice(0,10),
+   value:base+i*step,source:{sheet:i<14?"2024":i<26?"2025":"2026",cell:"K116"}
+  }));
+  data.dataEngine.assetHistory=data.dataEngine.assetHistory.filter(x=>x.type!=="pension");
+  data.dataEngine.assetHistory.push(
+   {id:"p0",name:"Santander Previ",type:"pension",account:"Previdência",currency:"BRL",observations:mk(126000,1000)},
+   {id:"p1",name:"Banesprev",type:"pension",account:"Previdência",currency:"BRL",observations:mk(33000,500)}
+  );
+  localStorage.setItem(key,JSON.stringify(data));
+ });
+ await page.reload({waitUntil:"networkidle"});
+ await page.locator("[data-v3-openpension]").click();
+ assert.equal(await page.locator("#v3HistoryRows .v3-history-row").count(),35);
+ assert.ok((await page.locator("#v3HistoryDescription").textContent()).includes("Dois planos de previdência"));
+ assert.ok((await page.locator("#v3HistoryDelta").textContent()).includes("51.000,00"),"Full pension history must display the observed balance change");
+ await page.locator("[data-v3-annual='1']").click();
+ assert.ok((await page.locator("#v3HistoryRows").textContent()).includes("ano completo"),"2024 and 2025 pension years have full monthly coverage");
+ assert.ok((await page.locator("#v3HistoryRows .v3-history-row").first().textContent()).includes("parcial"),"Sep-2026 is not a full calendar year");
+ await page.screenshot({path:"artifacts/v3-06-pension-history-35-months.png",fullPage:true});
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
  assert.ok(overflow<=3,"Unexpected horizontal page overflow: "+overflow);
  assert.deepEqual(errors,[],"No browser or CSP errors in V3 mobile flow");
