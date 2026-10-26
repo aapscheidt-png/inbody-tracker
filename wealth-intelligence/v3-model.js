@@ -63,7 +63,7 @@ function group(state,dim="product",category="",query=""){
   filtered};
 }
 // The 2024 workbook calls this same fund "FUNDO ELET FGTS" while 2025+
-// calls it "FUNDO FGTS". Both carry exactly R$ 7,813.94 on 31 Dec 2024.
+// calls it "FUNDO FGTS". Both carry the same recorded closing balance on 31 Dec 2024.
 // Map only this audited alias, not all products containing "FGTS".
 function historyKey(item){
  const n=String(item.name||"").trim().toUpperCase().replace(/\s+/g," ");
