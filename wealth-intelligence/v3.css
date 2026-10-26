@@ -339,3 +339,10 @@
 .v3-ready .v3-chart-picked[hidden]{display:none!important}
 .v3-ready [data-v3-chartpoint]{cursor:pointer;outline:0}
 .v3-ready [data-v3-chartpoint]:focus-visible{stroke:#fff;stroke-width:3px}
+
+.v3-ready .v3-history-context{border-top:1px solid #29424e;margin:6px 0 3px;padding-top:11px}
+.v3-ready .v3-history-context summary{font-size:11px;color:#a9d5cd;cursor:pointer;list-style:none;font-weight:680}
+.v3-ready .v3-history-context summary::-webkit-details-marker{display:none}
+.v3-ready .v3-history-context summary:after{content:"  ⌄";color:#8db7ad}
+.v3-ready .v3-history-context[open] summary:after{content:"  ⌃"}
+.v3-ready .v3-history-context p{padding-top:4px;font-size:11px;line-height:1.55}
