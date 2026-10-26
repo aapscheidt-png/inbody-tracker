@@ -109,7 +109,7 @@ const {chromium}=require("playwright-core");
  assert.ok((await page.locator("#v3HistoryRows").textContent()).includes("ano completo"),"2024 and 2025 Jan–Dec must be identified");
  await page.locator("[data-v3-annual='0']").click();
  await page.locator("#v3HistoryCategory").selectOption("pension");
- assert.ok((await page.locator("#v3HistoryDescription").textContent()).includes("cobertura histórica varia"));
+ assert.ok((await page.locator("#v3HistoryDescription").textContent()).includes("cobertura histórica pode variar"));
  assert.ok((await page.locator("#v3HistoryDelta").textContent()).includes("N/D"));
  assert.equal(await page.locator("#v3HistoryRows .v3-history-row").count(),2);
  await page.locator("#v3HistoryDimension").selectOption("account");
