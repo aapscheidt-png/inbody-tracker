@@ -6,40 +6,82 @@ const $=id=>document.getElementById(id),esc=v=>String(v??"").replace(/[&<>"']/g,
 const brl=(v)=>Number(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:2,maximumFractionDigits:2});
 const pct=(v)=>Number(v).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:2})+"%";
 const fmt=v=>hidden?"••••••":brl(v),monthDate=s=>s.slice(5,7)+"/"+s.slice(0,4);
+// Human-readable axes are essential for a financial chart. The horizontal axis
+// uses only observed periods; missing months are never interpolated.
+function axisMoney(value,currency="BRL"){
+ if(hidden)return"•••";
+ const symbol=currency==="USD"?"US$":"R$";
+ const absolute=Math.abs(value);
+ const form=(number,precision=1)=>number.toLocaleString("pt-BR",{maximumFractionDigits:precision});
+ if(absolute>=1000000)return symbol+" "+form(value/1000000,2)+" mi";
+ if(absolute>=1000)return symbol+" "+form(value/1000,1)+" mil";
+ return symbol+" "+form(value,0);
+}
 function chart(series,title,currency="BRL"){
- if(!series.length)return'<p class="v3-empty">Não há observações para este período.</p>';
- const w=360,h=160,l=20,r=11,t=15,b=16,vals=series.map(x=>x.value),lo=Math.min(...vals),hi=Math.max(...vals);
- const spread=Math.max(1,hi-lo),ymin=Math.max(0,lo-spread*.12),ymax=hi+spread*.12;
- const y=v=>t+(ymax-v)/Math.max(1,ymax-ymin)*(h-t-b);
- const monthIndex=month=>{const match=/^(\d{4})-(\d{2})$/.exec(month);return match?Number(match[1])*12+Number(match[2]):null;};
- const months=series.map(v=>monthIndex(v.month));
- const axisValid=months.every(x=>Number.isFinite(x)),minIndex=Math.min(...months),maxIndex=Math.max(...months);
- const x=i=>axisValid&&maxIndex>minIndex?l+(months[i]-minIndex)/(maxIndex-minIndex)*(w-l-r):l+i/Math.max(1,series.length-1)*(w-l-r);
- const pts=series.map((v,i)=>[x(i),y(v.value)]);
- // Never join gaps in the monthly calendar. A partial asset cohort is visually
- // distinguished from a complete monthly closing by a dashed segment.
- const verifiedPoint=row=>row.yearComplete!==undefined?row.yearComplete===true:row.complete===true;
- const segments=pts.slice(1).map(([px,py],j)=>{
-  const i=j+1,prev=pts[i-1];
-  const annual=series[i].yearComplete!==undefined;
-  const currentMonth=Number(series[i].month.slice(5,7)),previousMonth=Number(series[i-1].month.slice(5,7));
-  const adjacent=axisValid&&(annual?
-   (Number(series[i].month.slice(0,4))===Number(series[i-1].month.slice(0,4))+1 &&
-    previousMonth===12 && Number(series[i].monthsObserved)===currentMonth):
-   months[i]===months[i-1]+1);
-  if(!adjacent)return "";
-  const partial=!verifiedPoint(series[i])||!verifiedPoint(series[i-1]);
-  return '<path d="M'+prev[0].toFixed(1)+' '+prev[1].toFixed(1)+' L'+px.toFixed(1)+' '+py.toFixed(1)+
-    '" fill="none" stroke="'+(partial?"#c8a66c":"#8ae8cf")+'" stroke-width="2.5"'+(partial?' stroke-dasharray="5 5"':'')+' stroke-linecap="round" />';
+ if(!series.length)return'<p class="v3-empty">Não há observações para este período. Nenhum ponto será estimado.</p>';
+ const annual=series.some(x=>x.yearComplete!==undefined),cadence=annual?"Anual":"Mensal";
+ const valid=series.filter(s=>Number.isFinite(s.value)&&/^\d{4}-\d{2}$/.test(s.month));
+ if(!valid.length)return'<p class="v3-empty">Não há saldos válidos para este período.</p>';
+ const w=425,h=206,l=86,r=16,t=15,b=33;
+ const vals=valid.map(x=>x.value),lo=Math.min(...vals),hi=Math.max(...vals);
+ // Use a rounded, evenly spaced monetary axis, not unlabeled grid lines.
+ const range=hi-lo||Math.max(1,Math.abs(hi)*.16),rawStep=range/3;
+ const magnitude=Math.pow(10,Math.floor(Math.log10(rawStep)));
+ const step=[1,2,2.5,5,10].map(x=>x*magnitude).find(x=>x>=rawStep)||10*magnitude;
+ let low=Math.max(0,Math.floor((lo-range*.05)/step)*step);
+ let high=Math.ceil((hi+range*.05)/step)*step;
+ if(high<=low)high=low+step;
+ const count=Math.round((high-low)/step);
+ // Small series and precise amounts still get a readable 3–5 tick scale.
+ const y=value=>t+(high-value)/(high-low)*(h-t-b);
+ const ord=month=>Number(month.slice(0,4))*12+Number(month.slice(5,7));
+ const ordinals=valid.map(s=>ord(s.month));
+ const first=ordinals[0],last=ordinals.at(-1);
+ const x=i=>last>first?l+(ordinals[i]-first)/(last-first)*(w-l-r):l+(w-l-r)/2;
+ const pts=valid.map((v,i)=>[x(i),y(v.value)]);
+ const complete=row=>row.yearComplete!==undefined?row.yearComplete===true:row.complete===true;
+ const fragments=pts.slice(1).map(([px,py],j)=>{
+  const i=j+1,previous=pts[i-1],a=valid[i-1],b=valid[i];
+  // Annual lines only join adjoining years with truly covered intervening months.
+  const adjacent=annual?
+   (Number(b.month.slice(0,4))===Number(a.month.slice(0,4))+1 &&
+    a.month.endsWith("-12")&&Number(b.monthsObserved)===Number(b.month.slice(5,7))):
+   ordinals[i]===ordinals[i-1]+1;
+  if(!adjacent)return"";
+  const partial=!complete(a)||!complete(b);
+  return'<path d="M'+previous[0].toFixed(1)+' '+previous[1].toFixed(1)+' L'+px.toFixed(1)+' '+py.toFixed(1)+
+   '" stroke="'+(partial?"#c8a66c":"#8ae8cf")+'" stroke-width="2.6" fill="none"'+(partial?' stroke-dasharray="5 5"':'')+' stroke-linecap="round"/>';
  }).join("");
- const ticks=[0,1,2,3].map(i=>{const yy=t+i*(h-t-b)/3;return '<line x1="'+l+'" x2="'+(w-r)+'" y1="'+yy+'" y2="'+yy+'" stroke="#324653" stroke-opacity=".65"/>';}).join("");
- const dots=series.map((s,i)=>{
-  const confirmed=verifiedPoint(s),color=confirmed?"#8ae8cf":"#c8a66c";
-  const hint=monthDate(s.month)+" · "+(hidden?"••••••":Number(s.value).toLocaleString("pt-BR",{style:"currency",currency}))+
-   (confirmed?" · observado":" · cobertura parcial");
-  return '<circle data-v3-chartpoint="'+esc(hint)+'" tabindex="0" role="button" aria-label="'+esc(hint)+'" cx="'+pts[i][0]+'" cy="'+pts[i][1]+'" r="'+(i===series.length-1?5:4)+'" fill="'+color+'"><title>'+esc(hint)+'</title></circle>';
+ const yTicks=Array.from({length:count+1},(_,i)=>{
+  const value=low+i*step,yy=y(value).toFixed(1);
+  return'<line x1="'+l+'" x2="'+(w-r)+'" y1="'+yy+'" y2="'+yy+'" stroke="#304553" stroke-opacity=".75"/>'+
+   '<text data-v3-y-label x="'+(l-8)+'" y="'+(Number(yy)+3.5)+'" text-anchor="end" font-size="10" fill="#9db4be">'+esc(axisMoney(value,currency))+'</text>';
  }).join("");
- return'<div class="v3-chart-area" data-v3-chart><svg viewBox="0 0 360 160" role="group" aria-label="'+esc(title)+'">'+ticks+segments+dots+'</svg><p class="v3-chart-picked" role="status" hidden></p></div>';
+ // Up to five dated labels for the actual records; annual partial years get an asterisk.
+ const indices=[...new Set(Array.from({length:Math.min(5,valid.length)},(_,i)=>
+  Math.round(i*(valid.length-1)/Math.max(1,Math.min(5,valid.length)-1))))];
+ const xTicks=indices.map(i=>{
+  const s=valid[i],xx=x(i).toFixed(1);
+  const label=annual?s.month.slice(0,4)+(s.yearComplete?"":"*"):monthDate(s.month);
+  return'<line x1="'+xx+'" x2="'+xx+'" y1="'+(h-b)+'" y2="'+(h-b+4)+'" stroke="#607783"/>'+
+   '<text data-v3-x-label x="'+xx+'" y="'+(h-9)+'" fill="#adc5cd" text-anchor="middle" font-size="10">'+esc(label)+'</text>';
+ }).join("");
+ const dots=valid.map((s,i)=>{
+  const verified=complete(s),color=verified?"#8ae8cf":"#c8a66c";
+  const dateLabel=annual?s.month.slice(0,4)+(s.yearComplete?" · ano completo":" · até "+monthDate(s.month)+" · ano parcial"):monthDate(s.month);
+  const hint=dateLabel+" · "+(hidden?"••••••":Number(s.value).toLocaleString("pt-BR",{style:"currency",currency}))+
+   (verified?" · observado":" · cobertura parcial");
+  return'<circle data-v3-chartpoint="'+esc(hint)+'" tabindex="0" role="button" aria-label="'+esc(hint)+'" cx="'+pts[i][0].toFixed(1)+'" cy="'+pts[i][1].toFixed(1)+
+   '" r="'+(i===valid.length-1?5:4)+'" fill="'+color+'"><title>'+esc(hint)+'</title></circle>';
+ }).join("");
+ const hasPartial=valid.some(x=>!complete(x));
+ const partialLegend=hasPartial?'<span><i class="v3-legend-dash"></i> Cobertura parcial</span>':"";
+ return'<div class="v3-chart-area" data-v3-chart>'+
+  '<div class="v3-chart-meta"><span>Saldo ('+(currency==="USD"?"US$":"R$")+')</span><span>'+cadence+' · '+(annual?"ano de referência":"competência (mês/ano)")+'</span></div>'+
+  '<svg viewBox="0 0 '+w+' '+h+'" role="group" aria-label="'+esc(title+' · '+cadence+' · escala monetária em '+currency)+'">'+
+  yTicks+xTicks+fragments+dots+'</svg>'+
+  '<div class="v3-chart-legend"><span><i class="v3-legend-line"></i> Saldos '+(annual?"anuais":"mensais")+'</span>'+partialLegend+'</div>'+
+  '<p class="v3-chart-picked" role="status" hidden></p></div>';
 }
 function optionsWithLabels(groups,chosen,all="Todas as categorias"){
  return'<option value="">'+esc(all)+'</option>'+groups.map(g=>'<option value="'+esc(g.id)+'"'+(chosen===g.id?' selected':'')+'>'+esc(g.label)+'</option>').join("");
