@@ -7,6 +7,21 @@ const brl=(v)=>Number(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL"
 const pct=(v)=>Number(v).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:2})+"%";
 const pctVisible=v=>hidden?"•••":pct(v);
 const fmt=v=>hidden?"••••••":brl(v),monthDate=s=>s.slice(5,7)+"/"+s.slice(0,4);
+function allocationSvg(groups){
+ let cursor=0;
+ const segments=groups.filter(g=>g.amount>0).map(g=>{
+  const span=Math.max(0,g.share)*10,left=cursor;cursor+=span;
+  return '<rect x="'+left.toFixed(3)+'" y="0" width="'+span.toFixed(3)+'" height="12" fill="'+esc(g.color)+'"><title>'+esc(g.label+" "+pctVisible(g.share))+'</title></rect>';
+ }).join("");
+ return '<svg viewBox="0 0 1000 12" preserveAspectRatio="none" aria-hidden="true">'+segments+'</svg>';
+}
+function incomeBarSvg(row,ceiling){
+ const divisor=Math.max(1,ceiling),stock=100*row.stock/divisor,fiis=100*row.fiis/divisor,other=100*row.other/divisor;
+ return '<svg viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden="true">'+
+  '<rect x="0" y="0" width="'+stock.toFixed(3)+'" height="12" fill="#63b5cb"/>'+
+  '<rect x="'+stock.toFixed(3)+'" y="0" width="'+fiis.toFixed(3)+'" height="12" fill="#d0a65f"/>'+
+  '<rect x="'+(stock+fiis).toFixed(3)+'" y="0" width="'+other.toFixed(3)+'" height="12" fill="#bc99d5"/></svg>';
+}
 // Human-readable axes are essential for a financial chart. The horizontal axis
 // uses only observed periods; missing months are never interpolated.
 function axisMoney(value,currency="BRL"){
@@ -140,11 +155,11 @@ function renderHome(){
   '<p class="v3-note">Evolução dos saldos, sem descontar aportes ou retiradas.</p></article>'+
   '<article class="v3-card v3-home-allocation"><div class="v3-card-top"><div><span class="v3-eyebrow">DISTRIBUIÇÃO ATUAL</span><h3>Por produto</h3></div><button type="button" class="v3-text-button" data-v3-openportfolio>Ver carteira ›</button></div>'+
   '<div class="v3-allocation-track" role="img" aria-label="Distribuição do patrimônio por '+all.groups.length+' produtos">'+
-  all.groups.filter(g=>g.amount>0).map(g=>'<span data-v3-color="'+esc(g.color)+'" data-v3-share="'+Math.max(0,g.share).toFixed(5)+'" title="'+esc(g.label+" "+pctVisible(g.share))+'"></span>').join("")+'</div>'+
+  allocationSvg(all.groups)+'</div>'+
   '<div class="v3-allocation-list">'+all.groups.map(g=>'<button type="button" class="v3-allocation-row" data-v3-product="'+esc(g.id)+'"><span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span class="v3-allocation-label">'+esc(g.label)+'</span><strong class="v3-allocation-amount" data-v3-money>'+fmt(g.amount)+'</strong><span class="v3-allocation-share">'+pctVisible(g.share)+'</span><span aria-hidden="true" class="v3-chevron">›</span></button>').join("")+'</div></article>'+
   '<p class="v3-file-info">'+esc(sourceLine)+'. Valores da última observação por conta, não cotação em tempo real.</p>';
- document.querySelectorAll("#v3Home [data-v3-color]").forEach(x=>x.style.background=x.dataset.v3Color);
- document.querySelectorAll("#v3Home .v3-allocation-track [data-v3-share]").forEach(x=>{x.style.width=x.dataset.v3Share+"%";});
+
+
 
  $("v3PrivacyToggle").textContent=hidden?"Mostrar valores":"Ocultar valores";
  $("v3PrivacyToggle").setAttribute("aria-pressed",String(hidden));
@@ -169,7 +184,7 @@ function renderPortfolio(){
  '<strong class="v3-group-amount" data-v3-money>'+fmt(g.amount)+'</strong><span class="v3-chevron">⌄</span></summary><div class="v3-group-items">'+g.items.map(item=>
  '<button type="button" data-v3-detail="'+esc(item.id)+'" class="v3-item"><span><strong>'+esc(item.name)+'</strong><small>'+esc(item.asOf)+' · '+esc(M.EXPOSURE[item.facets.exposure])+'</small></span><strong data-v3-money>'+fmt(item.amount)+'</strong><span class="v3-chevron">›</span></button>'
  ).join("")+'</div></details>').join("");
- document.querySelectorAll("#v3PortfolioCategories [data-v3-color]").forEach(x=>x.style.background=x.dataset.v3Color);
+
 }
 function renderHistory(){
  const data=getState();
@@ -221,15 +236,10 @@ function renderIncome(){
   '<div class="v3-income-legend"><span><i class="v3-income-key v3-key-stock"></i> Ações</span><span><i class="v3-income-key v3-key-fii"></i> FIIs</span>'+
   (report.other>0?'<span><i class="v3-income-key v3-key-other"></i> Outros lançamentos</span>':"")+'</div>':"";
  $("v3IncomeMonths").innerHTML=report.months.length?axis+
-  report.months.map(row=>'<div class="v3-income-row"><span>'+esc(monthDate(row.month))+'</span><span class="v3-income-track" role="img" aria-label="'+esc(monthDate(row.month)+" · "+(hidden?"valores ocultos":brl(row.total)))+'"><i></i><b></b><em></em></span><strong data-v3-money>'+fmt(row.total)+'</strong></div>').join("")+legend+
+  report.months.map(row=>'<div class="v3-income-row"><span>'+esc(monthDate(row.month))+'</span><span class="v3-income-track" role="img" aria-label="'+esc(monthDate(row.month)+" · "+(hidden?"valores ocultos":brl(row.total)))+'">'+incomeBarSvg(row,ceiling)+'</span><strong data-v3-money>'+fmt(row.total)+'</strong></div>').join("")+legend+
   '<p class="v3-income-data-note">Somente meses com lançamentos; meses ausentes não representam valor zero.</p>':
   '<p class="v3-empty">Sem proventos registrados para este ano.</p>';
- document.querySelectorAll("#v3IncomeMonths .v3-income-track").forEach((element,i)=>{
-  const row=report.months[i];if(!row)return;
-  element.children[0].style.width=(100*row.stock/ceiling).toFixed(2)+"%";
-  element.children[1].style.width=(100*row.fiis/ceiling).toFixed(2)+"%";
-  element.children[2].style.width=(100*row.other/ceiling).toFixed(2)+"%";
- });
+
 }
 function render(){
  if(!$("v3Home"))return;
