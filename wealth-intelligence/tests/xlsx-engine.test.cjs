@@ -12,6 +12,7 @@ const d2026=sheet([[1,1,46022],[1,22,46295],[1,23,46310],[3,0,"ABCB4"],[3,22,90]
 const parsed=X.analyze({sheets:{"2024":d2024,"2025":d2025,"2026":d2026}});
 assert.equal(parsed.schema,"wealth-data-engine-v2");
 assert.equal(parsed.sourceMetadata.sourceVerified,true);
+assert.equal(parsed.sourceMetadata.sourcePositionFingerprint,E.positionFingerprint(parsed.positions));
 assert.equal(parsed.sourceMetadata.sourceTotal,1037.5);
 assert.equal(parsed.sourceMetadata.calculatedTotal,1037.5);
 assert.equal(parsed.sourceMetadata.sourceBuckets.length,4);
@@ -49,6 +50,7 @@ assert.ok(parsed.reportedDistributions.some(x=>x.kind==="fii_income_total"&&x.am
 const state=E.normalize({...E.emptyData(),positions:parsed.positions,history:parsed.history,
  dataEngine:{assetHistory:parsed.assetHistory,quality:parsed.quality,sourceMetadata:parsed.sourceMetadata,sourceRates:parsed.sourceRates}});
 assert.ok(state.dataEngine);
+assert.equal(state.dataEngine.sourceMetadata.sourcePositionFingerprint,E.positionFingerprint(state.positions));
 assert.equal(state.dataEngine.assetHistory.length,parsed.assetHistory.length);
 assert.ok(state.dataEngine.quality.length);
 assert.ok(state.history.every(x=>x.flowKnown===false));
