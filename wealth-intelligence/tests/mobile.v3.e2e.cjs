@@ -96,11 +96,20 @@ const {chromium}=require("playwright-core");
  assert.equal(await page.locator("#v3PortfolioCategories .v3-group").count(),7);
  await page.locator(".tabbar [data-go='history']").click();
  assert.ok(await page.locator("#v3HistoryChart svg").isVisible());
- const disconnected=await page.evaluate(()=>{
-  const html=window.WealthV3View.renderChart([{month:"2026-01",value:100,complete:false},{month:"2026-03",value:130,complete:false}],"Interrupted history");
-  return html.match(/<path d="([^"]+)"/)?.[1]||"";
+ const segmentChecks=await page.evaluate(()=>{
+  const render=window.WealthV3View.renderChart;
+  const disconnected=render([{month:"2026-01",value:100,complete:false},{month:"2026-03",value:130,complete:false}],"Interrupted history");
+  const partial=render([{month:"2026-01",value:100,complete:false},{month:"2026-02",value:130,complete:false}],"Partial");
+  const complete=render([{month:"2026-01",value:100,complete:true},{month:"2026-02",value:130,complete:true}],"Complete");
+  const count=html=>(html.match(/<path d=/g)||[]).length;
+  return{gap:count(disconnected),partial:count(partial),dashed:partial.includes('stroke-dasharray="5 5"'),
+   complete:count(complete),solid:!complete.includes("stroke-dasharray")};
  });
- assert.equal((disconnected.match(/M/g)||[]).length,2,"Missing February is not a drawn continuous line");
+ assert.equal(segmentChecks.gap,0,"No visual line across missing February");
+ assert.equal(segmentChecks.partial,1,"Partial data still displays its observed movement");
+ assert.equal(segmentChecks.dashed,true,"Partial observations must be visibly dashed");
+ assert.equal(segmentChecks.complete,1);
+ assert.equal(segmentChecks.solid,true,"Complete observed months use solid line");
  assert.equal(await page.locator("#v3HistoryChart svg text").count(),0,"No overlapping labels inside small mobile SVG");
  assert.equal(await page.locator("#v3HistoryRows .v3-history-row").count(),35);
  await page.locator("[data-v3-annual='1']").click();
