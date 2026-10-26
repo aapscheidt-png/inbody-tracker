@@ -5,6 +5,7 @@ let getState=()=>null,navigate=()=>{},facet="product",selection="",search="",per
 const $=id=>document.getElementById(id),esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const brl=(v)=>Number(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:2,maximumFractionDigits:2});
 const pct=(v)=>Number(v).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:2})+"%";
+const pctVisible=v=>hidden?"•••":pct(v);
 const fmt=v=>hidden?"••••••":brl(v),monthDate=s=>s.slice(5,7)+"/"+s.slice(0,4);
 // Human-readable axes are essential for a financial chart. The horizontal axis
 // uses only observed periods; missing months are never interpolated.
@@ -130,7 +131,7 @@ function renderHome(){
   (metadata.importedAt?" · importado "+esc(new Date(metadata.importedAt).toLocaleDateString("pt-BR")):"")+'</small></details></div>'+
   '<button type="button" data-v3-reimport>Atualizar Excel</button></section>'+
   (mismatch?'<div class="v3-critical" role="alert">Previdência divergente: o Excel informa '+fmt(expectedPension)+', mas esta carteira exibe '+fmt(pension.total)+'. Reimporte e confira os registros.</div>':"")+
-  '<section class="v3-key-figures"><div><span>Previdência</span><strong data-v3-money>'+fmt(pension.total)+'</strong><small>'+pct(all.total?pension.total/all.total*100:0)+' do patrimônio</small><button type="button" class="v3-text-button" data-v3-openpension>Ver histórico</button></div>'+
+  '<section class="v3-key-figures"><div><span>Previdência</span><strong data-v3-money>'+fmt(pension.total)+'</strong><small>'+pctVisible(all.total?pension.total/all.total*100:0)+' do patrimônio</small><button type="button" class="v3-text-button" data-v3-openpension>Ver histórico</button></div>'+
   '<div><span>Demais investimentos</span><strong data-v3-money>'+fmt(all.total-pension.total)+'</strong><small>Inclui ativos com diferentes condições de liquidez</small></div></section>'+
   '<article class="v3-card v3-home-trend"><div class="v3-card-top"><div><span class="v3-eyebrow">PATRIMÔNIO NO TEMPO</span><h3>Evolução mensal</h3></div><button type="button" class="v3-text-button" data-v3-openhistory>Explorar ›</button></div>'+
   '<div class="v3-chart-range">'+(first?'<span>'+esc(monthDate(first.month))+'<strong data-v3-money>'+fmt(first.value)+'</strong></span>':'')+
@@ -139,8 +140,8 @@ function renderHome(){
   '<p class="v3-note">Evolução dos saldos, sem descontar aportes ou retiradas.</p></article>'+
   '<article class="v3-card v3-home-allocation"><div class="v3-card-top"><div><span class="v3-eyebrow">DISTRIBUIÇÃO ATUAL</span><h3>Por produto</h3></div><button type="button" class="v3-text-button" data-v3-openportfolio>Ver carteira ›</button></div>'+
   '<div class="v3-allocation-track" role="img" aria-label="Distribuição do patrimônio por '+all.groups.length+' produtos">'+
-  all.groups.filter(g=>g.amount>0).map(g=>'<span data-v3-color="'+esc(g.color)+'" data-v3-share="'+Math.max(0,g.share).toFixed(5)+'" title="'+esc(g.label+" "+pct(g.share))+'"></span>').join("")+'</div>'+
-  '<div class="v3-allocation-list">'+all.groups.map(g=>'<button type="button" class="v3-allocation-row" data-v3-product="'+esc(g.id)+'"><span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span class="v3-allocation-label">'+esc(g.label)+'</span><strong class="v3-allocation-amount" data-v3-money>'+fmt(g.amount)+'</strong><span class="v3-allocation-share">'+pct(g.share)+'</span><span aria-hidden="true" class="v3-chevron">›</span></button>').join("")+'</div></article>'+
+  all.groups.filter(g=>g.amount>0).map(g=>'<span data-v3-color="'+esc(g.color)+'" data-v3-share="'+Math.max(0,g.share).toFixed(5)+'" title="'+esc(g.label+" "+pctVisible(g.share))+'"></span>').join("")+'</div>'+
+  '<div class="v3-allocation-list">'+all.groups.map(g=>'<button type="button" class="v3-allocation-row" data-v3-product="'+esc(g.id)+'"><span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span class="v3-allocation-label">'+esc(g.label)+'</span><strong class="v3-allocation-amount" data-v3-money>'+fmt(g.amount)+'</strong><span class="v3-allocation-share">'+pctVisible(g.share)+'</span><span aria-hidden="true" class="v3-chevron">›</span></button>').join("")+'</div></article>'+
   '<p class="v3-file-info">'+esc(sourceLine)+'. Valores da última observação por conta, não cotação em tempo real.</p>';
  document.querySelectorAll("#v3Home [data-v3-color]").forEach(x=>x.style.background=x.dataset.v3Color);
  document.querySelectorAll("#v3Home .v3-allocation-track [data-v3-share]").forEach(x=>{x.style.width=x.dataset.v3Share+"%";});
@@ -164,7 +165,7 @@ function renderPortfolio(){
  $("v3PortfolioReset").hidden=!selection&&!search&&facet==="product";
  if(!out.groups.length){$("v3PortfolioCategories").innerHTML='<div class="v3-empty">Nenhum investimento encontrado para os filtros escolhidos.</div>';return;}
  $("v3PortfolioCategories").innerHTML=out.groups.map((g,i)=>'<details class="v3-group" '+((selection||search)?"open":"")+'><summary>'+
- '<span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span class="v3-group-name"><strong>'+esc(g.label)+'</strong><small>'+g.count+' posição(ões) • '+pct(all.total?100*g.amount/all.total:0)+' do total</small></span>'+
+ '<span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span class="v3-group-name"><strong>'+esc(g.label)+'</strong><small>'+g.count+' posição(ões) • '+pctVisible(all.total?100*g.amount/all.total:0)+' do total</small></span>'+
  '<strong class="v3-group-amount" data-v3-money>'+fmt(g.amount)+'</strong><span class="v3-chevron">⌄</span></summary><div class="v3-group-items">'+g.items.map(item=>
  '<button type="button" data-v3-detail="'+esc(item.id)+'" class="v3-item"><span><strong>'+esc(item.name)+'</strong><small>'+esc(item.asOf)+' · '+esc(M.EXPOSURE[item.facets.exposure])+'</small></span><strong data-v3-money>'+fmt(item.amount)+'</strong><span class="v3-chevron">›</span></button>'
  ).join("")+'</div></details>').join("");
