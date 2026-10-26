@@ -109,8 +109,15 @@ function trend(state,options={}){
  }else{
   const rate=historicalRates(state.dataEngine),buckets=new Map();
   const cohort=source.filter(item=>classify(item)[dim]===cat);
-  const expected=new Set(cohort.map(historyKey)).size;
-  const verifiedPension=expected>0&&cohort.every(item=>classify(item).product==="pension");
+  const current=(state.positions||[]).filter(item=>classify(item)[dim]===cat);
+  const samePlan=(a,b)=>String(a.name||"").trim().toUpperCase()===String(b.name||"").trim().toUpperCase()
+    &&String(a.account||"")===String(b.account||"");
+  const expected=Math.max(new Set(cohort.map(historyKey)).size,current.length);
+  // Mark complete only if every current pension plan is represented and each
+  // monthly observation contains every plan; never infer missing plans as zero.
+  const verifiedPension=current.length>0&&cohort.length>0
+    &&current.every(item=>classify(item).product==="pension"&&cohort.some(hist=>samePlan(item,hist)))
+    &&cohort.every(item=>classify(item).product==="pension");
   for(const item of cohort){
    const byMonth=new Map();
    for(const obs of item.observations||[]){
