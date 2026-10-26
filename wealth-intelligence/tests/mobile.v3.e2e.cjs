@@ -38,8 +38,8 @@ const {chromium}=require("playwright-core");
    assetHistory:[
     {id:"santander",name:"Santander Previ",type:"pension",currency:"BRL",account:"Previdência",observations:[{date:"2026-08-01",value:150000},{date:"2026-09-01",value:160000}]},
     {id:"banes",name:"Banesprev",type:"pension",currency:"BRL",account:"Previdência",observations:[{date:"2026-09-01",value:50000}]},
-    {id:"old-fgts",name:"FUNDO ELET FGTS",type:"funds",currency:"BRL",account:"Carteira doméstica",observations:[{date:"2024-11-29",value:8100,source:{sheet:"2024",cell:"AT47"}},{date:"2024-12-31",value:7813.94,source:{sheet:"2024",cell:"AW47"}}]},
-    {id:"new-fgts",name:"FUNDO  FGTS",type:"funds",currency:"BRL",account:"Carteira doméstica",observations:[{date:"2024-12-31",value:7813.94,source:{sheet:"2025",cell:"B55"}},{date:"2025-01-31",value:8282.04,source:{sheet:"2025",cell:"E55"}}]}
+    {id:"old-fgts",name:"FUNDO ELET FGTS",type:"funds",currency:"BRL",account:"Carteira doméstica",observations:[{date:"2024-11-29",value:8100,source:{sheet:"2024",cell:"AT47"}},{date:"2024-12-31",value:7800.50,source:{sheet:"2024",cell:"AW47"}}]},
+    {id:"new-fgts",name:"FUNDO  FGTS",type:"funds",currency:"BRL",account:"Carteira doméstica",observations:[{date:"2024-12-31",value:7800.50,source:{sheet:"2025",cell:"B55"}},{date:"2025-01-31",value:8299.25,source:{sheet:"2025",cell:"E55"}}]}
    ],
    reportedDistributions:[{date:"2026-01-01",kind:"stock_dividends_total",amount:360,source:"2026!C76"},{date:"2026-02-01",kind:"fii_income_total",amount:100,source:"2026!D79"}],
    reportedContributions:[],quality:[]}
