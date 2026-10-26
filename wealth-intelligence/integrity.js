@@ -16,8 +16,14 @@ function check(state){
    return Math.abs(expected-sum)<=0.03 && Math.abs((b.importedValue??expected)-sum)<=0.03;
  });
  const allBuckets=verified&&Math.abs(buckets.reduce((s,b)=>s+b.excelValue,0)-total)<=0.03;
+ // Older backups without the new position-level checksum remain importable, but
+ // cannot claim full verification until the original Excel is imported again.
+ if(verified&&!m.sourcePositionFingerprint)
+  return{status:"unverified",total,message:"Subtotais presentes, mas falta a conferência individual das posições. Reimporte o Excel original."};
+ const individual=typeof m.sourcePositionFingerprint==="string"&&m.sourcePositionFingerprint===
+  global.WealthEngine.positionFingerprint(state.positions);
  const original=Number.isFinite(m.sourceTotal)&&Math.abs(m.sourceTotal-total)<=0.03&&Number.isFinite(m.calculatedTotal)&&Math.abs(m.calculatedTotal-total)<=0.03;
- if(!allBuckets||!original)return{status:"modified",total,expected:Number(m.sourceTotal)||null,message:"Posições ou valores diferentes daqueles conferidos no Excel original."};
+ if(!allBuckets||!original||!individual)return{status:"modified",total,expected:Number(m.sourceTotal)||null,message:"Posições ou valores diferentes daqueles conferidos no Excel original."};
  return{status:"verified",total,expected:Number(m.sourceTotal),message:"Quatro subtotais reconciliados com o Excel da base."};
 }
 global.WealthIntegrity={check};
