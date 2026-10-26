@@ -95,4 +95,21 @@ const pensionYear=V.trend(state,{category:"pension",annual:true});
 assert.equal(pensionYear.length,1);
 assert.equal(pensionYear[0].monthsObserved,12);
 assert.equal(pensionYear[0].yearComplete,false,"Twelve months of one pension plan do not prove full category coverage");
+
+const pensionMonths=Array.from({length:35},(_,i)=>{
+ const d=new Date(Date.UTC(2023,10+i+1,0)).toISOString().slice(0,10);
+ return {date:d,value:400000+i*8600,source:{sheet:i<14?"2024":i<26?"2025":"2026",cell:"B113"}};
+});
+state.dataEngine.assetHistory=[
+ {name:"Santander Previ",type:"pension",account:"Previdência",currency:"BRL",observations:pensionMonths},
+ {name:"Banesprev",type:"pension",account:"Previdência",currency:"BRL",observations:pensionMonths.map(o=>({...o,value:90000+Number(o.date.slice(0,4))*50}))}
+];
+const pension35=V.trend(state,{category:"pension"});
+assert.equal(pension35.length,35);
+assert.ok(pension35.every(row=>row.complete),"Both pension plans have all 35 months");
+assert.ok(pension35.every(row=>row.samples===2&&row.expected===2));
+assert.deepEqual(V.trend(state,{category:"pension",annual:true}).map(row=>row.yearComplete),[false,true,true,false]);
+assert.ok(V.historyFacets(state,"product").some(row=>row.id==="pension"));
+state.dataEngine.assetHistory.push({name:"CDB Antigo",type:"fixed_income",account:"Carteira doméstica",currency:"BRL",observations:[{date:"2024-01-31",value:8000}]});
+assert.ok(V.historyFacets(state,"product").some(row=>row.id==="fixed_income"),"Past exited investments are still filterable");
 console.log("Wealth V3 product facets, filters and truthful history passed.");
