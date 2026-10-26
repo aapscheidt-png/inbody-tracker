@@ -148,6 +148,7 @@ function renderHistory(){
  const deltaLabel=$("v3History").querySelector(".v3-historical-metrics>div:last-child>span");
  if(deltaLabel)deltaLabel.textContent=historySelection&&allObserved?"Variação dos saldos observados":"Variação do saldo";
  const hasPartial=values.some(x=>x.yearComplete!==undefined?!x.yearComplete:!x.complete);
+ $("v3HistoryShort").textContent=hasPartial?"Cobertura parcial · entenda a série":"Como interpretar a série";
  $("v3HistoryDescription").textContent=(historySelection?
   (allObserved?
     "Dois planos de previdência identificados em todas as competências exibidas. Variação dos saldos não significa rentabilidade e pode incluir contribuições.":
