@@ -106,6 +106,9 @@ const {chromium}=require("playwright-core");
  assert.equal(await page.locator("#v3PortfolioCategories .v3-group").count(),7);
  await page.locator(".tabbar [data-go='history']").click();
  assert.ok(await page.locator("#v3HistoryChart svg").isVisible());
+ await page.locator("#v3HistoryChart [data-v3-chartpoint]").last().click();
+ assert.ok(await page.locator("#v3HistoryChart .v3-chart-picked").isVisible(),"Tap a monthly balance to show its date and amount");
+ assert.ok((await page.locator("#v3HistoryChart .v3-chart-picked").textContent()).includes("09/2026"));
  const segmentChecks=await page.evaluate(()=>{
   const render=window.WealthV3View.renderChart;
   const disconnected=render([{month:"2026-01",value:100,complete:false},{month:"2026-03",value:130,complete:false}],"Interrupted history");
@@ -149,6 +152,7 @@ const {chromium}=require("playwright-core");
  assert.equal(await page.locator("#v3HistoryRows .v3-history-row").count(),2);
  await page.locator("#v3HistoryDimension").selectOption("product");
  await page.locator("#v3HistoryCategory").selectOption("pension");
+ await page.evaluate(()=>scrollTo(0,0));
  await page.screenshot({path:"artifacts/v3-04-history.png",fullPage:false});
  // Stale or edited wallet must never keep the source-verified banner.
  await page.evaluate(()=>{
@@ -167,6 +171,8 @@ const {chromium}=require("playwright-core");
  await page.waitForFunction(()=>document.querySelector(".v3-integrity")?.textContent.includes("Subtotais conferidos"));
  await page.locator(".tabbar [data-go='income']").click();
  assert.ok((await page.locator("#v3IncomeTotal").textContent()).includes("460,00"));
+ await page.waitForFunction(()=>!document.querySelector("#toast")?.classList.contains("show"),null,{timeout:6000});
+ await page.evaluate(()=>scrollTo(0,0));
  await page.screenshot({path:"artifacts/v3-05-proventos.png",fullPage:false});
  await page.locator("[data-v3-private]").click();
  assert.ok((await page.locator("#v3IncomeTotal").textContent()).includes("•••"));
