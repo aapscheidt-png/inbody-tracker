@@ -23,6 +23,14 @@ Este conjunto de mudanças **não foi publicado no GitHub Pages**. A versão ant
 - A carteira permanece em localStorage e a importação pelo Excel/JSON exige ação do usuário. A V3 não sincroniza os saldos do iPhone automaticamente.
 - A verificação V3 compara cada posição da importação Excel por uma impressão de consistência armazenada apenas no próprio dispositivo. Isso detecta alterações compensatórias que não modificariam os quatro subtotais; não é assinatura criptográfica nem substitui os extratos originais. Backups antigos sem essa impressão continuam importáveis, mas aparecem como não verificados até nova carga do Excel.
 
+### Revisão visual V3.1 em pesquisa
+- Resumo com patrimônio primeiro, integridade compacta e expansão contextual, previdência e demais ativos separados, evolução antes da lista de alocação por produto. Barra horizontal substitui a rosca; sete categorias mostram valor e peso e permitem acesso direto à Carteira.
+- Carteira por categorias recolhidas, busca imediata e filtros progressivos. Alterar critérios não modifica dados, só reorganiza e recalcula os subtotais visíveis.
+- Histórico com período e modalidade próximos do gráfico, filtros lado a lado e justificativas financeiras sob expansão opcional. Pontos mensais podem ser tocados para mostrar competência, saldo e cobertura.
+- Barra inferior respeita o safe-area do iPhone. Testes visuais rodam em viewport 393 × 852, sem representar validação manual do Safari.
+- Mantida a política CSP estrita: gráficos usam propriedades de estilo DOM para áreas proporcionais, nunca estilos inline em HTML dinâmico.
+- Status: pesquisa isolada no PR #9; ainda requer validação visual no dispositivo e importação local do Excel antes de qualquer merge ou publicação.
+
 ## V2.4 · Integridade do backup e recuperação no iPhone
 
 - **Nunca apresentar valores fictícios por acidente:** quando o armazenamento local estiver ilegível, o aplicativo inicia sem carteira e exibe alerta explícito, em vez de apresentar o modo demonstração como se fosse patrimônio real.
