@@ -88,13 +88,13 @@ assert.equal(pension[0].complete,false);
 // Verified spreadsheet rollover: identical FGTS-fund balance on 2024-12-31 in both year sheets.
 state.dataEngine.assetHistory=[
  {id:"old-fgts",name:"FUNDO ELET FGTS",type:"funds",account:"Carteira doméstica",currency:"BRL",
-  observations:[{date:"2024-11-29",value:8112.83,source:{sheet:"2024",cell:"AT47"}},{date:"2024-12-31",value:7813.94,source:{sheet:"2024",cell:"AW47"}}]},
+  observations:[{date:"2024-11-29",value:8111.11,source:{sheet:"2024",cell:"AT47"}},{date:"2024-12-31",value:7800.50,source:{sheet:"2024",cell:"AW47"}}]},
  {id:"new-fgts",name:"FUNDO  FGTS",type:"funds",account:"Carteira doméstica",currency:"BRL",
-  observations:[{date:"2024-12-31",value:7813.94,source:{sheet:"2025",cell:"B55"}},{date:"2025-01-31",value:8282.04,source:{sheet:"2025",cell:"E55"}}]}
+  observations:[{date:"2024-12-31",value:7800.50,source:{sheet:"2025",cell:"B55"}},{date:"2025-01-31",value:8299.25,source:{sheet:"2025",cell:"E55"}}]}
 ];
 const roll=V.trend(state,{dimension:"product",category:"fund"});
 assert.deepEqual(roll.map(x=>x.month),["2024-11","2024-12","2025-01"]);
-assert.deepEqual(roll.map(x=>x.value),[8112.83,7813.94,8282.04]);
+assert.deepEqual(roll.map(x=>x.value),[8111.11,7800.50,8299.25]);
 assert.equal(roll[1].samples,1,"Old and new fund names are a single holding at rollover");
 const stitched=V.historyForAsset(state.dataEngine,positions[9]);
 assert.equal(stitched.length,3,"Merge fund history across year sheets, deduplicating identical December");
