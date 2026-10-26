@@ -1,7 +1,7 @@
 (function(root){
 "use strict";
 const M=root.WealthV3Model,L=root.WealthLedger,G=root.WealthIntegrity;
-let getState=()=>null,navigate=()=>{},facet="product",selection="",search="",period=0,annual=false,historySelection="",historyDimension="product",incomeYear="2026",hidden=false;
+let getState=()=>null,navigate=()=>{},facet="product",selection="",search="",period=0,annual=false,historySelection="",historyDimension="product",incomeYear="2026",hidden=false,filterOpen=false;
 const $=id=>document.getElementById(id),esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const brl=(v)=>Number(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:2,maximumFractionDigits:2});
 const pct=(v)=>Number(v).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:2})+"%";
@@ -78,26 +78,30 @@ function renderHome(){
  }[integrity.status]||{title:"Conferência indisponível",detail:"Confira o arquivo original.",style:"danger"};
  const expectedPension=data.dataEngine?.sourceMetadata?.sourceBuckets?.find(x=>x.key==="pension")?.excelValue;
  const mismatch=Number.isFinite(expectedPension)&&Math.abs(expectedPension-pension.total)>.02;
+
+ const recent=M.trend(data,{months:12}),first=recent[0],last=recent.at(-1);
+ const sourceLine=(metadata.filename||"Cadastro manual")+" · último fechamento "+(metadata.latestFullMonth||"não informado")+
+  (metadata.partial?" · posição recente com competências diferentes":"");
  $("v3Home").innerHTML=
- '<section class="v3-integrity v3-'+status.style+'" role="status"><div><span class="v3-integrity-title">'+esc(status.title)+'</span><p>'+esc(status.detail)+'</p><small>'+esc(metadata.filename||"Nenhum arquivo Excel identificado")+
- (metadata.importedAt?" · carregado "+esc(new Date(metadata.importedAt).toLocaleDateString("pt-BR")):"")+'</small></div><button type="button" data-v3-reimport>Importar Excel</button></section>'+
- (mismatch?'<div class="v3-critical" role="alert">Previdência divergente: o último Excel informa '+fmt(expectedPension)+', mas esta carteira está exibindo '+fmt(pension.total)+'. Reimporte o arquivo e confira os dados antes de usar o saldo.</div>':"")+
- '<section class="v3-key-figures"><div><span>Previdência</span><strong data-v3-money>'+fmt(pension.total)+'</strong><small>'+pct(all.total?pension.total/all.total*100:0)+' do patrimônio</small><button type="button" class="v3-text-button" data-v3-openpension>Ver evolução mensal</button></div>'+
- '<div><span>Demais investimentos</span><strong data-v3-money>'+fmt(all.total-pension.total)+'</strong><small>Não significa valor disponível para saque</small></div></section>'+
- '<article class="v3-card"><div class="v3-card-top"><div><span class="v3-eyebrow">DISTRIBUIÇÃO</span><h3>Por produto</h3></div><button type="button" class="v3-text-button" data-v3-openportfolio>Ver carteira</button></div>'+
- '<div class="v3-donut-layout"><div id="v3Donut" class="v3-donut"><div class="v3-hole">'+all.groups.length+'<small>categorias</small></div></div><div class="v3-donut-list">'+
- all.groups.map(g=>'<button type="button" class="v3-donut-row" data-v3-product="'+esc(g.id)+'"><span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span>'+esc(g.label)+'</span><strong>'+pct(g.share)+'</strong></button>').join("")+'</div></div>'+
- '<p class="v3-note">Valores da última observação de cada conta. Competências diferentes podem coexistir.</p></article>'+
- '<article class="v3-card"><div class="v3-card-top"><div><span class="v3-eyebrow">EVOLUÇÃO DO PATRIMÔNIO</span><h3>Histórico mensal</h3></div><button type="button" class="v3-text-button" data-v3-openhistory>Ver evolução</button></div>'+
- '<div class="v3-chart-range">'+(M.trend(data,{months:12})[0]?'<span>'+esc(monthDate(M.trend(data,{months:12})[0].month))+'<strong data-v3-money>'+fmt(M.trend(data,{months:12})[0].value)+'</strong></span>':'')+
- (M.trend(data,{months:12}).at(-1)?'<span>'+esc(monthDate(M.trend(data,{months:12}).at(-1).month))+'<strong data-v3-money>'+fmt(M.trend(data,{months:12}).at(-1).value)+'</strong></span>':'')+'</div>'+
- chart(M.trend(data,{months:12}),"Últimos 12 meses do patrimônio")+
- '<p class="v3-note">Variação do patrimônio registrado, não retorno financeiro ajustado por aportes.</p></article>'+
- '<p class="v3-file-info">Fonte: '+esc(data.dataEngine?.sourceMetadata?.filename||"Cadastro manual")+
- ' · último fechamento: '+esc(data.dataEngine?.sourceMetadata?.latestFullMonth||"não informado")+
- (data.dataEngine?.sourceMetadata?.partial?' · saldo mais recente provisório ('+esc(monthDate(data.dataEngine.sourceMetadata.latestDate.slice(0,7)))+') não incluído na linha de fechamentos':'')+'</p>';
- $("v3Donut").style.background=M.makeDonut(all.groups,all.total);
+  '<section class="v3-integrity v3-'+status.style+'" role="status"><div class="v3-integrity-main"><span class="v3-integrity-title">'+esc(status.title)+'</span>'+
+  '<details class="v3-integrity-info"><summary>Detalhes da conferência</summary><p>'+esc(status.detail)+'</p><small>'+esc(metadata.filename||"Nenhum Excel identificado")+
+  (metadata.importedAt?" · importado "+esc(new Date(metadata.importedAt).toLocaleDateString("pt-BR")):"")+'</small></details></div>'+
+  '<button type="button" data-v3-reimport>Atualizar Excel</button></section>'+
+  (mismatch?'<div class="v3-critical" role="alert">Previdência divergente: o Excel informa '+fmt(expectedPension)+', mas esta carteira exibe '+fmt(pension.total)+'. Reimporte e confira os registros.</div>':"")+
+  '<section class="v3-key-figures"><div><span>Previdência</span><strong data-v3-money>'+fmt(pension.total)+'</strong><small>'+pct(all.total?pension.total/all.total*100:0)+' do patrimônio</small><button type="button" class="v3-text-button" data-v3-openpension>Ver histórico</button></div>'+
+  '<div><span>Demais investimentos</span><strong data-v3-money>'+fmt(all.total-pension.total)+'</strong><small>Inclui ativos com diferentes condições de liquidez</small></div></section>'+
+  '<article class="v3-card v3-home-trend"><div class="v3-card-top"><div><span class="v3-eyebrow">PATRIMÔNIO NO TEMPO</span><h3>Evolução mensal</h3></div><button type="button" class="v3-text-button" data-v3-openhistory>Explorar ›</button></div>'+
+  '<div class="v3-chart-range">'+(first?'<span>'+esc(monthDate(first.month))+'<strong data-v3-money>'+fmt(first.value)+'</strong></span>':'')+
+  (last?'<span>'+esc(monthDate(last.month))+'<strong data-v3-money>'+fmt(last.value)+'</strong></span>':'')+'</div>'+
+  chart(recent,"Últimos 12 meses completos do patrimônio")+
+  '<p class="v3-note">Evolução dos saldos, sem descontar aportes ou retiradas.</p></article>'+
+  '<article class="v3-card v3-home-allocation"><div class="v3-card-top"><div><span class="v3-eyebrow">DISTRIBUIÇÃO ATUAL</span><h3>Por produto</h3></div><button type="button" class="v3-text-button" data-v3-openportfolio>Ver carteira ›</button></div>'+
+  '<div class="v3-allocation-track" role="img" aria-label="Distribuição do patrimônio por '+all.groups.length+' produtos">'+
+  all.groups.filter(g=>g.amount>0).map(g=>'<span data-v3-color="'+esc(g.color)+'" style="width:'+Math.max(0,g.share).toFixed(5)+'%" title="'+esc(g.label+" "+pct(g.share))+'"></span>').join("")+'</div>'+
+  '<div class="v3-allocation-list">'+all.groups.map(g=>'<button type="button" class="v3-allocation-row" data-v3-product="'+esc(g.id)+'"><span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span class="v3-allocation-label">'+esc(g.label)+'</span><strong class="v3-allocation-amount" data-v3-money>'+fmt(g.amount)+'</strong><span class="v3-allocation-share">'+pct(g.share)+'</span><span aria-hidden="true" class="v3-chevron">›</span></button>').join("")+'</div></article>'+
+  '<p class="v3-file-info">'+esc(sourceLine)+'. Valores da última observação por conta, não cotação em tempo real.</p>';
  document.querySelectorAll("#v3Home [data-v3-color]").forEach(x=>x.style.background=x.dataset.v3Color);
+
  $("v3PrivacyToggle").textContent=hidden?"Mostrar valores":"Ocultar valores";
  $("v3PrivacyToggle").setAttribute("aria-pressed",String(hidden));
 }
@@ -105,12 +109,18 @@ function renderPortfolio(){
  const data=getState(),all=M.group(data),possible=M.group(data,facet,"",search),out=M.group(data,facet,selection,search);
  const choices=possible.groups.map(g=>({id:g.id,label:g.label}));
  $("v3PortfolioTabs").innerHTML=navChoices();
+ $("v3PortfolioFilterArea").hidden=!filterOpen;
+ $("v3ToggleFilters").setAttribute("aria-expanded",String(filterOpen));
+ $("v3ToggleFilters").classList.toggle("chosen",filterOpen);
+ const activeFilters=(facet!=="product"?1:0)+(selection?1:0);
+ $("v3FilterBadge").hidden=activeFilters===0;
+ $("v3FilterBadge").textContent=activeFilters;
  $("v3PortfolioCategory").innerHTML=optionsWithLabels(choices,selection);
  $("v3PortfolioTotal").textContent=fmt(out.total);
- $("v3PortfolioCount").textContent=out.count+" investimentos • "+out.groups.length+" grupos";
+ $("v3PortfolioCount").textContent=out.count+" posições · "+out.groups.length+" categorias";
  $("v3PortfolioReset").hidden=!selection&&!search&&facet==="product";
  if(!out.groups.length){$("v3PortfolioCategories").innerHTML='<div class="v3-empty">Nenhum investimento encontrado para os filtros escolhidos.</div>';return;}
- $("v3PortfolioCategories").innerHTML=out.groups.map((g,i)=>'<details class="v3-group" '+((selection||search||i===0)?"open":"")+'><summary>'+
+ $("v3PortfolioCategories").innerHTML=out.groups.map((g,i)=>'<details class="v3-group" '+((selection||search)?"open":"")+'><summary>'+
  '<span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span class="v3-group-name"><strong>'+esc(g.label)+'</strong><small>'+g.count+' posição(ões) • '+pct(all.total?100*g.amount/all.total:0)+' do total</small></span>'+
  '<strong class="v3-group-amount" data-v3-money>'+fmt(g.amount)+'</strong><span class="v3-chevron">⌄</span></summary><div class="v3-group-items">'+g.items.map(item=>
  '<button type="button" data-v3-detail="'+esc(item.id)+'" class="v3-item"><span><strong>'+esc(item.name)+'</strong><small>'+esc(item.asOf)+' · '+esc(M.EXPOSURE[item.facets.exposure])+'</small></span><strong data-v3-money>'+fmt(item.amount)+'</strong><span class="v3-chevron">›</span></button>'
@@ -169,14 +179,15 @@ function render(){
 function mount(options){
  getState=options.getState;navigate=options.navigate;
  document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-v3-facet],[data-v3-detail],[data-v3-product],[data-v3-months],[data-v3-annual],[data-v3-reset],[data-v3-private],[data-v3-openportfolio],[data-v3-openhistory],[data-v3-reimport],[data-v3-openpension]");
+  const t=e.target.closest("[data-v3-togglefilters],[data-v3-facet],[data-v3-detail],[data-v3-product],[data-v3-months],[data-v3-annual],[data-v3-reset],[data-v3-private],[data-v3-openportfolio],[data-v3-openhistory],[data-v3-reimport],[data-v3-openpension]");
   if(!t)return;
-  if(t.hasAttribute("data-v3-facet")){facet=t.dataset.v3Facet;selection="";renderPortfolio();}
+  if(t.hasAttribute("data-v3-togglefilters")){filterOpen=!filterOpen;renderPortfolio();}
+  else if(t.hasAttribute("data-v3-facet")){facet=t.dataset.v3Facet;selection="";renderPortfolio();}
   else if(t.hasAttribute("data-v3-detail"))showDetail(t.dataset.v3Detail);
-  else if(t.hasAttribute("data-v3-product")){facet="product";selection=t.dataset.v3Product;renderPortfolio();navigate("portfolio");}
+  else if(t.hasAttribute("data-v3-product")){facet="product";selection=t.dataset.v3Product;filterOpen=true;renderPortfolio();navigate("portfolio");}
   else if(t.hasAttribute("data-v3-months")){period=Number(t.dataset.v3Months);renderHistory();}
   else if(t.hasAttribute("data-v3-annual")){annual=t.dataset.v3Annual==="1";renderHistory();}
-  else if(t.hasAttribute("data-v3-reset")){facet="product";selection="";search="";$("v3PortfolioSearch").value="";renderPortfolio();}
+  else if(t.hasAttribute("data-v3-reset")){facet="product";selection="";search="";filterOpen=false;$("v3PortfolioSearch").value="";renderPortfolio();}
   else if(t.hasAttribute("data-v3-private")){hidden=!hidden;document.body.classList.toggle("v3-private",hidden);render();}
   else if(t.hasAttribute("data-v3-openportfolio"))navigate("portfolio");
   else if(t.hasAttribute("data-v3-openhistory"))navigate("history");
