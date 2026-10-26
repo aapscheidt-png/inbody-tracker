@@ -98,7 +98,7 @@ function historicalRates(data){
  return map;
 }
 function monthNumber(month){
- const match=/^(\\d{4})-(\\d{2})$/.exec(String(month||""));
+ const match=/^(\d{4})-(\d{2})$/.exec(String(month||""));
  if(!match)return null;
  const m=Number(match[2]);
  return m>=1&&m<=12?Number(match[1])*12+m:null;
