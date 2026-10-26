@@ -1,8 +1,9 @@
 "use strict";
 const assert=require("node:assert/strict");
-const {chromium}=require("playwright-core");
+const {chromium,webkit}=require("playwright-core");
 (async()=>{
- const errors=[],browser=await chromium.launch({channel:"chrome",headless:true,args:["--no-sandbox","--disable-dev-shm-usage"]});
+ const browserType=process.env.WEALTH_BROWSER==="webkit"?webkit:chromium;
+ const errors=[],browser=await browserType.launch(browserType===chromium?{channel:"chrome",headless:true,args:["--no-sandbox","--disable-dev-shm-usage"]}:{headless:true});
  try{
  const context=await browser.newContext({viewport:{width:393,height:852},deviceScaleFactor:3,isMobile:true,hasTouch:true,locale:"pt-BR",acceptDownloads:true});
  const page=await context.newPage();
@@ -229,7 +230,24 @@ const {chromium}=require("playwright-core");
  await page.screenshot({path:"artifacts/v3-06-pension-history-35-months.png",fullPage:false});
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
  assert.ok(overflow<=3,"Unexpected horizontal page overflow: "+overflow);
+ // Simulate common iPhone narrow/standard/large CSS viewports on the same private wallet.
+ for(const width of [320,375,393,430]){
+  await page.setViewportSize({width,height:852});
+  for(const pageName of ["home","portfolio","history","income"]){
+   await page.locator(".tabbar [data-go='"+pageName+"']").click();
+   const measures=await page.evaluate(()=>{
+    const w=document.documentElement.clientWidth,full=document.documentElement.scrollWidth;
+    const tab=document.querySelector(".tabbar")?.getBoundingClientRect();
+    const chart=document.querySelector(".page.active .v3-chart-area svg")?.getBoundingClientRect();
+    return{w,full,tabLeft:tab?.left,tabRight:tab?.right,chartLeft:chart?.left,chartRight:chart?.right};
+   });
+   assert.ok(measures.full-measures.w<=3,"Horizontal overflow at "+width+"px on "+pageName+": "+JSON.stringify(measures));
+   assert.ok(measures.tabLeft>=-2&&measures.tabRight<=width+2,"Navigation fits viewport "+width+"px on "+pageName);
+   if(measures.chartLeft!==undefined)assert.ok(measures.chartLeft>=-2&&measures.chartRight<=width+2,"Chart fits viewport "+width+"px on "+pageName);
+  }
+ }
+ await page.setViewportSize({width:393,height:852});
  assert.deepEqual(errors,[],"No browser or CSP errors in V3 mobile flow");
- console.log("V3 mobile product facets, pension, history, privacy, income and screenshots: PASS");
+ console.log("V3 mobile product facets, pension, history, privacy, income and screenshots on "+browserType.name()+": PASS");
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});
