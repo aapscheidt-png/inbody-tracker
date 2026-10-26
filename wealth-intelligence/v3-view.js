@@ -80,7 +80,7 @@ function chart(series,title,currency="BRL"){
   '<div class="v3-chart-meta"><span>Saldo ('+(currency==="USD"?"US$":"R$")+')</span><span>'+cadence+' · '+(annual?"ano de referência":"competência (mês/ano)")+'</span></div>'+
   '<svg viewBox="0 0 '+w+' '+h+'" role="group" aria-label="'+esc(title+' · '+cadence+' · escala monetária em '+currency)+'">'+
   yTicks+xTicks+fragments+dots+'</svg>'+
-  '<div class="v3-chart-legend"><span><i class="v3-legend-line"></i> Saldos '+(annual?"anuais":"mensais")+'</span>'+partialLegend+'</div>'+
+  '<div class="v3-chart-legend"><span><i class="v3-legend-line"></i> Saldos '+(annual?"de referência anual":"mensais")+'</span>'+partialLegend+'</div>'+
   '<p class="v3-chart-picked" role="status" hidden></p></div>';
 }
 function optionsWithLabels(groups,chosen,all="Todas as categorias"){
@@ -175,11 +175,13 @@ function renderHistory(){
  const values=M.trend(data,{dimension:historyDimension,category:historySelection,months:period,annual});
  const cohort=historySelection?M.group(data,historyDimension,historySelection).count:0;
  const groups=M.historyFacets(data,historyDimension);
+ const subject=historySelection?M.label(historyDimension,historySelection):"Patrimônio total";
+ $("v3History").querySelector(".v3-card-top h3").textContent="Saldos · "+subject;
  $("v3HistoryDimension").value=historyDimension;
  $("v3HistoryCategory").innerHTML=optionsWithLabels(groups,historySelection,"Todo o patrimônio");
  $("v3HistoryYears").innerHTML=['Tudo','12 meses','6 meses','3 meses'].map((label,i)=>'<button type="button" data-v3-months="'+[0,12,6,3][i]+'" class="'+(period===[0,12,6,3][i]?"chosen":"")+'">'+label+'</button>').join("");
  $("v3HistoricalMode").innerHTML=['Mensal','Anual'].map((label,i)=>'<button type="button" data-v3-annual="'+i+'" class="'+(annual===!!i?"chosen":"")+'">'+label+'</button>').join("");
- $("v3HistoryChart").innerHTML=chart(values,"Evolução patrimonial baseada nos registros do Excel");
+ $("v3HistoryChart").innerHTML=chart(values,subject+" · evolução "+(annual?"anual":"mensal")+" dos saldos observados");
  const first=values[0],last=values.at(-1);
  const metricCaptions=$("v3History").querySelectorAll(".v3-historical-metrics span");
  if(metricCaptions.length>=2){metricCaptions[0].textContent=first?"Início · "+monthDate(first.month):"Início";metricCaptions[1].textContent=last?"Final · "+monthDate(last.month):"Final";}
