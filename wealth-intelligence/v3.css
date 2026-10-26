@@ -384,3 +384,8 @@
  .v3-ready .v3-income-ticks>span{font-size:9px}
  .v3-ready .v3-chart-meta{font-size:9px}
 }
+
+/* Privacy is an entire portfolio view, not only a number formatting toggle. */
+.v3-ready.v3-private .v3-allocation-track,
+.v3-ready.v3-private .v3-income-track{filter:blur(7px)}
+.v3-ready.v3-private .v3-allocation-track span{pointer-events:none}
