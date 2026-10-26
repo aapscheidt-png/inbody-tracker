@@ -141,7 +141,7 @@ function renderReconciliation(p){
  panel.hidden=!has;
  if(!has){text("heroEyebrow","PATRIMÔNIO CONSOLIDADO");text("heroGainCaption","resultado não realizado sobre custo atual");text("heroCostLabel","CAPITAL ALOCADO*");return;}
  const reported=meta.dashboardTotal,calculated=p.total,difference=reported===null?null:reported-calculated;
- text("heroEyebrow","SOMA DOS SALDOS DISPONÍVEIS · PROVISÓRIO");
+ text("heroEyebrow","PATRIMÔNIO REGISTRADO · PROVISÓRIO");
  text("heroGainCaption","Diferença entre origens e competências dos saldos");
  text("heroCostLabel","CUSTO DE AQUISIÇÃO");
  text("heroTotal",money(calculated,2));
