@@ -98,10 +98,45 @@ jobs:
           path: wealth-intelligence/artifacts/*.png
           if-no-files-found: ignore
 
+  safari-webkit-e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: wealth-intelligence
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install WebKit browser engine
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps webkit
+      - name: Mobile WebKit journey (Safari-compatible engine)
+        env:
+          WEALTH_BROWSER: webkit
+        run: |
+          mkdir -p artifacts
+          node server.js &
+          echo $! > /tmp/wealth-webkit-server.pid
+          trap 'kill $(cat /tmp/wealth-webkit-server.pid) || true' EXIT
+          for i in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:3000/health > /dev/null; then break; fi
+            sleep 1
+          done
+          node tests/mobile.v3.e2e.cjs
+      - name: Preserve WebKit mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wealth-webkit-e2e
+          path: wealth-intelligence/artifacts/*.png
+          if-no-files-found: ignore
+
   published-site:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    needs: [unit, mobile-e2e]
+    needs: [unit, mobile-e2e, safari-webkit-e2e]
     steps:
       - name: Check Wealth public GitHub Pages route
         run: |
