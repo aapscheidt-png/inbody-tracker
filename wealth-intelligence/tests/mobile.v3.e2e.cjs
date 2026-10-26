@@ -44,6 +44,7 @@ const {chromium}=require("playwright-core");
    reportedDistributions:[{date:"2026-01-01",kind:"stock_dividends_total",amount:360,source:"2026!C76"},{date:"2026-02-01",kind:"fii_income_total",amount:100,source:"2026!D79"}],
    reportedContributions:[],quality:[]}
  };
+ synthetic.dataEngine.sourceMetadata.sourcePositionFingerprint=await page.evaluate(items=>window.WealthEngine.positionFingerprint(items),positions);
  await page.locator("#openSettings").click();
  page.once("dialog",d=>d.accept());
  await page.locator("#importBackup").setInputFiles({name:"synthetic-wallet.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(synthetic))});
