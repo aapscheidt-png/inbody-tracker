@@ -346,3 +346,41 @@
 .v3-ready .v3-history-context summary:after{content:"  ⌄";color:#8db7ad}
 .v3-ready .v3-history-context[open] summary:after{content:"  ⌃"}
 .v3-ready .v3-history-context p{padding-top:4px;font-size:11px;line-height:1.55}
+
+
+/* V3.2 | Auditable visual encodings: labeled money axis, real calendar axis. */
+.v3-ready .v3-chart-area{min-width:0;margin:8px 0 1px}
+.v3-ready .v3-chart-area svg{width:100%;height:auto;max-height:none;min-height:0;display:block;overflow:visible}
+.v3-ready .v3-chart-area svg text{stroke:none!important;font-family:inherit;font-weight:620}
+.v3-ready .v3-chart-area svg [data-v3-x-label]{font-size:12px;letter-spacing:0}
+.v3-ready .v3-chart-area svg [data-v3-y-label]{font-size:12px;letter-spacing:-.015em}
+.v3-ready .v3-chart-area svg [data-v3-chartpoint]{touch-action:manipulation}
+.v3-ready .v3-chart-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#a3bec7;font-size:10px;font-weight:610;margin:0 2px 1px}
+.v3-ready .v3-chart-meta span:last-child{text-align:right}
+.v3-ready .v3-chart-legend{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:8px 17px;margin:3px 2px 2px;color:#aec3cb;font-size:10px}
+.v3-ready .v3-chart-legend span{display:flex;align-items:center;gap:6px}
+.v3-ready .v3-legend-line{width:21px;height:0;border-top:2.5px solid #8ae8cf;display:inline-block}
+.v3-ready .v3-legend-dash{width:21px;height:0;border-top:2.5px dashed #c8a66c;display:inline-block}
+.v3-ready .v3-chart-picked{font-size:11px;line-height:1.4;margin:9px 1px 1px}
+.v3-ready .v3-income-chart-intro{display:flex;justify-content:space-between;align-items:center;gap:9px;margin:12px 0 9px;color:#a8c4cd;font-size:11px;font-weight:660}
+.v3-ready .v3-income-chart-intro>span:last-child{white-space:nowrap;color:#91adb8;font-size:10px}
+.v3-ready .v3-income-axis{display:grid;grid-template-columns:50px minmax(0,1fr) 105px;gap:7px;align-items:end;margin:0 0 4px}
+.v3-ready .v3-income-ticks{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #365263;gap:2px;padding:0 0 6px;min-width:0}
+.v3-ready .v3-income-ticks>span{font-size:10px;line-height:1.2;white-space:nowrap;color:#b0c7cc;font-variant-numeric:tabular-nums}
+.v3-ready .v3-income-ticks>span:last-child{text-align:right}
+.v3-ready .v3-income-track{height:11px;min-width:0;display:flex;overflow:hidden;background:#263b48}
+.v3-ready .v3-income-track i{height:100%;background:#63b5cb}
+.v3-ready .v3-income-track b{height:100%;background:#d0a65f}
+.v3-ready .v3-income-track em{height:100%;background:#bc99d5}
+.v3-ready .v3-income-legend{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0 6px;font-size:11px;color:#bfced6}
+.v3-ready .v3-income-legend span{display:inline-flex;align-items:center;gap:6px}
+.v3-ready .v3-income-key{display:inline-block;width:11px;height:11px;border-radius:3px}
+.v3-ready .v3-key-stock{background:#63b5cb}
+.v3-ready .v3-key-fii{background:#d0a65f}
+.v3-ready .v3-key-other{background:#bc99d5}
+.v3-ready .v3-income-data-note{font-size:10px;line-height:1.45;color:#9eb6be;margin:11px 0 2px}
+@media(max-width:390px){
+ .v3-ready .v3-income-axis{grid-template-columns:44px minmax(0,1fr) 93px;gap:7px}
+ .v3-ready .v3-income-ticks>span{font-size:9px}
+ .v3-ready .v3-chart-meta{font-size:9px}
+}
