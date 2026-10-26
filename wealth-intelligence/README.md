@@ -23,6 +23,14 @@ Este conjunto de mudanças **não foi publicado no GitHub Pages**. A versão ant
 - A carteira permanece em localStorage e a importação pelo Excel/JSON exige ação do usuário. A V3 não sincroniza os saldos do iPhone automaticamente.
 - A verificação V3 compara cada posição da importação Excel por uma impressão de consistência armazenada apenas no próprio dispositivo. Isso detecta alterações compensatórias que não modificariam os quatro subtotais; não é assinatura criptográfica nem substitui os extratos originais. Backups antigos sem essa impressão continuam importáveis, mas aparecem como não verificados até nova carga do Excel.
 
+### V3.2 · Gráficos com escalas e contexto temporal (somente pesquisa)
+- Evolução geral, por categoria e por ativo: eixo Y com valores arredondados em R$ (ou US$ no histórico individual denominado em USD), eixo X com competências reais em mm/aaaa, marcações visíveis e identificação de periodicidade mensal.
+- Modo anual: rótulos por ano; anos incompletos ganham * e legenda específica. Valores anuais representam saldo na última competência disponível, não soma anual nem rentabilidade.
+- Dados ausentes não são interpolados, a linha não é conectada artificialmente; cobertura parcial mantém traço diferenciado.
+- Proventos: barras mensais em reais com escala horizontal, mês/ano por linha, legenda de Ações e FIIs e observação sobre competências sem lançamentos.
+- Ocultar valores também oculta os números dos eixos; interação nos pontos mostra competência e saldo apenas enquanto valores estiverem visíveis.
+- Testes no navegador móvel verificam os rótulos, escalas, periodicidade, ano parcial, privacidade e ausência de erros de segurança. Não usar imagens de teste como confirmação dos números financeiros do iPhone.
+
 ### Revisão visual V3.1 em pesquisa
 - Resumo com patrimônio primeiro, integridade compacta e expansão contextual, previdência e demais ativos separados, evolução antes da lista de alocação por produto. Barra horizontal substitui a rosca; sete categorias mostram valor e peso e permitem acesso direto à Carteira.
 - Carteira por categorias recolhidas, busca imediata e filtros progressivos. Alterar critérios não modifica dados, só reorganiza e recalcula os subtotais visíveis.
