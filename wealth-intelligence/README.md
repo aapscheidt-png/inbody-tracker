@@ -10,6 +10,35 @@ Aplicativo independente de inteligência patrimonial com interface mobile-first/
 - Ao importar backup, os dados locais existentes serão substituídos. Recomenda-se exportar backup antes.
 - Dados do extrato de maio de 2026 são históricos; atualizar com extrato atual antes de considerar as informações vigentes.
 
+## V3 em pesquisa: UX orientada a produto e tempo (sem produção)
+
+Este conjunto de mudanças **não foi publicado no GitHub Pages**. A versão anterior continua disponível até revisão do fluxo no iPhone e validação do usuário.
+
+- Modelo derivado sem mutações na base financeira original: classificação independente por **produto, exposição, conta, localização e liquidez informada**. Fundos Trend Ouro, Trend Prata, Trend IA e ARX Fuji RF são fundos na vista *Produto*, com exposições econômicas separadas; o investimento identificado como `FUNDO  FGTS` é exibido em **Fundos de investimento**, mantendo o nome original e sem supor sua exposição econômica. O filtro de liquidez é oculto enquanto a base não informar condições de resgate.
+- Quatro entradas principais no mobile: **Resumo, Carteira, Evolução, Proventos**. Filtros reais de produto/exposição/conta/localização/liquidez na Carteira, com subtotais consistentes e detalhamento por investimento.
+- Evolução usa os **35 fechamentos mensais históricos** sem conectar saldos provisórios de outubro à linha de setembro. Filtragens por classe geram séries marcadas como **parciais** e não calculam rentabilidade nem suposta variação completa com cobertura incompleta.
+- A previdência aparece em destaque, com a soma dos dois contratos; se a base carregada não corresponder ao subtotal do Excel, um alerta explícito substitui qualquer indicação de saldo validado.
+- Detalhes contextuais com origem, data e moeda original; sem inventar cotas, preços médios, liquidez, retorno ou instituições.
+- Reprodução/QA em navegador móvel com dados **inteiramente sintéticos** e captura das quatro telas. Nenhum valor financeiro privado é salvo no repositório.
+- A carteira permanece em localStorage e a importação pelo Excel/JSON exige ação do usuário. A V3 não sincroniza os saldos do iPhone automaticamente.
+- A verificação V3 compara cada posição da importação Excel por uma impressão de consistência armazenada apenas no próprio dispositivo. Isso detecta alterações compensatórias que não modificariam os quatro subtotais; não é assinatura criptográfica nem substitui os extratos originais. Backups antigos sem essa impressão continuam importáveis, mas aparecem como não verificados até nova carga do Excel.
+
+### V3.2 · Gráficos com escalas e contexto temporal (somente pesquisa)
+- Evolução geral, por categoria e por ativo: eixo Y com valores arredondados em R$ (ou US$ no histórico individual denominado em USD), eixo X com competências reais em mm/aaaa, marcações visíveis e identificação de periodicidade mensal.
+- Modo anual: rótulos por ano; anos incompletos ganham * e legenda específica. Valores anuais representam saldo na última competência disponível, não soma anual nem rentabilidade.
+- Dados ausentes não são interpolados, a linha não é conectada artificialmente; cobertura parcial mantém traço diferenciado.
+- Proventos: barras mensais em reais com escala horizontal, mês/ano por linha, legenda de Ações e FIIs e observação sobre competências sem lançamentos.
+- Ocultar valores também oculta os números dos eixos; interação nos pontos mostra competência e saldo apenas enquanto valores estiverem visíveis.
+- Testes no navegador móvel verificam os rótulos, escalas, periodicidade, ano parcial, privacidade e ausência de erros de segurança. Não usar imagens de teste como confirmação dos números financeiros do iPhone.
+
+### Revisão visual V3.1 em pesquisa
+- Resumo com patrimônio primeiro, integridade compacta e expansão contextual, previdência e demais ativos separados, evolução antes da lista de alocação por produto. Barra horizontal substitui a rosca; sete categorias mostram valor e peso e permitem acesso direto à Carteira.
+- Carteira por categorias recolhidas, busca imediata e filtros progressivos. Alterar critérios não modifica dados, só reorganiza e recalcula os subtotais visíveis.
+- Histórico com período e modalidade próximos do gráfico, filtros lado a lado e justificativas financeiras sob expansão opcional. Pontos mensais podem ser tocados para mostrar competência, saldo e cobertura.
+- Barra inferior respeita o safe-area do iPhone. Testes visuais rodam em viewport 393 × 852, sem representar validação manual do Safari.
+- Mantida a política CSP estrita: gráficos usam propriedades de estilo DOM para áreas proporcionais, nunca estilos inline em HTML dinâmico.
+- Status: pesquisa isolada no PR #9; ainda requer validação visual no dispositivo e importação local do Excel antes de qualquer merge ou publicação.
+
 ## V2.4 · Integridade do backup e recuperação no iPhone
 
 - **Nunca apresentar valores fictícios por acidente:** quando o armazenamento local estiver ilegível, o aplicativo inicia sem carteira e exibe alerta explícito, em vez de apresentar o modo demonstração como se fosse patrimônio real.

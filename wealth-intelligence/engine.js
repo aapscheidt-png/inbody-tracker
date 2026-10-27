@@ -34,7 +34,7 @@ function normalizeAudit(raw){if(!raw||typeof raw!=="object")return null;
  sourceBuckets:(Array.isArray(m.sourceBuckets)?m.sourceBuckets:[]).slice(0,8).map(b=>({key:String(b.key||"").slice(0,30),label:String(b.label||"").slice(0,80),
   excelCell:String(b.excelCell||"").slice(0,35),asOf:String(b.asOf||"").slice(0,10),
   excelValue:b.excelValue===null?null:n(b.excelValue,null),importedValue:b.importedValue===null?null:n(b.importedValue,null),matched:b.matched===true})),
- importedAt:String(m.importedAt||"").slice(0,35),fileSize:Number.isFinite(+m.fileSize)?+m.fileSize:0,sha256:String(m.sha256||"").slice(0,64)};
+ sourcePositionFingerprint:/^v1-[0-9a-f]{16}$/.test(String(m.sourcePositionFingerprint||""))?m.sourcePositionFingerprint:"",importedAt:String(m.importedAt||"").slice(0,35),fileSize:Number.isFinite(+m.fileSize)?+m.fileSize:0,sha256:String(m.sha256||"").slice(0,64)};
  let totalObs=0;
  const assetHistory=(Array.isArray(raw.assetHistory)?raw.assetHistory:[]).slice(0,500).map(asset=>{
  const observations=(Array.isArray(asset.observations)?asset.observations:[]).slice(0,1500).map(o=>({
@@ -50,6 +50,26 @@ function normalizeAudit(raw){if(!raw||typeof raw!=="object")return null;
  const contributions=(Array.isArray(raw.reportedContributions)?raw.reportedContributions:[]).slice(0,1500).map(x=>({date:String(x.date||"").slice(0,10),amount:n(x.amount,0),source:String(x.source||"").slice(0,45),kind:"reported_aporte",externalFlowVerified:false})).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x.date)&&Math.abs(x.amount)<1e12);
  const distributions=(Array.isArray(raw.reportedDistributions)?raw.reportedDistributions:[]).slice(0,2500).map(x=>({date:String(x.date||"").slice(0,10),amount:n(x.amount,0),source:String(x.source||"").slice(0,45),name:String(x.name||"").slice(0,80),kind:String(x.kind||"").slice(0,35),cashReceiptVerified:false})).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x.date)&&x.amount>0&&x.amount<1e12);
  return{quality,sourceMetadata,assetHistory,sourceRates:fxRates,reportedContributions:contributions,reportedDistributions:distributions,schema:"wealth-data-engine-v2"};
+}
+// Detect unintended edits to individual Excel-sourced positions, including
+// compensating changes that leave all portfolio subtotals unchanged.
+// This is a local consistency checksum, not a cryptographic signature.
+function positionFingerprint(positions){
+ if(!Array.isArray(positions))return "";
+ const canonical=positions.map(p=>JSON.stringify([
+  String(p.id||""),String(p.name||""),String(p.type||""),String(p.account||""),
+  p.currency==="USD"?"USD":"BRL",Number(p.units).toFixed(8),Number(p.price).toFixed(8),
+  String(p.asOf||""),p.originalCurrency==="USD"?"USD":"BRL",
+  Number(p.originalValue==null?p.price:p.originalValue).toFixed(8),
+  String(p.source?.sheet||""),String(p.source?.cell||"")
+ ])).sort().join("\n");
+ let a=2166136261,b=1315423911;
+ for(let i=0;i<canonical.length;i++){
+  const c=canonical.charCodeAt(i);
+  a=Math.imul(a^c,16777619)>>>0;
+  b=Math.imul(b^c,2246822519)>>>0;
+ }
+ return "v1-"+a.toString(16).padStart(8,"0")+b.toString(16).padStart(8,"0");
 }
 function normalize(raw){if(!raw||typeof raw!=="object"||raw.version!==1||!Array.isArray(raw.positions)||!Array.isArray(raw.history))throw new Error("Formato de backup não reconhecido.");if(raw.positions.length>500||raw.history.length>2000)throw new Error("Backup ultrapassa os limites permitidos.");const a=raw.assumptions||{},positions=raw.positions.map(cleanPosition).filter(Boolean),history=raw.history.map(cleanSnapshot).filter(Boolean).sort((x,y)=>x.date.localeCompare(y.date));if(positions.length!==raw.positions.length||history.length!==raw.history.length)throw new Error("Alguns registros do backup são inválidos.");if(new Set(positions.map(p=>p.id)).size!==positions.length)throw new Error("Identificadores de posições duplicados.");if(new Set(history.map(h=>h.date)).size!==history.length)throw new Error("Datas históricas duplicadas.");return{version:1,mode:raw.mode==="demo"?"demo":"personal",fx:clamp(n(raw.fx,5.2),.01,100),benchmarkAnnualPct:clamp(n(raw.benchmarkAnnualPct,10),-95,500),positions,history,...(raw.dataEngine?{dataEngine:normalizeAudit(raw.dataEngine)}:{}),assumptions:{target:clamp(n(a.target,5000000),1,1e13),monthly:clamp(n(a.monthly,7000),0,1e10),years:Math.round(clamp(n(a.years,15),1,40)),rate:clamp(n(a.rate,10),-50,50),vol:clamp(n(a.vol,14),0,60),inflation:clamp(n(a.inflation,4.5),0,30)}};}
 function read(){try{const raw=localStorage.getItem(STORAGE_KEY);return raw?normalize(JSON.parse(raw)):deepClone(DEMO);}catch(error){const fallback=emptyData();fallback.loadError=true;return fallback;}}
@@ -68,5 +88,5 @@ function historyAnalysis(history){const h=[...history].sort((a,b)=>a.date.locale
 function mulberry32(seed){return function(){let t=seed+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
 function normal(rng){let a=0;while(a<=1e-12)a=rng();return Math.sqrt(-2*Math.log(a))*Math.cos(2*Math.PI*rng());}
 function forecast(initial,assumptions){const a={target:clamp(n(assumptions.target,5000000),1,1e13),monthly:clamp(n(assumptions.monthly,7000),0,1e10),years:Math.floor(clamp(n(assumptions.years,15),1,40)),rate:clamp(n(assumptions.rate,10),-50,50),vol:clamp(n(assumptions.vol,14),0,60),inflation:clamp(n(assumptions.inflation,4.5),0,30)};const paths=1000,years=Array.from({length:a.years+1},()=>[]),rand=mulberry32(20261012),monthlyRate=Math.pow(1+a.rate/100,1/12)-1,sigma=(a.vol/100)/Math.sqrt(12),drift=Math.log1p(monthlyRate)-sigma*sigma/2;for(let j=0;j<paths;j++){let value=initial;years[0].push(value);for(let month=1;month<=a.years*12;month++){const growth=Math.exp(drift+sigma*normal(rand));value=Math.max(0,value*growth+a.monthly);if(month%12===0)years[month/12].push(value);}}const q=(values,f)=>values[Math.min(values.length-1,Math.floor((values.length-1)*f))];const series=years.map((v,year)=>{v.sort((x,y)=>x-y);return{year,p10:q(v,.10),p50:q(v,.50),p90:q(v,.90),inflationAdjustedMedian:q(v,.50)/Math.pow(1+a.inflation/100,year)};});const final=years[a.years],hit=final.filter(v=>v>=a.target).length/paths*100;return{assumptions:a,series,probability:hit,median:series.at(-1).p50,realMedian:series.at(-1).inflationAdjustedMedian};}
-global.WealthEngine={TYPES,DEMO,STORAGE_KEY,emptyData,normalize,read,save,money,compact,percent,signedPercent,portfolio,positionValue,positionCost,score,insights,daysOld,historyAnalysis,forecast,asDate};
+global.WealthEngine={TYPES,DEMO,STORAGE_KEY,emptyData,normalize,positionFingerprint,read,save,money,compact,percent,signedPercent,portfolio,positionValue,positionCost,score,insights,daysOld,historyAnalysis,forecast,asDate};
 })(window);
