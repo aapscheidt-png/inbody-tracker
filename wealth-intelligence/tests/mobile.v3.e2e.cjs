@@ -263,6 +263,32 @@ const {chromium,webkit}=require("playwright-core");
   }
  }
  await page.setViewportSize({width:393,height:852});
+ // Browser-native XLSX import regression, all values generated synthetically in memory.
+ // This runs on both Chromium and WebKit, exercising the actual ZIP/XML import UI.
+ const {fixture}=require("./synthetic-xlsx.cjs");
+ await page.locator("#openSettings").click();
+ await page.locator("#importXlsx").setInputFiles({
+  name:"v3-safe-synthetic.xlsx",
+  mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  buffer:fixture()
+ });
+ await page.locator("#xlsxDialog").waitFor({state:"visible",timeout:15000});
+ assert.equal(await page.locator("#confirmXlsx").isEnabled(),true,"Reconciled Excel enables explicit approval");
+ assert.ok((await page.locator("#xlsxPreview").textContent()).includes("SALDOS PROVISÓRIOS"),"Excel preview describes mixed-date positions");
+ page.once("dialog",d=>d.accept());
+ await page.locator("#confirmXlsx").click();
+ await page.waitForFunction(()=>document.querySelector(".v3-integrity")?.textContent.includes("Subtotais conferidos"),null,{timeout:10000});
+ assert.ok((await page.locator("#heroTotal").textContent()).includes("1.037,50"),"Headline uses verified source positions, not dashboard");
+ assert.equal(await page.locator("#reconcileSources .reconcile-bucket").count(),4,"Four Excel source totals were verified");
+ const beforeInvalid=await page.evaluate(()=>localStorage.getItem("wealth-intelligence-ai.v1"));
+ assert.ok(beforeInvalid&&beforeInvalid.includes("sourceVerified"),"Validated Excel has been persisted privately");
+ await page.locator("#importXlsx").setInputFiles({
+  name:"v3-rejected-synthetic.xlsx",
+  mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  buffer:fixture(true)
+ });
+ await page.waitForFunction(()=>document.querySelector("#importStatus")?.textContent?.includes("Importação interrompida"),null,{timeout:10000});
+ assert.equal(await page.evaluate(()=>localStorage.getItem("wealth-intelligence-ai.v1")),beforeInvalid,"Rejected Excel must never replace a prior valid wallet");
  assert.deepEqual(errors,[],"No browser or CSP errors in V3 mobile flow");
  console.log("V3 mobile product facets, pension, history, privacy, income and screenshots on "+browserType.name()+": PASS");
  }finally{await browser.close();}
