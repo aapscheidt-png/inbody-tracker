@@ -67,6 +67,18 @@ jobs:
           name: wealth-data-engine-v2-source
           path: wealth-intelligence/xlsx-engine.js
           if-no-files-found: error
+      - name: Package static app sources for private device/import QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: wealth-v3-private-qa-sources
+          path: |
+            wealth-intelligence/*.js
+            wealth-intelligence/*.html
+            wealth-intelligence/*.css
+            wealth-intelligence/*.webmanifest
+            wealth-intelligence/*.svg
+          if-no-files-found: error
+          retention-days: 3
   mobile-e2e:
     runs-on: ubuntu-latest
     defaults:
