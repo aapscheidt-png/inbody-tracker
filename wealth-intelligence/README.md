@@ -10,6 +10,10 @@ Aplicativo independente de inteligência patrimonial com interface mobile-first/
 - Ao importar backup, os dados locais existentes serão substituídos. Recomenda-se exportar backup antes.
 - Dados do extrato de maio de 2026 são históricos; atualizar com extrato atual antes de considerar as informações vigentes.
 
+## Auditoria corretiva V3.2.1 (branch de pesquisa)
+
+Veja [AUDITORIA_V3_2.md](AUDITORIA_V3_2.md) para falhas corrigidas, riscos residuais, critérios de homologação no Safari e regras de não publicação. Correções incluem gravação transacional, datas civis válidas, fluxo financeiro desconhecido e custo de aquisição não inventado. A versão anterior do GitHub Pages permanece inalterada.
+
 ## V3 em pesquisa: UX orientada a produto e tempo (sem produção)
 
 Este conjunto de mudanças **não foi publicado no GitHub Pages**. A versão anterior continua disponível até revisão do fluxo no iPhone e validação do usuário.
@@ -36,7 +40,7 @@ Este conjunto de mudanças **não foi publicado no GitHub Pages**. A versão ant
 - Carteira por categorias recolhidas, busca imediata e filtros progressivos. Alterar critérios não modifica dados, só reorganiza e recalcula os subtotais visíveis.
 - Histórico com período e modalidade próximos do gráfico, filtros lado a lado e justificativas financeiras sob expansão opcional. Pontos mensais podem ser tocados para mostrar competência, saldo e cobertura.
 - Barra inferior respeita o safe-area do iPhone. Testes visuais rodam em viewport 393 × 852, sem representar validação manual do Safari.
-- Mantida a política CSP estrita: gráficos usam propriedades de estilo DOM para áreas proporcionais, nunca estilos inline em HTML dinâmico.
+- Mantida a política CSP estrita: os gráficos e barras proporcionais usam geometria SVG, sem estilos inline de largura sujeitos a bloqueio no Safari/WebKit.
 - Status: pesquisa isolada no PR #9; ainda requer validação visual no dispositivo e importação local do Excel antes de qualquer merge ou publicação.
 
 ## V2.4 · Integridade do backup e recuperação no iPhone
