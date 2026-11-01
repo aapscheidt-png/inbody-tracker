@@ -289,6 +289,19 @@ const {chromium,webkit}=require("playwright-core");
  });
  await page.waitForFunction(()=>document.querySelector("#importStatus")?.textContent?.includes("Importação interrompida"),null,{timeout:10000});
  assert.equal(await page.evaluate(()=>localStorage.getItem("wealth-intelligence-ai.v1")),beforeInvalid,"Rejected Excel must never replace a prior valid wallet");
+ // Simulate Safari storage quota/permission failure. Saving must be transactional:
+ // neither memory nor the previously persisted wallet may switch to DEMO.
+ await page.evaluate(()=>{
+   window.__savedSetItem=Storage.prototype.setItem;
+   Storage.prototype.setItem=function(){throw new DOMException("Quota exceeded","QuotaExceededError");};
+ });
+ await page.locator("#openSettings").click();
+ page.once("dialog",d=>d.accept());
+ await page.locator("#resetDemo").click();
+ assert.ok((await page.locator("#heroTotal").textContent()).includes("1.037,50"),"Storage failure must not swap the active wallet");
+ assert.ok((await page.locator("#toast").textContent()).includes("Nenhuma alteração foi aplicada"),"Storage failure must not signal successful reset");
+ await page.evaluate(()=>{Storage.prototype.setItem=window.__savedSetItem;delete window.__savedSetItem;});
+ assert.equal(await page.evaluate(()=>localStorage.getItem("wealth-intelligence-ai.v1")),beforeInvalid,"Storage failure leaves the prior Excel wallet untouched");
  assert.deepEqual(errors,[],"No browser or CSP errors in V3 mobile flow");
  console.log("V3 mobile product facets, pension, history, privacy, income and screenshots on "+browserType.name()+": PASS");
  }finally{await browser.close();}
