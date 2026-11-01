@@ -21,7 +21,7 @@ assert.equal(missing.history[1].flowKnown,false);
 assert.equal(E.historyAnalysis(missing.history).twr,null);
 const zero=safe({history:[{date:"2025-12-31",total:100,flow:0},{date:"2026-01-31",total:120,flow:0}]});
 assert.equal(zero.history[1].flowKnown,true);
-assert.equal(E.historyAnalysis(zero.history).twr,20);
+assert.ok(Math.abs(E.historyAnalysis(zero.history).twr-20)<1e-9);
 assert.equal(E.historyAnalysis([{date:"2025-12-31",total:0,flowKnown:false},{date:"2026-01-31",total:120,flowKnown:false}]).delta,null);
 // Historical balance proxies must not acquire a fictitious average cost.
 const balance=safe({positions:[{id:"proxy",name:"Saldo no extrato",type:"funds",currency:"BRL",units:1,price:1000,cost:0,valuationOnly:true,asOf:"2026-09-30"}]});
