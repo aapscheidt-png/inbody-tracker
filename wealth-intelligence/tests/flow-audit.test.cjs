@@ -33,6 +33,15 @@ assert.equal(result.intervals[2].declaredTotal,null);
 assert.equal(result.outsideCount,2);
 assert.equal(result.declaredCount,4);
 assert.equal(result.declaredTotal,240);
+const csv=F.exportCsv(result);
+assert.ok(csv.startsWith("\uFEFF"),"Excel-compatible UTF-8 BOM");
+assert.equal(csv.trim().split("\r\n").length,4,"Header plus one row per interval");
+assert.ok(csv.includes('"100";"INFORMADO, NÃO CONCILIADO"'),"Declared flow remains numeric, not audited");
+const negative=F.exportCsv({intervals:[{from:"2026-01-31",to:"2026-02-28",opening:1000,closing:800,known:true,flow:-200,declaredTotal:null,declaredCount:0}]});
+assert.ok(negative.includes('"-200"'),"Negative withdrawals remain numeric in export");
+const malicious=F.exportCsv({intervals:[{from:"=2+2",to:"2026-02-28",opening:10,closing:20,known:false,declaredTotal:null,declaredCount:0}]});
+assert.ok(malicious.includes('"\'=2+2"'),"Formula injection is escaped as text");
+
 assert.ok(result.intervals.every(x=>!x.returnAudited));
 assert.equal(F.coverage({history:[]}).intervalCount,0);
 assert.equal(F.coverage({}).pending,0);
