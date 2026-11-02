@@ -155,7 +155,13 @@ function renderHome(){
  const recent=M.trend(data,{months:12}),first=recent[0],last=recent.at(-1);
  const sourceLine=(metadata.filename||"Cadastro manual")+" · último fechamento "+(metadata.latestFullMonth||"não informado")+
   (metadata.partial?" · posição recente com competências diferentes":"");
+ const reference=metadata.latestDate||data.positions?.map(x=>x.asOf).filter(Boolean).sort().at(-1)||"";
+ const referenceText=data.mode==="demo"?"Exemplo fictício":
+  (metadata.partial?"Saldos de competências diferentes":reference?"Última posição: "+reference.slice(8,10)+"/"+reference.slice(5,7)+"/"+reference.slice(0,4):"Sem data de referência");
  $("v3Home").innerHTML=
+  '<section class="v3-total-overview" aria-label="Resumo patrimonial"><span class="v3-eyebrow">PATRIMÔNIO CONSOLIDADO'+(data.mode==="demo"?" · DEMONSTRAÇÃO":"")+'</span>'+
+  '<strong class="v3-total-amount" data-v3-money>'+fmt(all.total)+'</strong>'+
+  '<div class="v3-total-footer"><span>'+esc(referenceText)+'</span><span>'+all.count+' posições · '+all.groups.filter(g=>g.amount>0).length+' categorias</span></div></section>'+
   '<section class="v3-integrity v3-'+status.style+'" role="status"><div class="v3-integrity-main"><span class="v3-integrity-title">'+esc(status.title)+'</span>'+
   '<details class="v3-integrity-info"><summary>Detalhes da conferência</summary><p>'+esc(status.detail)+'</p><small>'+esc(metadata.filename||"Nenhum Excel identificado")+
   (metadata.importedAt?" · importado "+esc(new Date(metadata.importedAt).toLocaleDateString("pt-BR")):"")+'</small></details></div>'+
@@ -262,7 +268,7 @@ function exportFlowAudit(){
  setTimeout(()=>URL.revokeObjectURL(url),3000);
 }
 function renderIncome(){
- const data=getState().dataEngine||{},years=L.yearList(data);if(!years.includes(incomeYear))incomeYear=years[0]||"2026";
+ const data=getState().dataEngine||{},years=L.yearList(data);if(!years.length)years.push(String(new Date().getFullYear()));if(!years.includes(incomeYear))incomeYear=years[0];
  $("v3IncomeYear").innerHTML=years.map(y=>'<option value="'+esc(y)+'" '+(incomeYear===y?"selected":"")+'>'+y+'</option>').join("");
  const report=L.incomeByYear(data,incomeYear);
  $("v3IncomeTotal").textContent=fmt(report.total);
