@@ -10,6 +10,18 @@ Aplicativo independente de inteligência patrimonial com interface mobile-first/
 - Ao importar backup, os dados locais existentes serão substituídos. Recomenda-se exportar backup antes.
 - Dados do extrato de maio de 2026 são históricos; atualizar com extrato atual antes de considerar as informações vigentes.
 
+## V3.4 · Atualização incremental de Excel (branch de pesquisa)
+
+Quando a carteira atual e o novo Excel passam integralmente na conferência, o modal de importação oferece **Atualizar incrementalmente** e **Substituir pelo Excel**, com apresentação da diferença antes de gravar. A escolha incremental é opcional e necessita confirmação do usuário.
+
+- Compara posições por identidade semântica (conta, nome normalizado, tipo e moeda original), não por ID sequencial gerado pelo parser.
+- O saldo corrente é sempre o conjunto de posições da **nova** planilha: posições ausentes são consideradas encerradas/ausentes para fins de exibição, mas **nenhuma venda ou retirada é inferida**.
+- Meses históricos e observações antigas permanecem, assim como lançamentos e câmbios não presentes na nova planilha; as entradas de mesmo identificador não são duplicadas.
+- Diferenças de saldo no mesmo fechamento, observações divergentes, lançamentos alterados, identidade ambígua, arquivos com competências anteriores e carteiras manuais/modificadas **bloqueiam** a atualização incremental. Não existe merge silencioso de conflitos.
+- Ajustes manuais de aporte e hipóteses de simulação são preservados quando há fonte validada. A atualização e a substituição exigem confirmação, e a gravação local só altera a carteira ativa após persistir.
+- **Importante:** o leitor atual reconhece o layout específico das abas 2024, 2025 e 2026 e de suas células mapeadas. Ele **não está homologado para 2027 ou mudanças de estrutura**. Ajustar o parser e revalidar os quatro subtotais antes de habilitar formatos futuros.
+- Sempre exportar backup JSON antes de importar. O app não sincroniza automaticamente com bancos ou corretoras, e não guarda os dados no Vercel.
+
 ## V3.3 · Conciliação financeira (branch de pesquisa)
 
 Na aba Evolução, a seção **Conciliação de aportes e retiradas** apresenta intervalos com e sem fluxo informado, identificando apenas lançamentos existentes no Excel, sem convertê-los em rentabilidade auditada. É possível exportar o diagnóstico em CSV local (sem enviar dados à internet). Os motores de análise não estimam retornos quando faltam fluxos e não calibram projeções com séries fragmentadas. Veja [AUDITORIA_V3_2.md](AUDITORIA_V3_2.md) para critérios de aceite e limitações.
