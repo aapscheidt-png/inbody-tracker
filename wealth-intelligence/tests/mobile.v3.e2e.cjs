@@ -20,6 +20,30 @@ const {chromium,webkit}=require("playwright-core");
  await page.locator(".v3-ready").waitFor();
  assert.equal(await page.locator(".tabbar [data-go]").count(),4);
  assert.ok(await page.locator("#v3Home").isVisible());
+ // Protect the exact Safari case reported by the user: Sep and Oct labels
+ // used to overlap near the right edge of the home chart on a 393px iPhone.
+ const assertAxisFits=async(contextLabel)=>{
+  const state=await page.evaluate(()=>{
+   const svg=document.querySelector(".v3-home-trend [data-v3-chart] svg");
+   const labels=[...svg.querySelectorAll("[data-v3-x-label]")].map(node=>({
+    value:node.textContent,box:node.getBoundingClientRect().toJSON()
+   }));
+   return{svg:svg.getBoundingClientRect().toJSON(),labels};
+  });
+  const labels=state.labels;
+  assert.ok(labels.length>=2,contextLabel+": sufficient dates");
+  for(let i=0;i<labels.length;i++){
+   const b=labels[i].box;
+   assert.ok(b.left>=state.svg.left-2&&b.right<=state.svg.right+2,
+    contextLabel+": date "+labels[i].value+" stays inside SVG");
+   if(i)assert.ok(b.left>=labels[i-1].box.right+2,
+    contextLabel+": dates "+labels[i-1].value+" and "+labels[i].value+" must not overlap");
+  }
+  return labels.map(x=>x.value);
+ };
+ const beforeImportAxis=await assertAxisFits("DEMO/iPhone");
+ assert.ok(beforeImportAxis.includes("10/2026"),"Always label the latest observed date");
+ assert.ok(!beforeImportAxis.includes("09/2026"),"Adjacent Sep/Oct should not both appear");
  function pos(name,type,price,account,originalCurrency="BRL"){
   return{id:"v3test"+name.replace(/\W/g,"").slice(0,13),name,type,account,currency:"BRL",units:1,price,costKnown:false,cost:0,asOf:type==="pension"?"2026-09-30":"2026-10-15",originalCurrency,originalValue:originalCurrency==="USD"?price/5:price,source:{sheet:"2026",cell:"A1"}};
  }
@@ -264,6 +288,7 @@ const {chromium,webkit}=require("playwright-core");
   await page.setViewportSize({width,height:852});
   for(const pageName of ["home","portfolio","history","income"]){
    await page.locator(".tabbar [data-go='"+pageName+"']").click();
+   if(pageName==="home")await assertAxisFits("width "+width+"px");
    const measures=await page.evaluate(()=>{
     const w=document.documentElement.clientWidth,full=document.documentElement.scrollWidth;
     const tab=document.querySelector(".tabbar")?.getBoundingClientRect();
