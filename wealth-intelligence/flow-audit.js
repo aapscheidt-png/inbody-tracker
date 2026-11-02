@@ -5,6 +5,7 @@
 // with brokerage/bank statements. A zero reported transaction is not proof
 // that there was no cash movement in an interval.
 function coverage(data){
+ const isDemo=data?.mode==="demo";
  const history=(Array.isArray(data?.history)?data.history:[]).filter(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(String(x.date||""))&&Number.isFinite(Number(x.total)))
    .slice().sort((a,b)=>a.date.localeCompare(b.date));
  const contributions=(Array.isArray(data?.dataEngine?.reportedContributions)?data.dataEngine.reportedContributions:[])
@@ -14,7 +15,7 @@ function coverage(data){
   const previous=history[i-1],current=history[i];
   const reported=contributions.filter(x=>x.date>previous.date&&x.date<=current.date);
   const sourceTotal=reported.reduce((sum,x)=>sum+Number(x.amount),0);
-  const known=current.flowKnown!==false&&current.flow!==undefined&&current.flow!==null&&current.flow!==""&&Number.isFinite(Number(current.flow));
+  const known=!isDemo&&current.flowKnown!==false&&current.flow!==undefined&&current.flow!==null&&current.flow!==""&&Number.isFinite(Number(current.flow));
   intervals.push({
    from:previous.date,to:current.date,opening:Number(previous.total),closing:Number(current.total),
    known,flow:known?Number(current.flow):null,
@@ -26,11 +27,11 @@ function coverage(data){
  const supplied=intervals.filter(x=>x.known).length,pending=intervals.length-supplied;
  const unmatched=contributions.filter(x=>!intervals.some(i=>x.date>i.from&&x.date<=i.to));
  return{
-  intervals,intervalCount:intervals.length,supplied,pending,
+  intervals,intervalCount:intervals.length,supplied,pending,demo:isDemo,
   declaredCount:contributions.length,declaredTotal:contributions.reduce((s,x)=>s+Number(x.amount),0),
   outsideCount:unmatched.length,
   fullyReconciled:false,
-  reason:"Fluxos registrados e aportes declarados não equivalem a extratos conciliados. Proventos podem ter sido reinvestidos; não são automaticamente aportes externos."
+  reason:isDemo?"Demonstração fictícia: os fluxos apresentados são exemplos, não aportes verificados. Nenhum intervalo está conciliado.":"Fluxos registrados e aportes declarados não equivalem a extratos conciliados. Proventos podem ter sido reinvestidos; não são automaticamente aportes externos."
  };
 }
 function exportCsv(report){
