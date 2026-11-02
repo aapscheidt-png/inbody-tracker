@@ -49,6 +49,9 @@ assert.equal(F.coverage({history:[{date:"2026-01-31",total:1000},{date:"2026-02-
 require("../engine.js");require("../analytics.js");require("../performance.js");
 const E=global.WealthEngine,A=global.WealthAnalytics,P=global.WealthPerformance;
 const missing=[{date:"2025-01-01",total:1000},{date:"2026-01-01",total:1100}];
+assert.equal(E.historyAnalysis([{date:"2026-01-01",total:1000}]).twr,null,"One valuation alone is not zero-percent return");
+const incompleteCalibration=Array.from({length:16},(_,i)=>({date:new Date(Date.UTC(2025,i,1)).toISOString().slice(0,10),total:1000+i*10,flow:i===6?undefined:0}));
+assert.equal(A.historicalCalibration(incompleteCalibration).available,false,"Missing interval must block forecast calibration despite 12+ valid intervals");
 for(const rows of [missing,[{date:"2025-01-01",total:1000,flow:0},{date:"2026-01-01",total:1100,flow:null}]]){
  assert.equal(E.historyAnalysis(rows).twr,null,"Missing flows must not produce adjusted returns");
  assert.equal(A.growthBridge(rows).ready,false,"Missing flows must block growth bridge");
