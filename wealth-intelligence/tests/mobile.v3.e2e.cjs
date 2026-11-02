@@ -313,11 +313,31 @@ const {chromium,webkit}=require("playwright-core");
  await page.locator("#xlsxDialog").waitFor({state:"visible",timeout:15000});
  assert.equal(await page.locator("#confirmXlsx").isEnabled(),true,"Reconciled Excel enables explicit approval");
  assert.ok((await page.locator("#xlsxPreview").textContent()).includes("SALDOS PROVISÓRIOS"),"Excel preview describes mixed-date positions");
+ assert.equal(await page.locator("#xlsxModeIncremental").isEnabled(),false,"DEMO has no verified prior Excel; incremental update must be locked");
+ assert.equal(await page.locator("#xlsxModeReplace").isChecked(),true,"First import requires explicit full replacement");
  page.once("dialog",d=>d.accept());
  await page.locator("#confirmXlsx").click();
  await page.waitForFunction(()=>document.querySelector(".v3-integrity")?.textContent.includes("Subtotais conferidos"),null,{timeout:10000});
  assert.ok((await page.locator("#heroTotal").textContent()).includes("1.037,50"),"Headline uses verified source positions, not dashboard");
  assert.equal(await page.locator("#reconcileSources .reconcile-bucket").count(),4,"Four Excel source totals were verified");
+ // Re-import an identical verified Excel: incrementally update without deleting
+ // historical records, or creating duplicate transactions.
+ const previousCount=await page.evaluate(()=>JSON.parse(localStorage.getItem("wealth-intelligence-ai.v1")).history.length);
+ await page.locator("#openSettings").click();
+ await page.locator("#importXlsx").setInputFiles({
+  name:"v3-incremental-synthetic.xlsx",
+  mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  buffer:fixture()
+ });
+ await page.locator("#xlsxDialog").waitFor({state:"visible",timeout:15000});
+ assert.equal(await page.locator("#xlsxModeIncremental").isEnabled(),true,"Verified wallet can update incrementally");
+ assert.equal(await page.locator("#xlsxModeIncremental").isChecked(),true,"Incremental is the default for two verified Excel snapshots");
+ assert.ok((await page.locator("#xlsxPreview").textContent()).includes("Novas posições"),"Preview shows the update diff");
+ page.once("dialog",d=>d.accept());
+ await page.locator("#confirmXlsx").click();
+ await page.locator("#xlsxDialog").waitFor({state:"hidden"});
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem("wealth-intelligence-ai.v1")).history.length),previousCount,"Incremental re-import does not duplicate or discard history");
+ assert.ok((await page.locator(".v3-integrity").textContent()).includes("Subtotais conferidos"),"Incremental wallet remains source-verified");
  const beforeInvalid=await page.evaluate(()=>localStorage.getItem("wealth-intelligence-ai.v1"));
  assert.ok(beforeInvalid&&beforeInvalid.includes("sourceVerified"),"Validated Excel has been persisted privately");
  await page.locator("#importXlsx").setInputFiles({
