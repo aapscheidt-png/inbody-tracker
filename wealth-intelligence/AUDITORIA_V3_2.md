@@ -2,6 +2,16 @@
 
 **Escopo:** PR #9 (branch de pesquisa). O projeto anterior e o GitHub Pages não podem ser alterados sem aprovação explícita. Nenhum Excel real, extrato, backup pessoal, e-mail ou dado da carteira é enviado à CI ou gravado no GitHub.
 
+## V3.3 · Cobertura e conciliação de fluxos (pesquisa)
+
+**Avanço executado:** A tela Evolução passa a apresentar a cobertura histórica de fluxos: quantidade de intervalos com aporte/retirada informados, quantidade de intervalos pendentes e aportes listados no Excel. Uma lista expansível identifica os pares de fechamentos, a informação de fluxo e as declarações de aporte contidas no período.
+
+O botão **Exportar pendências CSV** gera o relatório localmente no navegador (UTF-8, separador ponto e vírgula), sem upload. A exportação não cria transações novas, não modifica o histórico e preserva valores negativos de retiradas. Campos textuais são protegidos contra fórmulas em planilhas.
+
+**Regra financeira:** Aporte declarado na planilha não significa fluxo externo conciliado. Proventos lançados não comprovam recebimento nem demonstram reinvestimento. Ausência de fluxo não significa zero. TWR aproximada, TIR e comparação hipotética ficam indisponíveis se faltarem fluxos. O módulo de calibração histórica também exige cobertura integral dos intervalos, e um único saldo não produz retorno de 0%.
+
+**Pendente:** Para obter rentabilidade confiável, conciliar aportes, retiradas, datas e saldo com extratos de instituições financeiras. Não inferir fluxos a partir da simples variação do patrimônio, e não converter dividendos em aportes externos automaticamente.
+
 ## Resultado por dimensão
 
 | Dimensão | Revisão e regras verificadas | Ressalvas |
