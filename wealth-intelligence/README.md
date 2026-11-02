@@ -10,6 +10,10 @@ Aplicativo independente de inteligência patrimonial com interface mobile-first/
 - Ao importar backup, os dados locais existentes serão substituídos. Recomenda-se exportar backup antes.
 - Dados do extrato de maio de 2026 são históricos; atualizar com extrato atual antes de considerar as informações vigentes.
 
+## V3.3 · Conciliação financeira (branch de pesquisa)
+
+Na aba Evolução, a seção **Conciliação de aportes e retiradas** apresenta intervalos com e sem fluxo informado, identificando apenas lançamentos existentes no Excel, sem convertê-los em rentabilidade auditada. É possível exportar o diagnóstico em CSV local (sem enviar dados à internet). Os motores de análise não estimam retornos quando faltam fluxos e não calibram projeções com séries fragmentadas. Veja [AUDITORIA_V3_2.md](AUDITORIA_V3_2.md) para critérios de aceite e limitações.
+
 ## Auditoria corretiva V3.2.1 (branch de pesquisa)
 
 Veja [AUDITORIA_V3_2.md](AUDITORIA_V3_2.md) para falhas corrigidas, riscos residuais, critérios de homologação no Safari e regras de não publicação. Correções incluem gravação transacional, datas civis válidas, fluxo financeiro desconhecido e custo de aquisição não inventado. A versão anterior do GitHub Pages permanece inalterada.
