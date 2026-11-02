@@ -5,7 +5,8 @@ require("../engine.js");
 require("../integrity.js");
 const E=global.WealthEngine,G=global.WealthIntegrity;
 const positions=[
-{id:"d",name:"Brasil",type:"stocks",account:"Carteira de ações",currency:"BRL",units:1,price:100,cost:0,costKnown:false,asOf:"2026-10-15"},
+{id:"d",name:"Brasil",type:"stocks",account:"Carteira de ações",currency:"BRL",units:1,price:60,cost:0,costKnown:false,asOf:"2026-10-15"},
+{id:"d2",name:"Outro Brasil",type:"stocks",account:"Carteira de ações",currency:"BRL",units:1,price:40,cost:0,costKnown:false,asOf:"2026-10-15"},
 {id:"i",name:"Exterior",type:"international",account:"Investimentos internacionais",currency:"BRL",units:1,price:25,cost:0,costKnown:false,asOf:"2026-10-01"},
 {id:"p",name:"Previdência",type:"pension",account:"Previdência",currency:"BRL",units:1,price:70,cost:0,costKnown:false,asOf:"2026-09-30"},
 {id:"c",name:"Cripto",type:"crypto",account:"Cripto",currency:"BRL",units:1,price:5,cost:0,costKnown:false,asOf:"2026-10-01"}
@@ -16,11 +17,19 @@ const meta={sourceVerified:true,sourceTotal:200,calculatedTotal:200,sourceBucket
 {key:"pension",excelValue:70,importedValue:70,matched:true},
 {key:"crypto",excelValue:5,importedValue:5,matched:true}
 ]};
+meta.sourcePositionFingerprint=E.positionFingerprint(positions);
 const base=E.normalize({...E.emptyData(),positions,dataEngine:{sourceMetadata:meta}});
 let report=G.check(base);
 assert.equal(report.status,"verified");assert.equal(report.total,200);
 let modified=E.normalize({...base,positions:base.positions.map(x=>x.id==="d"?{...x,price:101}:x)});
 assert.equal(G.check(modified).status,"modified");
+const balanced=E.normalize({...base,positions:base.positions.map(p=>
+ p.id==="d"?{...p,price:p.price+5}:p.id==="d2"?{...p,price:p.price-5}:p)});
+assert.equal(balanced.positions.reduce((s,p)=>s+p.price,0),200);
+assert.equal(G.check(balanced).status,"modified","Offsetting asset changes must not pass a bucket-only check");
+const legacy=E.normalize({...base,dataEngine:{sourceMetadata:{...meta,sourcePositionFingerprint:""}}});
+assert.equal(G.check(legacy).status,"unverified","An old backup stays importable but cannot claim position-level verification");
+assert.equal(E.positionFingerprint(base.positions),E.positionFingerprint([...base.positions].reverse()),"Position order must not affect audit");
 assert.equal(G.check(E.normalize({...E.emptyData(),positions})).status,"manual");
 assert.equal(G.check(E.DEMO).status,"demo");
 const noMeta=E.normalize({...base,dataEngine:{sourceMetadata:{sourceVerified:true,sourceBuckets:[]}}});

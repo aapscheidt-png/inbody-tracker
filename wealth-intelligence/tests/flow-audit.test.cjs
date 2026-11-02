@@ -1,0 +1,81 @@
+"use strict";
+const assert=require("node:assert/strict");
+global.window=global;
+require("../flow-audit.js");
+const F=global.WealthFlowAudit;
+const data={
+ history:[
+  {date:"2026-01-31",total:1000,flow:0,flowKnown:false},
+  {date:"2026-02-28",total:1200},
+  {date:"2026-03-31",total:1300,flow:100,flowKnown:true},
+  {date:"2026-04-30",total:1380,flow:0,flowKnown:true}
+ ],
+ dataEngine:{
+  reportedContributions:[
+   {date:"2026-01-20",amount:20},
+   {date:"2026-02-28",amount:50},
+   {date:"2026-03-05",amount:100},
+   {date:"2026-05-01",amount:70}
+  ],
+  reportedDistributions:[{date:"2026-03-01",amount:5,kind:"fii_income_total"}]
+ }
+};
+const result=F.coverage(data);
+assert.equal(result.intervalCount,3);
+assert.equal(result.supplied,2);
+assert.equal(result.pending,1);
+assert.equal(result.fullyReconciled,false,"No source declaration certifies external flows");
+assert.deepEqual(result.intervals.map(x=>x.known),[false,true,true]);
+assert.equal(result.intervals[0].declaredCount,1);
+assert.equal(result.intervals[0].declaredTotal,50,"Interval includes its closing date");
+assert.equal(result.intervals[1].declaredTotal,100);
+assert.equal(result.intervals[2].declaredTotal,null);
+assert.equal(result.outsideCount,2);
+assert.equal(result.declaredCount,4);
+assert.equal(result.declaredTotal,240);
+const csv=F.exportCsv(result);
+assert.ok(csv.startsWith("\uFEFF"),"Excel-compatible UTF-8 BOM");
+assert.equal(csv.trim().split("\r\n").length,4,"Header plus one row per interval");
+assert.ok(csv.includes('"100";"INFORMADO, NÃO CONCILIADO"'),"Declared flow remains numeric, not audited");
+const negative=F.exportCsv({intervals:[{from:"2026-01-31",to:"2026-02-28",opening:1000,closing:800,known:true,flow:-200,declaredTotal:null,declaredCount:0}]});
+assert.ok(negative.includes('"-200"'),"Negative withdrawals remain numeric in export");
+const malicious=F.exportCsv({intervals:[{from:"=2+2",to:"2026-02-28",opening:10,closing:20,known:false,declaredTotal:null,declaredCount:0}]});
+assert.ok(malicious.includes('"\'=2+2"'),"Formula injection is escaped as text");
+
+assert.ok(result.intervals.every(x=>!x.returnAudited));
+assert.equal(F.coverage({history:[]}).intervalCount,0);
+assert.equal(F.coverage({}).pending,0);
+const demoCoverage=F.coverage({mode:"demo",history:[
+ {date:"2026-01-01",total:100,flow:0,flowKnown:true},
+ {date:"2026-02-01",total:150,flow:30,flowKnown:true}
+]});
+assert.equal(demoCoverage.demo,true);
+assert.equal(demoCoverage.supplied,0,"Fictitious demo flows must not be counted as reported actual flows");
+assert.equal(demoCoverage.pending,1);
+assert.ok(demoCoverage.reason.includes("Demonstração fictícia"));
+assert.equal(F.coverage({history:[{date:"2026-01-31",total:1000},{date:"2026-02-28",total:1100,flow:null}]}).pending,1);
+
+require("../engine.js");require("../analytics.js");require("../performance.js");
+const E=global.WealthEngine,A=global.WealthAnalytics,P=global.WealthPerformance;
+const misleading=[{date:"2025-01-01",total:1000,flow:0},{date:"2026-01-01",total:1100,flowKnown:true}];
+assert.equal(E.historyAnalysis(misleading).twr,null);
+assert.equal(A.growthBridge(misleading).ready,false);
+assert.equal(P.annualizedMoneyWeightedReturn(misleading).available,false);
+assert.equal(F.coverage({history:misleading}).pending,1);
+
+const missing=[{date:"2025-01-01",total:1000},{date:"2026-01-01",total:1100}];
+assert.equal(E.historyAnalysis([{date:"2026-01-01",total:1000}]).twr,null,"One valuation alone is not zero-percent return");
+const incompleteCalibration=Array.from({length:16},(_,i)=>({date:new Date(Date.UTC(2025,i,1)).toISOString().slice(0,10),total:1000+i*10,flow:i===6?undefined:0}));
+assert.equal(A.historicalCalibration(incompleteCalibration).available,false,"Missing interval must block forecast calibration despite 12+ valid intervals");
+for(const rows of [missing,[{date:"2025-01-01",total:1000,flow:0},{date:"2026-01-01",total:1100,flow:null}]]){
+ assert.equal(E.historyAnalysis(rows).twr,null,"Missing flows must not produce adjusted returns");
+ assert.equal(A.growthBridge(rows).ready,false,"Missing flows must block growth bridge");
+ assert.equal(A.historicalCalibration(rows).available,false);
+ assert.equal(P.annualizedMoneyWeightedReturn(rows).available,false,"Missing flows must block IRR");
+ assert.equal(P.referenceScenario(rows,10).available,false);
+}
+const explicitZero=[{date:"2025-01-01",total:1000,flow:0},{date:"2026-01-01",total:1100,flow:0}];
+assert.ok(Math.abs(E.historyAnalysis(explicitZero).twr-10)<1e-9);
+assert.equal(A.growthBridge(explicitZero).ready,true);
+assert.equal(P.annualizedMoneyWeightedReturn(explicitZero).available,true);
+console.log("Flow provenance and unknown-cash-flow regression PASS");

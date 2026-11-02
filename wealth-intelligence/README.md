@@ -10,6 +10,55 @@ Aplicativo independente de inteligência patrimonial com interface mobile-first/
 - Ao importar backup, os dados locais existentes serão substituídos. Recomenda-se exportar backup antes.
 - Dados do extrato de maio de 2026 são históricos; atualizar com extrato atual antes de considerar as informações vigentes.
 
+## V3.4 · Atualização incremental de Excel (branch de pesquisa)
+
+Quando a carteira atual e o novo Excel passam integralmente na conferência, o modal de importação oferece **Atualizar incrementalmente** e **Substituir pelo Excel**, com apresentação da diferença antes de gravar. A escolha incremental é opcional e necessita confirmação do usuário.
+
+- Compara posições por identidade semântica (conta, nome normalizado, tipo e moeda original), não por ID sequencial gerado pelo parser.
+- O saldo corrente é sempre o conjunto de posições da **nova** planilha: posições ausentes são consideradas encerradas/ausentes para fins de exibição, mas **nenhuma venda ou retirada é inferida**.
+- Meses históricos e observações antigas permanecem, assim como lançamentos e câmbios não presentes na nova planilha; as entradas de mesmo identificador não são duplicadas.
+- Diferenças de saldo no mesmo fechamento, observações divergentes, lançamentos alterados, identidade ambígua, arquivos com competências anteriores e carteiras manuais/modificadas **bloqueiam** a atualização incremental. Não existe merge silencioso de conflitos.
+- Ajustes manuais de aporte e hipóteses de simulação são preservados quando há fonte validada. A atualização e a substituição exigem confirmação, e a gravação local só altera a carteira ativa após persistir.
+- **Importante:** o leitor atual reconhece o layout específico das abas 2024, 2025 e 2026 e de suas células mapeadas. Ele **não está homologado para 2027 ou mudanças de estrutura**. Ajustar o parser e revalidar os quatro subtotais antes de habilitar formatos futuros.
+- Sempre exportar backup JSON antes de importar. O app não sincroniza automaticamente com bancos ou corretoras, e não guarda os dados no Vercel.
+
+## V3.3 · Conciliação financeira (branch de pesquisa)
+
+Na aba Evolução, a seção **Conciliação de aportes e retiradas** apresenta intervalos com e sem fluxo informado, identificando apenas lançamentos existentes no Excel, sem convertê-los em rentabilidade auditada. É possível exportar o diagnóstico em CSV local (sem enviar dados à internet). Os motores de análise não estimam retornos quando faltam fluxos e não calibram projeções com séries fragmentadas. Veja [AUDITORIA_V3_2.md](AUDITORIA_V3_2.md) para critérios de aceite e limitações.
+
+## Auditoria corretiva V3.2.1 (branch de pesquisa)
+
+Veja [AUDITORIA_V3_2.md](AUDITORIA_V3_2.md) para falhas corrigidas, riscos residuais, critérios de homologação no Safari e regras de não publicação. Correções incluem gravação transacional, datas civis válidas, fluxo financeiro desconhecido e custo de aquisição não inventado. A versão anterior do GitHub Pages permanece inalterada.
+
+## V3 em pesquisa: UX orientada a produto e tempo (sem produção)
+
+Este conjunto de mudanças **não foi publicado no GitHub Pages**. A versão anterior continua disponível até revisão do fluxo no iPhone e validação do usuário.
+
+- Modelo derivado sem mutações na base financeira original: classificação independente por **produto, exposição, conta, localização e liquidez informada**. Fundos Trend Ouro, Trend Prata, Trend IA e ARX Fuji RF são fundos na vista *Produto*, com exposições econômicas separadas; o investimento identificado como `FUNDO  FGTS` é exibido em **Fundos de investimento**, mantendo o nome original e sem supor sua exposição econômica. O filtro de liquidez é oculto enquanto a base não informar condições de resgate.
+- Quatro entradas principais no mobile: **Resumo, Carteira, Evolução, Proventos**. Filtros reais de produto/exposição/conta/localização/liquidez na Carteira, com subtotais consistentes e detalhamento por investimento.
+- Evolução usa os **35 fechamentos mensais históricos** sem conectar saldos provisórios de outubro à linha de setembro. Filtragens por classe geram séries marcadas como **parciais** e não calculam rentabilidade nem suposta variação completa com cobertura incompleta.
+- A previdência aparece em destaque, com a soma dos dois contratos; se a base carregada não corresponder ao subtotal do Excel, um alerta explícito substitui qualquer indicação de saldo validado.
+- Detalhes contextuais com origem, data e moeda original; sem inventar cotas, preços médios, liquidez, retorno ou instituições.
+- Reprodução/QA em navegador móvel com dados **inteiramente sintéticos** e captura das quatro telas. Nenhum valor financeiro privado é salvo no repositório.
+- A carteira permanece em localStorage e a importação pelo Excel/JSON exige ação do usuário. A V3 não sincroniza os saldos do iPhone automaticamente.
+- A verificação V3 compara cada posição da importação Excel por uma impressão de consistência armazenada apenas no próprio dispositivo. Isso detecta alterações compensatórias que não modificariam os quatro subtotais; não é assinatura criptográfica nem substitui os extratos originais. Backups antigos sem essa impressão continuam importáveis, mas aparecem como não verificados até nova carga do Excel.
+
+### V3.2 · Gráficos com escalas e contexto temporal (somente pesquisa)
+- Evolução geral, por categoria e por ativo: eixo Y com valores arredondados em R$ (ou US$ no histórico individual denominado em USD), eixo X com competências reais em mm/aaaa, marcações visíveis e identificação de periodicidade mensal.
+- Modo anual: rótulos por ano; anos incompletos ganham * e legenda específica. Valores anuais representam saldo na última competência disponível, não soma anual nem rentabilidade.
+- Dados ausentes não são interpolados, a linha não é conectada artificialmente; cobertura parcial mantém traço diferenciado.
+- Proventos: barras mensais em reais com escala horizontal, mês/ano por linha, legenda de Ações e FIIs e observação sobre competências sem lançamentos.
+- Ocultar valores também oculta os números dos eixos; interação nos pontos mostra competência e saldo apenas enquanto valores estiverem visíveis.
+- Testes no navegador móvel verificam os rótulos, escalas, periodicidade, ano parcial, privacidade e ausência de erros de segurança. Não usar imagens de teste como confirmação dos números financeiros do iPhone.
+
+### Revisão visual V3.1 em pesquisa
+- Resumo com patrimônio primeiro, integridade compacta e expansão contextual, previdência e demais ativos separados, evolução antes da lista de alocação por produto. Barra horizontal substitui a rosca; sete categorias mostram valor e peso e permitem acesso direto à Carteira.
+- Carteira por categorias recolhidas, busca imediata e filtros progressivos. Alterar critérios não modifica dados, só reorganiza e recalcula os subtotais visíveis.
+- Histórico com período e modalidade próximos do gráfico, filtros lado a lado e justificativas financeiras sob expansão opcional. Pontos mensais podem ser tocados para mostrar competência, saldo e cobertura.
+- Barra inferior respeita o safe-area do iPhone. Testes visuais rodam em viewport 393 × 852, sem representar validação manual do Safari.
+- Mantida a política CSP estrita: os gráficos e barras proporcionais usam geometria SVG, sem estilos inline de largura sujeitos a bloqueio no Safari/WebKit.
+- Status: pesquisa isolada no PR #9; ainda requer validação visual no dispositivo e importação local do Excel antes de qualquer merge ou publicação.
+
 ## V2.4 · Integridade do backup e recuperação no iPhone
 
 - **Nunca apresentar valores fictícios por acidente:** quando o armazenamento local estiver ilegível, o aplicativo inicia sem carteira e exibe alerta explícito, em vez de apresentar o modo demonstração como se fosse patrimônio real.

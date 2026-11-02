@@ -1,7 +1,7 @@
 (function(global){
 "use strict";
 const day=(s)=>Date.parse(s+"T00:00:00Z"),yearMs=365.25*86400000;
-function cleanHistory(h){return Array.isArray(h)?h.filter(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(String(x.date))&&Number.isFinite(+x.total)&&+x.total>=0&&Number.isFinite(+x.flow||0)).slice().sort((a,b)=>a.date.localeCompare(b.date)):[];}
+function cleanHistory(h){return Array.isArray(h)?h.filter(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(String(x.date))&&Number.isFinite(Number(x.total))&&Number(x.total)>=0&&(x.flow===undefined||x.flow===null||x.flow===""||Number.isFinite(Number(x.flow)))).map(x=>({...x,flow:x.flow==null||x.flow===""?0:Number(x.flow),flowKnown:x.flowKnown!==false&&x.flow!==undefined&&x.flow!==null&&x.flow!==""&&Number.isFinite(Number(x.flow))})).sort((a,b)=>a.date.localeCompare(b.date)):[];}
 function cashFlows(rows){const h=cleanHistory(rows);if(h.length<2||!(+h[0].total>0)||h.slice(1).some(x=>x.flowKnown===false))return[];let flows=[{date:h[0].date,amount:-Number(h[0].total)}];for(let i=1;i<h.length;i++){const f=Number(h[i].flow)||0;if(f)flows.push({date:h[i].date,amount:-f});}
 flows.push({date:h[h.length-1].date,amount:Number(h[h.length-1].total)});
 return flows;}
