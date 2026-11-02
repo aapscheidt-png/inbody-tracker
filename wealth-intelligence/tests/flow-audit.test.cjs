@@ -46,14 +46,15 @@ assert.ok(result.intervals.every(x=>!x.returnAudited));
 assert.equal(F.coverage({history:[]}).intervalCount,0);
 assert.equal(F.coverage({}).pending,0);
 assert.equal(F.coverage({history:[{date:"2026-01-31",total:1000},{date:"2026-02-28",total:1100,flow:null}]}).pending,1);
+
+require("../engine.js");require("../analytics.js");require("../performance.js");
+const E=global.WealthEngine,A=global.WealthAnalytics,P=global.WealthPerformance;
 const misleading=[{date:"2025-01-01",total:1000,flow:0},{date:"2026-01-01",total:1100,flowKnown:true}];
 assert.equal(E.historyAnalysis(misleading).twr,null);
 assert.equal(A.growthBridge(misleading).ready,false);
 assert.equal(P.annualizedMoneyWeightedReturn(misleading).available,false);
 assert.equal(F.coverage({history:misleading}).pending,1);
 
-require("../engine.js");require("../analytics.js");require("../performance.js");
-const E=global.WealthEngine,A=global.WealthAnalytics,P=global.WealthPerformance;
 const missing=[{date:"2025-01-01",total:1000},{date:"2026-01-01",total:1100}];
 assert.equal(E.historyAnalysis([{date:"2026-01-01",total:1000}]).twr,null,"One valuation alone is not zero-percent return");
 const incompleteCalibration=Array.from({length:16},(_,i)=>({date:new Date(Date.UTC(2025,i,1)).toISOString().slice(0,10),total:1000+i*10,flow:i===6?undefined:0}));
