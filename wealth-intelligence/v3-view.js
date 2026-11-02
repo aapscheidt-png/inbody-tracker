@@ -220,6 +220,22 @@ function renderHistory(){
   return '<div class="v3-history-row"><span>'+esc(periodLabel)+' <small>'+esc(note)+'</small></span><strong data-v3-money>'+fmt(x.value)+'</strong></div>';
  }).join("");
 }
+function renderFlowAudit(){
+ const report=root.WealthFlowAudit?.coverage(getState())||{intervalCount:0,supplied:0,pending:0,declaredCount:0,outsideCount:0,declaredTotal:0,intervals:[],reason:""};
+ $("v3FlowAuditSummary").innerHTML=
+  '<div><span>Intervalos com fluxo informado</span><strong>'+report.supplied+' / '+report.intervalCount+'</strong></div>'+
+  '<div><span>Intervalos sem fluxo</span><strong>'+report.pending+'</strong></div>'+
+  '<div><span>Aportes listados no Excel</span><strong>'+report.declaredCount+'</strong><small data-v3-money>'+fmt(report.declaredTotal)+'</small></div>';
+ $("v3FlowAuditHint").textContent=report.intervalCount===0?
+  "Ainda não há dois saldos datados para comparar. Registre ou importe fechamentos mensais.":
+  report.reason+" "+(report.outsideCount?"Há "+report.outsideCount+" lançamento(s) fora dos intervalos exibidos.":"");
+ $("v3FlowAuditRows").innerHTML=report.intervals.length?report.intervals.slice().reverse().map(i=>
+  '<div class="v3-flow-row"><span>'+esc(monthDate(i.from.slice(0,7)))+' → '+esc(monthDate(i.to.slice(0,7)))+
+  '<small>'+(i.known?"Fluxo informado":"Fluxo pendente · não presumir zero")+'</small></span>'+
+  '<span class="v3-flow-values"><strong data-v3-money>'+(i.known?fmt(i.flow):"Pendente")+'</strong>'+
+  '<small>'+(i.declaredCount?i.declaredCount+" aporte(s) listado(s) · "+fmt(i.declaredTotal):"Sem aporte listado na planilha")+'</small></span></div>'
+ ).join(""):'<p class="v3-empty">Sem intervalos comparáveis.</p>';
+}
 function renderIncome(){
  const data=getState().dataEngine||{},years=L.yearList(data);if(!years.includes(incomeYear))incomeYear=years[0]||"2026";
  $("v3IncomeYear").innerHTML=years.map(y=>'<option value="'+esc(y)+'" '+(incomeYear===y?"selected":"")+'>'+y+'</option>').join("");
@@ -243,7 +259,7 @@ function renderIncome(){
 }
 function render(){
  if(!$("v3Home"))return;
- renderHome();renderPortfolio();renderHistory();renderIncome();
+ renderHome();renderPortfolio();renderHistory();renderFlowAudit();renderIncome();
 }
 function mount(options){
  getState=options.getState;navigate=options.navigate;
