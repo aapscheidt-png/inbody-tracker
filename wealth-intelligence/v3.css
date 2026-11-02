@@ -439,3 +439,35 @@
 .xlsx-delta-grid strong{display:block;font-size:16px;color:#e6f4f1;margin-top:5px;font-variant-numeric:tabular-nums}
 .xlsx-merge-issues{padding-left:16px;font-size:11px;color:#eac6ab;line-height:1.55;margin:8px 0}
 @media(max-width:350px){.xlsx-delta-grid{gap:4px}.xlsx-delta-grid>div{padding:7px 5px}.xlsx-delta-grid strong{font-size:14px}}
+
+/* V3.4.1 Safari visual QA: legacy hero could paint an empty clipped gradient
+   above the V3 home. A self-contained, accessible summary replaces it. */
+body.v3-ready{background:#07141e!important;background-attachment:scroll!important}
+.v3-ready section[data-page="home"]>.hero{display:none!important}
+.v3-ready .v3-total-overview{
+ display:flex;flex-direction:column;gap:10px;min-width:0;
+ background:#103044;border:1px solid #316276;border-radius:20px;
+ padding:19px 18px 16px;
+}
+.v3-ready .v3-total-overview .v3-eyebrow{
+ font-size:10px;letter-spacing:.13em;color:#acd1df;font-weight:770
+}
+.v3-ready .v3-total-amount{
+ display:block;color:#f2fafb;font-size:clamp(30px,7.8vw,46px);
+ font-weight:800;letter-spacing:-.055em;line-height:1.2;
+ font-variant-numeric:tabular-nums;overflow-wrap:anywhere
+}
+.v3-ready .v3-total-footer{
+ display:flex;justify-content:space-between;flex-wrap:wrap;
+ gap:6px 12px;font-size:11px;line-height:1.45;color:#b5d3dc
+}
+.v3-ready .v3-year-selector select{
+ min-width:90px;width:auto;height:40px;
+ padding:8px 12px;background:#112c3d;color:#eaf5f8;
+ border:1px solid #426576;border-radius:10px;font-size:14px;
+ font-weight:700;appearance:auto;-webkit-appearance:menulist
+}
+@media(max-width:380px){
+ .v3-ready .v3-total-overview{padding:17px 14px}
+ .v3-ready .v3-total-amount{font-size:clamp(27px,7.8vw,40px)}
+}
