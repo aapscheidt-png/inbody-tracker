@@ -33,5 +33,24 @@ function coverage(data){
   reason:"Fluxos registrados e aportes declarados não equivalem a extratos conciliados. Proventos podem ter sido reinvestidos; não são automaticamente aportes externos."
  };
 }
-root.WealthFlowAudit={coverage};
+function exportCsv(report){
+ const escapeCell=value=>{
+  const raw=String(value??"");
+  // Never allow spreadsheet programs to evaluate imported text as formulas.
+  const safe=/^[=+\-@\t\r]/.test(raw)?"'"+raw:raw;
+  return '"'+safe.replace(/"/g,'""')+'"';
+ };
+ const lines=[[
+  "Data inicial","Data final","Saldo inicial (R$)","Saldo final (R$)",
+  "Fluxo informado (R$)","Situação do fluxo","Aportes listados (R$)",
+  "Quantidade de aportes listados","Rentabilidade auditada"
+ ]];
+ for(const i of report.intervals||[])lines.push([
+  i.from,i.to,i.opening,i.closing,i.known?i.flow:"",
+  i.known?"INFORMADO, NÃO CONCILIADO":"PENDENTE",
+  i.declaredTotal===null?"":i.declaredTotal,i.declaredCount,"NÃO"
+ ]);
+ return "\uFEFF"+lines.map(row=>row.map(escapeCell).join(";")).join("\r\n")+"\r\n";
+}
+root.WealthFlowAudit={coverage,exportCsv};
 })(window);
