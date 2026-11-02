@@ -113,7 +113,7 @@ const {chromium,webkit}=require("playwright-core");
  assert.ok((await page.locator(".v4-wealth-hero").textContent()).includes("CONFERIDO"),"Verified holdings have a clear status");
  // Direct reconciliation CTA must open the existing local Excel picker.
  const chooserPromise=page.waitForEvent("filechooser");
- await page.locator("[data-v3-reimport]").click();
+ await page.locator(".v4-home-action [data-v3-reimport]").click();
  const chooser=await chooserPromise;
  assert.equal(chooser.isMultiple(),false);
  await chooser.setFiles([]);
