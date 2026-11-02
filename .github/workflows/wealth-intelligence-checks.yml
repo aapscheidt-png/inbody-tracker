@@ -8,6 +8,7 @@ on:
       - main
       - research/wealth-data-engine-v2-20261021
       - wealth-intelligence-v1
+      - research/wealth-v4-experience-home-20261102
     paths:
       - "wealth-intelligence/**"
       - ".github/workflows/wealth-intelligence-checks.yml"
@@ -56,7 +57,7 @@ jobs:
           grep -q '"ok":true' /tmp/wealth-health.json
           curl --fail --silent http://127.0.0.1:3000/ > /tmp/wealth-index.html
           grep -q 'Wealth Intelligence AI' /tmp/wealth-index.html
-          for file in app.js engine.js analytics.js performance.js importer.js xlsx-engine.js ledger.js integrity.js v3-model.js v3-view.js v3.css styles.css sw.js manifest.webmanifest; do
+          for file in app.js engine.js analytics.js performance.js importer.js xlsx-engine.js ledger.js integrity.js v3-model.js v3-view.js v3.css v4-home.css styles.css sw.js manifest.webmanifest; do
             curl --fail --silent -o /dev/null "http://127.0.0.1:3000/$file"
           done
           echo 'Production HTTP smoke test passed'
