@@ -2,7 +2,7 @@
 (function(global){
   const MS_DAY=86400000;
   const parse=(value)=>{const t=Date.parse(String(value)+"T00:00:00Z");return Number.isFinite(t)?t:null;};
-  const normalizeRows=(rows)=>Array.isArray(rows)?rows.filter(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(String(x.date||""))&&parse(x.date)!==null&&Number.isFinite(Number(x.total))&&Number(x.total)>=0&&(x.flow===undefined||x.flow===null||x.flow===""||Number.isFinite(Number(x.flow)))).map(x=>({date:x.date,total:Number(x.total),flow:x.flow==null||x.flow===""?0:Number(x.flow),flowKnown:x.flowKnown===true||(x.flowKnown!==false&&x.flow!==undefined&&x.flow!==null&&x.flow!==""&&Number.isFinite(Number(x.flow)))})).sort((a,b)=>a.date.localeCompare(b.date)):[];
+  const normalizeRows=(rows)=>Array.isArray(rows)?rows.filter(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(String(x.date||""))&&parse(x.date)!==null&&Number.isFinite(Number(x.total))&&Number(x.total)>=0&&(x.flow===undefined||x.flow===null||x.flow===""||Number.isFinite(Number(x.flow)))).map(x=>({date:x.date,total:Number(x.total),flow:x.flow==null||x.flow===""?0:Number(x.flow),flowKnown:x.flowKnown!==false&&x.flow!==undefined&&x.flow!==null&&x.flow!==""&&Number.isFinite(Number(x.flow))})).sort((a,b)=>a.date.localeCompare(b.date)):[];
   function periodHistory(rows,key,now){
     const all=normalizeRows(rows),months={m1:1,m3:3,m6:6,y1:12,all:0},n=months[key];
     if(!n||!all.length)return all;
