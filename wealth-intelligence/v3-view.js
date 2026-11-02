@@ -150,7 +150,7 @@ function renderHome(){
  const dateDisplay=raw=>/^\d{4}-\d{2}/.test(String(raw||""))?String(raw).slice(5,7)+"/"+String(raw).slice(0,4):"Sem referência";
  const reference=metadata.latestDate||data.positions?.map(p=>p.asOf).filter(Boolean).sort().at(-1)||"";
  const lastFullMonth=metadata.latestFullMonth||"";
- const referenceText=demo?"Exemplo ilustrativo":metadata.partial?"Saldos de datas diferentes":
+ const referenceText=demo?"Exemplo ilustrativo":reference?"Última posição: "+dateDisplay(reference)":
   lastFullMonth?"Referência mensal: "+dateDisplay(lastFullMonth):
   reference?"Última posição: "+dateDisplay(reference):"Data não informada";
  const discrepancy=data.dataEngine?.sourceMetadata?.sourceBuckets?.find(x=>x.key==="pension")?.excelValue;
@@ -172,7 +172,7 @@ function renderHome(){
  }
  else if(integrity.status==="verified"&&metadata.partial){
   alertTitle="Há saldos de datas diferentes";
-  alertBody="Os investimentos não foram todos atualizados na mesma competência. Confira as datas antes de comparar.";
+  alertBody="Alguns investimentos têm referências de meses distintos. Atualize os saldos antes de comparar.";
   alertButton="Atualizar Excel";
  }
  else if(integrity.status==="verified"&&!metadata.partial){
