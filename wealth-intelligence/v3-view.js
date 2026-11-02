@@ -150,7 +150,7 @@ function renderHome(){
  const dateDisplay=raw=>/^\d{4}-\d{2}/.test(String(raw||""))?String(raw).slice(5,7)+"/"+String(raw).slice(0,4):"Sem referência";
  const reference=metadata.latestDate||data.positions?.map(p=>p.asOf).filter(Boolean).sort().at(-1)||"";
  const lastFullMonth=metadata.latestFullMonth||"";
- const referenceText=demo?"Exemplo ilustrativo":reference?"Última posição: "+dateDisplay(reference)":
+ const referenceText=demo?"Exemplo ilustrativo":reference?"Última posição: "+dateDisplay(reference):
   lastFullMonth?"Referência mensal: "+dateDisplay(lastFullMonth):
   reference?"Última posição: "+dateDisplay(reference):"Data não informada";
  const discrepancy=data.dataEngine?.sourceMetadata?.sourceBuckets?.find(x=>x.key==="pension")?.excelValue;
