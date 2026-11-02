@@ -236,6 +236,16 @@ function renderFlowAudit(){
   '<small>'+(i.declaredCount?i.declaredCount+" aporte(s) listado(s) · "+fmt(i.declaredTotal):"Sem aporte listado na planilha")+'</small></span></div>'
  ).join(""):'<p class="v3-empty">Sem intervalos comparáveis.</p>';
 }
+function exportFlowAudit(){
+ const data=root.WealthFlowAudit?.coverage(getState());
+ if(!data)return;
+ const csv=root.WealthFlowAudit.exportCsv(data);
+ const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download="wealth-conciliacao-fluxos-"+new Date().toISOString().slice(0,10)+".csv";
+ document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
 function renderIncome(){
  const data=getState().dataEngine||{},years=L.yearList(data);if(!years.includes(incomeYear))incomeYear=years[0]||"2026";
  $("v3IncomeYear").innerHTML=years.map(y=>'<option value="'+esc(y)+'" '+(incomeYear===y?"selected":"")+'>'+y+'</option>').join("");
@@ -288,6 +298,7 @@ function mount(options){
  $("v3HistoryDimension").addEventListener("change",e=>{historyDimension=e.target.value;historySelection="";renderHistory();});
  $("v3HistoryCategory").addEventListener("change",e=>{historySelection=e.target.value;renderHistory();});
  $("v3IncomeYear").addEventListener("change",e=>{incomeYear=e.target.value;renderIncome();});
+ $("v3FlowExport").addEventListener("click",exportFlowAudit);
  $("v3DetailDialog").addEventListener("click",e=>{if(e.target.closest("[data-v3-close]"))$("v3DetailDialog").close();});
  document.body.classList.add("v3-ready");
  render();
