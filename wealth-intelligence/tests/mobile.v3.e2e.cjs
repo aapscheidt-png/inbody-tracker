@@ -20,6 +20,15 @@ const {chromium,webkit}=require("playwright-core");
  await page.locator(".v3-ready").waitFor();
  assert.equal(await page.locator(".tabbar [data-go]").count(),4);
  assert.ok(await page.locator("#v3Home").isVisible());
+ assert.ok(await page.locator(".v3-total-overview").isVisible(),"Consolidated wealth summary replaces blank legacy hero");
+ assert.ok((await page.locator(".v3-total-overview").textContent()).includes("1.329.973,50"),"DEMO overview displays the full sample portfolio");
+ assert.ok(await page.locator("section[data-page='home']>.hero").isHidden(),"Legacy hero is never visible in V3 Safari");
+ await page.locator(".tabbar [data-go='history']").click();
+ assert.ok((await page.locator("#v3FlowAuditSummary").textContent()).includes("0 / 7"),"Fictitious cash movements are not certified");
+ assert.ok((await page.locator("#v3FlowAuditHint").textContent()).includes("Demonstração fictícia"),"Financial caveat is explicit in DEMO");
+ await page.locator(".tabbar [data-go='income']").click();
+ assert.ok((await page.locator("#v3IncomeYear").inputValue()).match(/^20[2-9][0-9]$/),"Even with zero income the year selector is visible");
+ await page.locator(".tabbar [data-go='home']").click();
  // Protect the exact Safari case reported by the user: Sep and Oct labels
  // used to overlap near the right edge of the home chart on a 393px iPhone.
  const assertAxisFits=async(contextLabel)=>{
@@ -93,6 +102,8 @@ const {chromium,webkit}=require("playwright-core");
  assert.ok(await page.evaluate(()=>document.querySelector(".v3-home-trend").getBoundingClientRect().top <
   document.querySelector(".v3-home-allocation").getBoundingClientRect().top),"Balance evolution precedes allocation");
  assert.ok((await page.locator("#v3Home").textContent()).includes("210.000,00"));
+ assert.ok((await page.locator(".v3-total-overview").textContent()).includes("485.700,00"),"Imported consolidation replaces DEMO");
+ assert.ok(await page.locator("section[data-page='home']>.hero").isHidden(),"No legacy hero after import");
  assert.ok((await page.locator(".v3-integrity").textContent()).includes("Subtotais conferidos com o Excel"));
  // Direct reconciliation CTA must open the existing local Excel picker.
  const chooserPromise=page.waitForEvent("filechooser");
