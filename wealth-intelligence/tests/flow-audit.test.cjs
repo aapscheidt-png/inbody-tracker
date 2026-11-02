@@ -45,6 +45,14 @@ assert.ok(malicious.includes('"\'=2+2"'),"Formula injection is escaped as text")
 assert.ok(result.intervals.every(x=>!x.returnAudited));
 assert.equal(F.coverage({history:[]}).intervalCount,0);
 assert.equal(F.coverage({}).pending,0);
+const demoCoverage=F.coverage({mode:"demo",history:[
+ {date:"2026-01-01",total:100,flow:0,flowKnown:true},
+ {date:"2026-02-01",total:150,flow:30,flowKnown:true}
+]});
+assert.equal(demoCoverage.demo,true);
+assert.equal(demoCoverage.supplied,0,"Fictitious demo flows must not be counted as reported actual flows");
+assert.equal(demoCoverage.pending,1);
+assert.ok(demoCoverage.reason.includes("Demonstração fictícia"));
 assert.equal(F.coverage({history:[{date:"2026-01-31",total:1000},{date:"2026-02-28",total:1100,flow:null}]}).pending,1);
 
 require("../engine.js");require("../analytics.js");require("../performance.js");
