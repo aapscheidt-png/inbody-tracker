@@ -14,7 +14,7 @@ function coverage(data){
   const previous=history[i-1],current=history[i];
   const reported=contributions.filter(x=>x.date>previous.date&&x.date<=current.date);
   const sourceTotal=reported.reduce((sum,x)=>sum+Number(x.amount),0);
-  const known=current.flowKnown===true||(current.flowKnown!==false&&current.flow!==undefined&&current.flow!==null&&current.flow!==""&&Number.isFinite(Number(current.flow)));
+  const known=current.flowKnown!==false&&current.flow!==undefined&&current.flow!==null&&current.flow!==""&&Number.isFinite(Number(current.flow));
   intervals.push({
    from:previous.date,to:current.date,opening:Number(previous.total),closing:Number(current.total),
    known,flow:known?Number(current.flow):null,
