@@ -43,6 +43,7 @@
     const h=normalizeRows(rows),periods=adjustedPeriodReturns(h);
     const elapsed=h.length<2?0:(parse(h[h.length-1].date)-parse(h[0].date))/MS_DAY;
     const intervals=periods.length;
+    if(periods.length!==Math.max(0,h.length-1))return{available:false,reason:"Há períodos sem fluxos completos ou intervalos inválidos; não é seguro calibrar uma projeção com uma série fragmentada.",intervals,elapsedDays:elapsed};
     if(intervals<12||elapsed<360)return{available:false,reason:"Requer pelo menos 12 intervalos válidos e um ano de histórico com fluxos líquidos registrados.",intervals,elapsedDays:elapsed};
     const logs=periods.map(r=>Math.log1p(r.return));
     const totalDays=periods.reduce((s,p)=>s+p.days,0);
