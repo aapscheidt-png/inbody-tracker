@@ -1,6 +1,6 @@
 (function(){"use strict";
 const E=window.WealthEngine,A=window.WealthAnalytics,P=window.WealthPerformance,I=window.WealthImporter,X=window.WealthXlsx,L=window.WealthLedger,G=window.WealthIntegrity;
-let state=E.read(),activePage="home",simulation=null,simulationKey="",activePreset="base",activePeriod="all",historyView="assets",incomeYear="2026",toastTimer=null,pendingXlsx=null;
+let state=E.read(),activePage="home",simulation=null,simulationKey="",activePreset="base",activePeriod="all",historyView="assets",incomeYear="2026",toastTimer=null,pendingXlsx=null,pendingIncremental=null,pendingPreviousState=null;
 const el=(id)=>document.getElementById(id);
 const text=(id,val)=>{const e=el(id);if(e)e.textContent=val;};
 const esc=(x)=>String(x==null?"":x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -106,7 +106,7 @@ function renderAudit(){
  el("auditIssues").innerHTML=flags.length?flags.slice(0,35).map(f=>'<div class="audit-item"><strong>'+esc(f.code)+'</strong><span>'+esc(f.date||f.asset||"")+'</span><small>'+esc(f.message||((f.reported||f.corrected)?"Informado: "+money(f.reported)+" · Reconciliado: "+money(f.corrected):f.cell||"Divergência entre fontes"))+'</small></div>').join(""):'<p class="muted">Nenhuma divergência detectada pelas regras implementadas; isso não substitui conciliação bancária.</p>';
 }
 async function importExcel(file){
- if(!file)return;pendingXlsx=null;el("confirmXlsx").disabled=true;
+ if(!file)return;pendingXlsx=null;pendingIncremental=null;pendingPreviousState=null;el("confirmXlsx").disabled=true;
   el("importStatus").hidden=false;text("importStatus","Conferindo o arquivo "+String(file.name||"Excel")+" com o saldo de cada classe...");
   notify("Analisando planilha localmente...");
  try{
@@ -121,18 +121,49 @@ async function importExcel(file){
   if(fx>0)next.fx=fx;
   if(state.mode==="personal"){next.assumptions={...state.assumptions};next.benchmarkAnnualPct=state.benchmarkAnnualPct;}
   next.dataEngine={quality:parsed.quality,sourceMetadata:parsed.sourceMetadata,assetHistory:parsed.assetHistory,sourceRates:parsed.sourceRates,reportedContributions:parsed.reportedContributions,reportedDistributions:parsed.reportedDistributions};
-  const candidate=E.normalize(next);pendingXlsx=candidate;
+  const candidate=E.normalize(next);pendingXlsx=candidate;pendingPreviousState=JSON.stringify(state);
+  pendingIncremental=window.WealthIncremental.reconciliation(state,candidate);
   const worth=E.portfolio(candidate).total;
   el("xlsxPreview").innerHTML='<p class="xlsx-check-ok">Conferência aprovada: Brasil, exterior, previdência e cripto coincidem com os quatro subtotais do Excel. O Dashboard pode continuar divergente porque usa competências diferentes.</p><div class="xlsx-summary"><div><small>POSIÇÕES COM SALDO</small><strong>'+candidate.positions.length+'</strong></div><div><small>OBSERVAÇÕES POR ATIVO</small><strong>'+parsed.metrics.observations+'</strong></div><div><small>MESES CONSOLIDADOS</small><strong>'+candidate.history.length+'</strong></div><div><small>SALDOS PROVISÓRIOS</small><strong>'+money(worth,2)+'</strong></div></div><p class="xlsx-warning"><strong>Competências diferentes.</strong> Última posição doméstica '+esc(parsed.sourceMetadata.latestDate)+', último fechamento '+esc(parsed.sourceMetadata.latestFullMonth)+', previdência '+esc(parsed.sourceMetadata.latestPensionDate)+'. Saldos, não preços unitários ou custos de compra.</p><p class="muted paragraph">'+parsed.quality.filter(q=>q.severity==="warning").length+' alertas de divergência. Importar substitui os dados do navegador, mas não altera o Excel original.</p>';
-  text("importStatus","Conferência concluída: quatro subtotais coincidem com a planilha. Confirme a importação.");
+  const report=pendingIncremental,metrics=report.stats;
+  const stat=(name,value)=>'<div><span>'+esc(name)+'</span><strong>'+esc(value)+'</strong></div>';
+  el("xlsxPreview").innerHTML+='<div class="xlsx-delta-grid">'+
+   stat("Novas posições",metrics.addedPositions)+stat("Posições alteradas",metrics.changedPositions)+
+   stat("Posições encerradas/ausentes",metrics.removedPositions)+stat("Meses históricos adicionais",metrics.newMonths)+
+   stat("Novas observações",metrics.newObservations)+stat("Proventos adicionais",metrics.newDistributions)+'</div>'+
+   '<p class="muted paragraph">A comparação se refere às posições e competências já identificáveis nas duas versões do Excel. Uma ausência na nova carteira atual não é uma ordem de venda e não é tratada como resgate comprovado.</p>'+
+   (report.issues.length?'<ul class="xlsx-merge-issues">'+report.issues.slice(0,8).map(m=>'<li>'+esc(m)+'</li>').join("")+
+    (report.issues.length>8?'<li>Outras '+(report.issues.length-8)+' divergências.</li>':"")+'</ul>':"");
+  el("xlsxModeIncremental").disabled=!report.eligible;
+  el("xlsxModeIncremental").checked=report.eligible;
+  el("xlsxModeReplace").checked=!report.eligible;
+  text("xlsxMergeWarning",report.eligible?
+   "Atualização incremental possível. Antes de confirmar, exporte um backup. As diferenças serão salvas somente após sua aprovação.":
+   "Atualização incremental indisponível: as fontes apresentam pendências ou não há Excel anterior conferido. A substituição completa continua disponível, mas descarta alterações locais; faça backup.");
+  text("importStatus","Quatro subtotais conferidos. Escolha atualização incremental ou substituição completa na prévia.");
   el("settingsDialog").close();el("xlsxDialog").showModal();el("confirmXlsx").disabled=false;
-  }catch(error){pendingXlsx=null;el("importStatus").hidden=false;text("importStatus","Importação interrompida: "+error.message+" Nenhum valor anterior foi substituído.");notify("Falha na leitura: "+error.message);}
+  }catch(error){pendingXlsx=null;pendingIncremental=null;pendingPreviousState=null;el("importStatus").hidden=false;text("importStatus","Importação interrompida: "+error.message+" Nenhum valor anterior foi substituído.");notify("Falha na leitura: "+error.message);}
 }
 function confirmExcelImport(){
  if(!pendingXlsx)return;
- if(!confirm("Substituir a carteira local atual pelo histórico do Excel? Exporte backup antes. Os dados não serão publicados."))return;
- const candidate=pendingXlsx;if(!persistCandidate(candidate))return;
- pendingXlsx=null;el("xlsxDialog").close();simulationKey="";render();go("home");notify("Histórico Excel importado com origem e ressalvas de conciliação.");
+ if(JSON.stringify(state)!==pendingPreviousState){
+  notify("A carteira foi alterada após abrir a prévia. Importe o Excel novamente antes de confirmar.");
+  el("confirmXlsx").disabled=true;return;
+ }
+ const incremental=el("xlsxModeIncremental").checked;
+ const report=pendingIncremental;
+ if(incremental&&(!report?.eligible||!report.candidate)){
+  notify("Atualização incremental bloqueada. Revise os conflitos antes de continuar.");return;
+ }
+ const message=incremental?
+  "Aplicar somente a atualização conciliada e preservar as observações antigas? Exporte backup antes de continuar.":
+  "ATENÇÃO: substituir TODA a carteira local atual e o histórico pelo conteúdo do Excel? Alterações manuais e meses não incluídos no novo arquivo serão descartados. Exporte backup antes de prosseguir.";
+ if(!confirm(message))return;
+ const candidate=incremental?report.candidate:pendingXlsx;
+ if(!persistCandidate(candidate))return;
+ pendingXlsx=null;pendingIncremental=null;pendingPreviousState=null;
+ el("xlsxDialog").close();simulationKey="";render();go("home");
+ notify(incremental?"Atualização incremental concluída. Confira o histórico preservado.":"Histórico Excel substituído após confirmação.");
 }
 function persistCandidate(candidate){try{const next=E.normalize(candidate);E.save(next);state=next;return true;}catch(e){notify("Não foi possível gravar os dados neste navegador. Nenhuma alteração foi aplicada; exporte um backup e verifique o espaço disponível.");return false;}}
 
