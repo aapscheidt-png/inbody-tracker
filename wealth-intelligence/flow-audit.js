@@ -37,7 +37,7 @@ function exportCsv(report){
  const escapeCell=value=>{
   const raw=String(value??"");
   // Never allow spreadsheet programs to evaluate imported text as formulas.
-  const safe=/^[=+\-@\t\r]/.test(raw)?"'"+raw:raw;
+  const safe=typeof value==="number"&&Number.isFinite(value)?raw:(/^[=+\-@\t\r]/.test(raw)?"'"+raw:raw);
   return '"'+safe.replace(/"/g,'""')+'"';
  };
  const lines=[[
