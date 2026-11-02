@@ -73,14 +73,29 @@ function chart(series,title,currency="BRL"){
   return'<line x1="'+l+'" x2="'+(w-r)+'" y1="'+yy+'" y2="'+yy+'" stroke="#304553" stroke-opacity=".75"/>'+
    '<text data-v3-y-label x="'+(l-8)+'" y="'+(Number(yy)+3.5)+'" text-anchor="end" font-size="10" fill="#9db4be">'+esc(axisMoney(value,currency))+'</text>';
  }).join("");
- // Up to five dated labels for the actual records; annual partial years get an asterisk.
- const indices=[...new Set(Array.from({length:Math.min(5,valid.length)},(_,i)=>
-  Math.round(i*(valid.length-1)/Math.max(1,Math.min(5,valid.length)-1))))];
+ // Reserve the first and last observed dates, then select spaced intermediate
+ // observations by their *calendar coordinates*. Sampling by record index was
+ // making Sep/2026 and Oct/2026 collide in the iPhone chart.
+ // The minimum gap is in SVG viewBox units, so it scales with mobile width.
+ const tickGap=annual?55:80,plotWidth=w-l-r;
+ const maxTicks=Math.min(5,valid.length,Math.floor(plotWidth/tickGap)+1);
+ const indices=[0];
+ if(valid.length>1&&x(valid.length-1)-x(0)>=tickGap)indices.push(valid.length-1);
+ for(let slot=1;slot<maxTicks-1;slot++){
+  const target=l+slot*plotWidth/(maxTicks-1);
+  const candidates=valid.map((_,i)=>i).filter(i=>
+   !indices.includes(i)&&indices.every(j=>Math.abs(x(i)-x(j))>=tickGap));
+  if(!candidates.length)break;
+  candidates.sort((a,b)=>Math.abs(x(a)-target)-Math.abs(x(b)-target)||a-b);
+  indices.push(candidates[0]);
+ }
+ indices.sort((a,b)=>x(a)-x(b));
  const xTicks=indices.map(i=>{
   const s=valid[i],xx=x(i).toFixed(1);
   const label=annual?s.month.slice(0,4)+(s.yearComplete?"":"*"):monthDate(s.month);
+  const anchor=i===0?"start":i===valid.length-1?"end":"middle";
   return'<line x1="'+xx+'" x2="'+xx+'" y1="'+(h-b)+'" y2="'+(h-b+4)+'" stroke="#607783"/>'+
-   '<text data-v3-x-label x="'+xx+'" y="'+(h-9)+'" fill="#adc5cd" text-anchor="middle" font-size="10">'+esc(label)+'</text>';
+   '<text data-v3-x-label x="'+xx+'" y="'+(h-9)+'" fill="#adc5cd" text-anchor="'+anchor+'" font-size="10">'+esc(label)+'</text>';
  }).join("");
  const dots=valid.map((s,i)=>{
   const verified=complete(s),color=verified?"#8ae8cf":"#c8a66c";
