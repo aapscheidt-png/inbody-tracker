@@ -189,7 +189,7 @@ function renderHome(){
   '<span class="v4-investment-label">'+esc(g.label)+'</span>'+
   '<strong class="v4-investment-value" data-v3-money>'+fmt(g.amount)+'</strong>'+
   '<span class="v4-investment-share">'+pctVisible(g.share)+'</span><span aria-hidden="true">›</span></button>';
- const statusTag=demo?"DEMONSTRAÇÃO":integrity.status==="verified"?"CONFERIDO":"NÃO CONFERIDO";
+ const statusTag=demo?"DEMONSTRAÇÃO":pensionMismatch?"REVISAR SALDOS":integrity.status==="verified"?"CONFERIDO":"NÃO CONFERIDO";
  const deltaColor=hasComparison&&balanceChange<0?" v4-down":"";
  $("v3Home").innerHTML=
   '<section class="v4-wealth-hero" aria-label="Visão geral do patrimônio">'+
