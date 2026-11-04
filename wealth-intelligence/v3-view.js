@@ -241,11 +241,12 @@ function renderPortfolio(){
  $("v3FilterBadge").textContent=activeFilters;
  $("v3PortfolioCategory").innerHTML=optionsWithLabels(choices,selection);
  $("v3PortfolioTotal").textContent=fmt(out.total);
- $("v3PortfolioCount").textContent=out.count+" posições · "+out.groups.length+" categorias";
+ $("v3PortfolioCount").textContent=out.count+" "+(out.count===1?"investimento":"investimentos")+" · "+out.groups.length+" "+(out.groups.length===1?"categoria":"categorias");
+ $("v4PortfolioContext").textContent=selection||search?"Mostrando os resultados da busca ou filtro.":"Selecione uma categoria para consultar seus investimentos.";
  $("v3PortfolioReset").hidden=!selection&&!search&&facet==="product";
  if(!out.groups.length){$("v3PortfolioCategories").innerHTML='<div class="v3-empty">Nenhum investimento encontrado para os filtros escolhidos.</div>';return;}
  $("v3PortfolioCategories").innerHTML=out.groups.map((g,i)=>'<details class="v3-group" '+((selection||search)?"open":"")+'><summary>'+
- '<span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span class="v3-group-name"><strong>'+esc(g.label)+'</strong><small>'+g.count+' posição(ões) • '+pctVisible(all.total?100*g.amount/all.total:0)+' do total</small></span>'+
+ '<span class="v3-bullet" data-v3-color="'+esc(g.color)+'"></span><span class="v3-group-name"><strong>'+esc(g.label)+'</strong><small>'+g.count+" "+(g.count===1?"investimento":"investimentos")+' · '+pctVisible(all.total?100*g.amount/all.total:0)+' do patrimônio</small></span>'+
  '<strong class="v3-group-amount" data-v3-money>'+fmt(g.amount)+'</strong><span class="v3-chevron">⌄</span></summary><div class="v3-group-items">'+g.items.map(item=>
  '<button type="button" data-v3-detail="'+esc(item.id)+'" class="v3-item"><span><strong>'+esc(item.name)+'</strong><small>'+esc(item.asOf)+' · '+esc(M.EXPOSURE[item.facets.exposure])+'</small></span><strong data-v3-money>'+fmt(item.amount)+'</strong><span class="v3-chevron">›</span></button>'
  ).join("")+'</div></details>').join("");
@@ -329,7 +330,9 @@ function renderIncome(){
  $("v3IncomeMonths").innerHTML=report.months.length?axis+
   report.months.map(row=>'<div class="v3-income-row"><span>'+esc(monthDate(row.month))+'</span><span class="v3-income-track" role="img" aria-label="'+esc(monthDate(row.month)+" · "+(hidden?"valores ocultos":brl(row.total)))+'">'+incomeBarSvg(row,ceiling)+'</span><strong data-v3-money>'+fmt(row.total)+'</strong></div>').join("")+legend+
   '<p class="v3-income-data-note">Somente meses com lançamentos; meses ausentes não representam valor zero.</p>':
-  '<p class="v3-empty">Sem proventos registrados para este ano.</p>';
+  '<div class="v4-income-empty"><span class="v4-income-empty-icon" aria-hidden="true">＋</span><h3>Sem lançamentos em '+esc(incomeYear)+'</h3>'+
+   '<p>A planilha ainda não contém proventos registrados para este ano. Isso não significa que não houve recebimentos.</p>'+
+   '<button type="button" data-v3-reimport>Atualizar Excel</button></div>';
 
 }
 function render(){
