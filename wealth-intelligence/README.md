@@ -10,6 +10,17 @@ Aplicativo independente de inteligência patrimonial com interface mobile-first/
 - Ao importar backup, os dados locais existentes serão substituídos. Recomenda-se exportar backup antes.
 - Dados do extrato de maio de 2026 são históricos; atualizar com extrato atual antes de considerar as informações vigentes.
 
+## V4.1 · Experiência móvel completa (branch de pesquisa isolada)
+
+A V4 reorganiza as quatro telas, preservando o motor financeiro V3.4:
+
+- **Resumo:** patrimônio e referência, variação de saldos identificada como não rentabilidade, uma única ação recomendada, evolução e três principais categorias.
+- **Carteira:** total da carteira em primeiro plano, busca com alcance imediato, filtros sob demanda e investimentos agrupados em categorias expansíveis.
+- **Evolução:** gráfico principal com períodos simples e escala de reais; seleção de categoria, registros mensais e auditoria financeira recolhidos até serem solicitados.
+- **Proventos:** total informado por ano, origens dos lançamentos e, na ausência de registros, mensagem educativa sem inferir que o recebimento efetivo foi zero.
+
+Proteções preservadas: nenhum dado pessoal no GitHub; nenhuma ordem automática; localStorage e backup; Excel 2024–2026 somente; sem TIR/retorno auditado na ausência de fluxos conciliados. Todos os controles e detalhes anteriores permanecem funcionais, mesmo quando inicialmente recolhidos. O projeto Vercel para V4 é separado do projeto V3 e do GitHub Pages.
+
 ## V3.4 · Atualização incremental de Excel (branch de pesquisa)
 
 Quando a carteira atual e o novo Excel passam integralmente na conferência, o modal de importação oferece **Atualizar incrementalmente** e **Substituir pelo Excel**, com apresentação da diferença antes de gravar. A escolha incremental é opcional e necessita confirmação do usuário.
