@@ -258,7 +258,7 @@ function renderHistory(){
  const cohort=historySelection?M.group(data,historyDimension,historySelection).count:0;
  const groups=M.historyFacets(data,historyDimension);
  const subject=historySelection?M.label(historyDimension,historySelection):"Patrimônio total";
- $("v3History").querySelector(".v3-card-top h3").textContent="Saldos · "+subject;
+ $("v3History").querySelector(".v3-card-top h3").textContent=subject;
  $("v3HistoryDimension").value=historyDimension;
  $("v3HistoryCategory").innerHTML=optionsWithLabels(groups,historySelection,"Todo o patrimônio");
  $("v3HistoryYears").innerHTML=['Tudo','12 meses','6 meses','3 meses'].map((label,i)=>'<button type="button" data-v3-months="'+[0,12,6,3][i]+'" class="'+(period===[0,12,6,3][i]?"chosen":"")+'">'+label+'</button>').join("");
