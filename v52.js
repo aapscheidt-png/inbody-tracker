@@ -5,18 +5,20 @@
 // O estado vermelho só pode aparecer quando a própria base privada trouxer prioridade clínica explícita.
 const V52_SPECIALTIES=[
   {id:'metabolic',label:'Metabólico e glicemia',icon:'◌',labKeys:['glucose','hba1c','estimated_avg_glucose','insulin','insulin_free','homa_ir','uric_acid']},
-  {id:'cardio',label:'Cardiovascular e lipídios',icon:'♡',labKeys:['total_cholesterol','hdl','ldl','non_hdl','triglycerides','homocysteine']},
-  {id:'hematology',label:'Hematologia',icon:'◇',labKeys:['rbc','hemoglobin','hematocrit','mcv','mch','mchc','rdw','wbc','neutrophils_abs','eosinophils_abs','basophils_abs','lymphocytes_abs','monocytes_abs','platelets','mpv']},
+  {id:'cardio',label:'Cardiovascular e lipídios',icon:'♡',labKeys:['total_cholesterol','hdl','ldl','non_hdl','triglycerides','homocysteine','vldl'],reportTerms:['ecocardiograma','cardiology','cardíaco','cardiaco']},
+  {id:'hematology',label:'Hematologia',icon:'◇',labKeys:['rbc','hemoglobin','hematocrit','mcv','mch','mchc','rdw','wbc','neutrophils_abs','eosinophils_abs','basophils_abs','lymphocytes_abs','monocytes_abs','platelets','mpv','erythroblasts_pct','neutrophils_pct','lymphocytes_pct','monocytes_pct','eosinophils_pct','basophils_pct']},
   {id:'kidney',label:'Rins e eletrólitos',icon:'◫',labKeys:['creatinine','egfr','urea','sodium','potassium']},
   {id:'liver',label:'Fígado e abdome',icon:'◒',labKeys:['alt','ast','ggt','bilirubin_total','bilirubin_direct','bilirubin_indirect','alkaline_phosphatase','albumin','lipase'],reportTerms:['abdome','abdominal','usg abd','abd tot','fígado','figado','hepát','hepat','vesícula','vesicula']},
   {id:'thyroid',label:'Tireoide',icon:'⌁',labKeys:['tsh','free_t4','t3','anti_tpo']},
-  {id:'vitamins',label:'Vitaminas e minerais',icon:'✦',labKeys:['vitamin_d_25oh','vitamin_b12','vitamin_c','iron','ferritin','zinc','magnesium','calcium']},
+  {id:'vitamins',label:'Vitaminas e minerais',icon:'✦',labKeys:['vitamin_d_25oh','vitamin_b12','vitamin_c','iron','ferritin','zinc','magnesium','calcium','vitamin_a','vitamin_e','folate']},
   {id:'hormones',label:'Hormonal e TRT',icon:'△',labKeys:['testosterone_total','testosterone_free','testosterone_bioavailable','shbg','fsh','lh','estradiol','dht','prolactin','cortisol_serum']},
-  {id:'urology',label:'Urologia e saúde reprodutiva',icon:'○',labKeys:['psa_total'],reportTerms:['testícul','testicul','escrot','esperm','próstata','prostata','urolog','varico']},
-  {id:'gastro',label:'Gastroenterologia',icon:'≈',labKeys:[],reportTerms:['endoscop','gástr','gastr','helicobacter','h. pylori','anatomopat','intestinal','duoden']},
+  {id:'urology',label:'Urologia e saúde reprodutiva',icon:'○',labKeys:['psa_total','psa_free','psa_free_total_ratio'],reportTerms:['testícul','testicul','escrot','esperm','próstata','prostata','urolog','varico']},
+  {id:'gastro',label:'Gastroenterologia',icon:'≈',labKeys:[],reportTerms:['endoscop','gástr','gastr','helicobacter','h. pylori','anatomopat','intestinal','duoden','colonoscop','sigmoide']},
   {id:'sleep',label:'Sono',icon:'☾',labKeys:[],reportTerms:['polisson','sono','apneia','ronco','brux']},
   {id:'neuro',label:'Neurologia',icon:'⌘',labKeys:[],reportTerms:['crânio','cranio','cérebr','cerebr','encefal','neurol','eletroneurom','enmg','parestes','aracnoide']},
   {id:'musculoskeletal',label:'Coluna e musculoesquelético',icon:'⌗',labKeys:[],reportTerms:['lomb','sacro','bacia','joelho','quadril','coluna','tendin','glúte','glute','isquiot','menisc','patela']},
+  {id:'serology',label:'Sorologias',icon:'○',labKeys:['hiv_1_2','hbsag','anti_hbs','anti_hcv','vdrl']},
+  {id:'urinalysis',label:'Urina',icon:'◫',labKeys:['urine_color','urine_appearance','urine_specific_gravity','urine_ph','urine_glucose','urine_ketones','urine_protein','urine_bile_pigments','urine_urobilinogen','urine_hemoglobin','urine_rbc','urine_wbc','urine_squamous_cells']},
   {id:'body',label:'Composição corporal',icon:'◎',body:true,labKeys:[]}
 ];
 
@@ -48,7 +50,7 @@ function v52BodyEvidence(){
   if(m.weightKg!=null)parts.push(`Peso ${fmtFlex(m.weightKg)} kg`);
   if(m.bodyFatPct!=null)parts.push(`gordura ${fmtFlex(m.bodyFatPct)}%`);
   if(m.skeletalMuscleKg!=null)parts.push(`massa muscular ${fmtFlex(m.skeletalMuscleKg)} kg`);
-  return{date:m.date||'',title:'Bioimpedância',summary:parts.join(' · '),source:'InBody',raw:m};
+  return{date:m.date||'',title:'Bioimpedância',summary:parts.join(' · '),source:'Bioimpedância',raw:m};
 }
 function v52BuildSpecialty(spec){
   if(spec.body){
@@ -98,7 +100,7 @@ function v52GlobalSummary(rows){
 function v52EvidenceHtml(row){
   const labsHtml=row.labs.map(x=>{const st=labStatus(x),visualCode=['high','low'].includes(st.code)?'monitor':st.code;return `<li><div><strong>${esc(x.label)}</strong><span>${brDate(x.date)} · ${fmtFlex(x.value)} ${esc(x.unit||'')}</span></div><em class="status ${esc(visualCode)}">${esc(st.label)}</em></li>`;}).join('');
   const reportHtml=row.report?`<li><div><strong>${esc(row.report.title)}</strong><span>${row.report.date?brDate(row.report.date):'Data não recuperada'} · ${esc(row.report.summary||'Laudo disponível')}</span></div><em class="status context">Laudo</em></li>`:'';
-  const bodyHtml=row.body?`<li><div><strong>${esc(row.body.title)}</strong><span>${brDate(row.body.date)} · ${esc(row.body.summary)}</span></div><em class="status context">InBody</em></li>`:'';
+  const bodyHtml=row.body?`<li><div><strong>${esc(row.body.title)}</strong><span>${brDate(row.body.date)} · ${esc(row.body.summary)}</span></div><em class="status context">Bioimpedância</em></li>`:'';
   return `<ul class="panorama-evidence-list">${labsHtml}${reportHtml}${bodyHtml}</ul>`;
 }
 function v52RenderPanorama(){
