@@ -18,8 +18,30 @@ async function decryptHealthPayloadV5(payload,recovery){
   if(payload.compression==='gzip')plain=await gunzipBytesV5(plain);
   return normalizeCanonical(JSON.parse(new TextDecoder().decode(plain)));
 }
+function mergeHistoricalDeltaV5(base,delta){
+  const out=clone(base);
+  const body=out.bodyComposition.confirmedMeasurements;
+  for(const x of delta.bodyComposition.confirmedMeasurements){
+    const existing=body.find(y=>y.date===x.date&&Number(y.weightKg)===Number(x.weightKg)&&Number(y.skeletalMuscleKg)===Number(x.skeletalMuscleKg)&&Number(y.bodyFatPct)===Number(x.bodyFatPct));
+    if(existing){for(const [k,v] of Object.entries(x))if(existing[k]==null)existing[k]=v;}
+    else body.push(x);
+  }
+  for(const x of delta.laboratoryResults){
+    if(!out.laboratoryResults.some(y=>y.date===x.date&&y.key===x.key))out.laboratoryResults.push(x);
+  }
+  for(const x of delta.reports){
+    if(!out.reports.some(y=>y.id===x.id||(y.date===x.date&&y.title===x.title)))out.reports.push(x);
+  }
+  out.sourceRegistry={...delta.sourceRegistry,...out.sourceRegistry};
+  out.dataFreshness={...out.dataFreshness};
+  for(const [k,v] of Object.entries(delta.dataFreshness||{}))if(!out.dataFreshness[k]||out.dataFreshness[k]<v)out.dataFreshness[k]=v;
+  return normalizeCanonical(out);
+}
 async function syncEncryptedHealthV5(){
   const recovery=loadRecoveryKeyV5();if(!recovery)throw new Error('Importe sua chave de recuperação uma única vez.');
   const res=await fetch(`${HT_ENCRYPTED_DATA_URL}?t=${Date.now()}`,{cache:'no-store'});if(!res.ok)throw new Error('Não foi possível baixar a base criptografada.');
-  const payload=await res.json();const decrypted=await decryptHealthPayloadV5(payload,recovery);data=decrypted;savePrivateData(data);return data;
+  const payload=await res.json();const decrypted=await decryptHealthPayloadV5(payload,recovery);
+  const deltaRes=await fetch(`./health-delta-2026-11-25.enc.json?t=${Date.now()}`,{cache:'no-store'});if(!deltaRes.ok)throw new Error('Não foi possível baixar a atualização criptografada.');
+  const delta=await decryptHealthPayloadV5(await deltaRes.json(),recovery);
+  const merged=mergeHistoricalDeltaV5(decrypted,delta);savePrivateData(merged);data=merged;return data;
 }
