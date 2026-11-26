@@ -13,8 +13,8 @@ const EMPTY_DATA={
 const CATEGORY_ORDER=['metabolic','lipids','hormones','thyroid','kidney','liver','vitamins','cbc','screening','other'];
 const CATEGORY_LABELS={metabolic:'Metabólico',lipids:'Lipídios',hormones:'Hormônios',thyroid:'Tireoide',kidney:'Rins',liver:'Fígado',vitamins:'Vitaminas e minerais',cbc:'Hemograma',screening:'Rastreamento',other:'Outros'};
 const LAB_CATEGORY={
-  glucose:'metabolic',hba1c:'metabolic',estimated_avg_glucose:'metabolic',insulin:'metabolic',homa_ir:'metabolic',uric_acid:'metabolic',calcium:'metabolic',homocysteine:'metabolic',
-  total_cholesterol:'lipids',hdl:'lipids',ldl:'lipids',non_hdl:'lipids',triglycerides:'lipids',
+  glucose_capillary:'metabolic',glucose:'metabolic',hba1c:'metabolic',estimated_avg_glucose:'metabolic',insulin:'metabolic',homa_ir:'metabolic',uric_acid:'metabolic',calcium:'metabolic',homocysteine:'metabolic',
+  apoa1:'lipids',apob:'lipids',apob_apoa1_ratio:'lipids',total_cholesterol:'lipids',hdl:'lipids',ldl:'lipids',non_hdl:'lipids',triglycerides:'lipids',
   testosterone_total:'hormones',testosterone_free:'hormones',testosterone_bioavailable:'hormones',shbg:'hormones',fsh:'hormones',lh:'hormones',estradiol:'hormones',dht:'hormones',prolactin:'hormones',cortisol_serum:'hormones',
   tsh:'thyroid',free_t4:'thyroid',t3:'thyroid',
   creatinine:'kidney',egfr:'kidney',urea:'kidney',
@@ -94,11 +94,22 @@ let currentHealthCategory='metabolic';
 function bodyMeasurements(){return (data.bodyComposition?.confirmedMeasurements||[]).map(normalizeBody).sort((a,b)=>(a.date+(a.time||''))>(b.date+(b.time||''))?1:-1);}
 function latestBody(){const a=bodyMeasurements();return a.at(-1)||null;}
 function firstBody(){const a=bodyMeasurements();return a[0]||null;}
-function metricValue(m,key){if(!m)return null;if(key==='bmi'&&m.bmi==null&&m.weightKg&&data.profile?.heightCm){const h=data.profile.heightCm/100;return m.weightKg/(h*h);}return m[key];}
-function bodyMetricLabel(k){return({weightKg:'Peso',skeletalMuscleKg:'Massa muscular',bodyFatPct:'Gordura corporal',bmi:'IMC'})[k]||k;}
-function bodyMetricUnit(k){return({weightKg:'kg',skeletalMuscleKg:'kg',bodyFatPct:'%',bmi:''})[k]??'';}
-function bodyMetricRange(k){const l=latestBody();return l?.referenceRanges?.[k]||null;}
-function bodyMetricTarget(k){const l=latestBody();if(k==='weightKg'&&Number.isFinite(Number(l?.idealWeightKg)))return Number(l.idealWeightKg);return null;}
+const BODY_METRICS_V5={
+ weightKg:['Peso','kg'],skeletalMuscleKg:['Massa muscular esquelética','kg'],bodyFatPct:['Gordura corporal','%'],bmi:['IMC',''],fatMassKg:['Massa de gordura','kg'],fatFreeMassKg:['Massa livre de gordura','kg'],bodyWaterL:['Água corporal','L'],proteinKg:['Proteína corporal','kg'],mineralsKg:['Minerais','kg'],visceralFatLevel:['Gordura visceral','nível'],bmrKcal:['Metabolismo basal','kcal'],waistHipRatio:['Relação cintura-quadril',''],obesityDegreePct:['Grau de obesidade','%'],score:['Pontuação do aparelho',''],idealWeightKg:['Peso ideal estimado pelo aparelho','kg']
+};
+function metricValue(m,key){
+ if(!m)return null;
+ if(key==='bmi'&&m.bmi==null&&m.weightKg&&data.profile?.heightCm){const h=data.profile.heightCm/100;return m.weightKg/(h*h);}
+ if(key.startsWith('lean:')||key.startsWith('fat:')){const [kind,seg,metric]=key.split(':');return m[kind==='lean'?'leanSegments':'fatSegments']?.find(x=>x.segment===seg)?.[metric]??null;}
+ return m[key]??null;
+}
+function bodyMetricLabel(k){if(BODY_METRICS_V5[k])return BODY_METRICS_V5[k][0];const [kind,seg,metric]=k.split(':');const names={left_arm:'Braço esquerdo',right_arm:'Braço direito',trunk:'Tronco',left_leg:'Perna esquerda',right_leg:'Perna direita'};return names[seg]?names[seg]+' · '+(kind==='lean'?'massa magra':'gordura')+(metric==='percentOfReference'?' (% referência)':metric==='bodyFatPct'?' (% gordura)':''):k;}
+function bodyMetricUnit(k){return BODY_METRICS_V5[k]?.[1]??(k.endsWith(':kg')?'kg':k.includes(':')?'%':'');}
+function bodyMetricRange(k){const l=bodyMeasurements().filter(m=>bodyMetricNumber(m,k)!==null).at(-1);return l?.referenceRanges?.[k]||null;}
+function bodyMetricTarget(k){const l=latestBody();if(k==='weightKg'&&l?.idealWeightKg!=null&&Number.isFinite(Number(l.idealWeightKg)))return Number(l.idealWeightKg);return null;}
+function bodyMetricNumber(m,key){const v=metricValue(m,key);return v===null||v===undefined||v===''||!Number.isFinite(Number(v))?null:Number(v);}
+function bodyDeviceGroup(m){if(m.deviceModel)return String(m.deviceModel);if(/equipamento\/software diferente/i.test(m.context||''))return 'Equipamento diferente';if(/inbody/i.test(m.source||''))return 'InBody';return 'Equipamento não identificado';}
+function availableBodyMetrics(){const rows=bodyMeasurements();const keys=Object.keys(BODY_METRICS_V5);for(const kind of ['lean','fat'])for(const seg of ['left_arm','right_arm','trunk','left_leg','right_leg'])for(const metric of ['kg','percentOfReference','bodyFatPct'])keys.push(kind+':'+seg+':'+metric);return keys.filter(k=>rows.some(m=>bodyMetricNumber(m,k)!==null));}
 function bodyStatus(value,range){const n=Number(value);if(!Number.isFinite(n)||!Array.isArray(range))return'Registrado';if(n<range[0])return'Abaixo';if(n>range[1])return'Acima';return'Na faixa';}
 
 function labs(){return (data.laboratoryResults||[]).slice().sort((a,b)=>a.date>b.date?1:a.date<b.date?-1:0);}
