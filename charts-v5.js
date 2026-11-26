@@ -12,18 +12,28 @@ function renderHomeChart(svg){
   const defs=[['weightKg','#ff4057'],['skeletalMuscleKg','#4aa7ff'],['bodyFatPct','#ffb13b']];
   const pad={l:34,r:20,t:26,b:46},w=720,h=350,iw=w-pad.l-pad.r,ih=h-pad.t-pad.b;const x=i=>pad.l+(rows.length===1?iw/2:iw*i/(rows.length-1));let html=svgGrid(w,h,pad,4);
   defs.forEach(([key,color],seriesIndex)=>{
-    const r=rows.map((m,i)=>({i,v:Number(metricValue(m,key))})).filter(z=>Number.isFinite(z.v));if(!r.length)return;const [lo,hi]=domain(r.map(z=>z.v));const y=v=>pad.t+ih-(v-lo)/(hi-lo)*ih;const pts=r.map(z=>[x(z.i),y(z.v)]);html+=`<path class="series home-series" stroke="${color}" d="${svgPath(pts)}"/>`;
+    const r=rows.map((m,i)=>({i,v:bodyMetricNumber(m,key)})).filter(z=>z.v!==null);if(!r.length)return;const [lo,hi]=domain(r.map(z=>z.v));const y=v=>pad.t+ih-(v-lo)/(hi-lo)*ih;const pts=r.map(z=>[x(z.i),y(z.v)]);html+=`<path class="series home-series" stroke="${color}" d="${svgPath(pts)}"/>`;
     pts.forEach((p,j)=>{const val=r[j].v;const offset=seriesIndex===0?-11:seriesIndex===1?18:(j%2?-11:18);const ly=clamp(p[1]+offset,pad.t+10,h-pad.b+16);html+=`<circle class="point point-compact" fill="${color}" cx="${p[0]}" cy="${p[1]}" r="5.4"/><text class="home-point-label" fill="${color}" text-anchor="middle" x="${p[0]}" y="${ly}">${esc(fmt(val,1))}</text>`;});
   });
   html+=xLabelRows(rows,x,h);svg.innerHTML=html;
 }
 
 function renderBodyChart(svg,key){
-  const rows=bodyMeasurements();const valid=rows.map((m,i)=>({m,i,v:Number(metricValue(m,key))})).filter(z=>Number.isFinite(z.v));if(!valid.length){svg.innerHTML='';return;}
-  const range=bodyMetricRange(key),target=bodyMetricTarget(key),extra=[...(Array.isArray(range)?range:[]),target];const [lo,hi]=domain(valid.map(z=>z.v),extra);const pad={l:68,r:28,t:36,b:64},w=720,h=450,iw=w-pad.l-pad.r,ih=h-pad.t-pad.b;const x=i=>pad.l+(rows.length===1?iw/2:iw*i/(rows.length-1)),y=v=>pad.t+ih-(v-lo)/(hi-lo)*ih;let html=svgGrid(w,h,pad,5);html+=statusBand(range,y,w,pad);html+=targetLine(target,y,w,pad,key==='weightKg'?'peso ideal':'meta');
-  for(let i=0;i<=4;i++){const v=hi-(hi-lo)*i/4;html+=`<text class="axislabel" x="4" y="${pad.t+ih*i/4+5}">${fmt(v,key==='bmi'?1:0)}</text>`;}
-  const pts=valid.map(z=>[x(z.i),y(z.v)]),color=key==='weightKg'?'#ff4057':key==='skeletalMuscleKg'?'#4aa7ff':key==='bodyFatPct'?'#ffb13b':'#aa8cff';if(pts.length>1){const area=`M ${pts[0][0]} ${pad.t+ih} `+pts.map(p=>`L ${p[0]} ${p[1]}`).join(' ')+` L ${pts.at(-1)[0]} ${pad.t+ih} Z`;html+=`<path class="area" fill="${color}" d="${area}"/>`;}
-  html+=`<path class="series" stroke="${color}" d="${svgPath(pts)}"/>`;pts.forEach((p,j)=>{const anchor=j===0?'start':j===pts.length-1?'end':'middle',dx=j===0?6:j===pts.length-1?-6:0,ly=clamp(p[1]+(j%2?-14:22),pad.t+13,h-pad.b+22);html+=`<circle class="point" fill="${color}" cx="${p[0]}" cy="${p[1]}" r="7"/><text class="point-label readable" fill="${color}" text-anchor="${anchor}" x="${p[0]+dx}" y="${ly}">${esc(fmt(valid[j].v,1))}</text>`;});html+=xLabelRows(rows,x,h);svg.innerHTML=html;
+ const all=bodyMeasurements(),valid=all.map(m=>({m,v:bodyMetricNumber(m,key),device:bodyDeviceGroup(m)})).filter(z=>z.v!==null);if(!valid.length){svg.innerHTML='';return;}
+ const w=720,h=450,pad={l:72,r:36,t:36,b:74},iw=w-pad.l-pad.r,ih=h-pad.t-pad.b;
+ const [lo,hi]=domain(valid.map(z=>z.v));const y=v=>pad.t+ih-(v-lo)/(hi-lo)*ih;
+ const stamps=valid.map(z=>Date.parse(z.m.date+'T'+(z.m.time||'12:00')+':00'));const min=Math.min(...stamps),max=Math.max(...stamps);
+ const x=i=>max>min?pad.l+(stamps[i]-min)/(max-min)*iw:pad.l+iw/2;
+ let html=svgGrid(w,h,pad,5);
+ for(let i=0;i<=4;i++){const v=hi-(hi-lo)*i/4;html+=`<text class="axislabel" x="4" y="${pad.t+ih*i/4+5}">${fmtFlex(v)}</text>`;}
+ const color=key==='weightKg'?'#ff4057':key==='skeletalMuscleKg'?'#4aa7ff':key==='bodyFatPct'?'#ffb13b':'#aa8cff';
+ const pts=valid.map((z,i)=>[x(i),y(z.v)]);
+ for(let i=1;i<valid.length;i++)if(valid[i].device===valid[i-1].device&&valid[i].device!=='Equipamento não identificado')html+=`<path class="series" stroke="${color}" d="${svgPath([pts[i-1],pts[i]])}"/>`;
+ let lastX=-1000;
+ pts.forEach((p,i)=>{const z=valid[i],anchor=i===0?'start':i===pts.length-1?'end':'middle',dx=i===0?4:i===pts.length-1?-4:0;
+ html+=`<circle class="point" fill="${color}" cx="${p[0]}" cy="${p[1]}" r="6"><title>${esc(brDate(z.m.date)+' · '+fmtFlex(z.v)+' '+bodyMetricUnit(key)+' · '+z.device)}</title></circle>`;
+ if(p[0]-lastX>=75||i===pts.length-1){lastX=p[0];html+=`<text class="point-label readable" fill="${color}" text-anchor="${anchor}" x="${p[0]+dx}" y="${clamp(p[1]+(i%2?-14:22),pad.t+13,h-pad.b+22)}">${esc(fmtFlex(z.v))}</text><text class="axislabel" text-anchor="${anchor}" x="${p[0]+dx}" y="${h-24+(i%2)*16}">${esc(brDate(z.m.date))}</text>`;}
+ });svg.innerHTML=html;
 }
 
 function comparableLabSeriesV5(series){
