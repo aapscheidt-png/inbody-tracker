@@ -29,16 +29,31 @@ function mergeHistoricalDeltaV5(base,delta){
   for(const x of delta.laboratoryResults){
     const old=out.laboratoryResults.find(y=>y.date===x.date&&y.key===x.key);
     if(!old)out.laboratoryResults.push(x);
-    else if(x.storagePathConfidence==='verified_zip_snapshot'&&String(old.value).replace(',','.')===String(x.value).replace(',','.')&&old.unit===x.unit)Object.assign(old,x,{context:old.context||x.context});
+    else if(['verified_zip_snapshot','user_confirmed_rename'].includes(x.storagePathConfidence)&&String(old.value).replace(',','.')===String(x.value).replace(',','.')&&old.unit===x.unit)Object.assign(old,x,{context:old.context||x.context});
   }
   for(const x of delta.reports){
     const old=out.reports.find(y=>y.id===x.id||(y.date===x.date&&y.title===x.title));
     if(!old)out.reports.push(x);
-    else if(x.storagePathConfidence==='verified_zip_snapshot')Object.assign(old,{storagePath:x.storagePath,storagePathConfidence:x.storagePathConfidence,fileName:x.fileName||old.fileName});
+    else if(['verified_zip_snapshot','user_confirmed_rename'].includes(x.storagePathConfidence))Object.assign(old,{storagePath:x.storagePath,storagePathConfidence:x.storagePathConfidence,fileName:x.fileName||old.fileName});
   }
   out.archiveIndex=Array.isArray(out.archiveIndex)?out.archiveIndex:[];
   for(const x of delta.archiveIndex||[]){const i=out.archiveIndex.findIndex(y=>y.id===x.id);if(i<0)out.archiveIndex.push(x);else out.archiveIndex[i]={...out.archiveIndex[i],...x};}
   out.sourceRegistry={...out.sourceRegistry,...delta.sourceRegistry};
+  const corrections=delta.archiveCorrections||{};
+  const aliases=corrections.pathAliases||{};
+  const clean=p=>String(p||'').replace(/\s*\/\s*/g,'/');
+  const deleted=new Set(corrections.removedPaths||[]);
+  const fixPath=x=>{
+    const p=clean(x.storagePath);if(!p)return;
+    let q=aliases[p]||p;
+    if(corrections.folderFrom&&q.startsWith(corrections.folderFrom))q=corrections.folderTo+q.slice(corrections.folderFrom.length);
+    if(q!==p){x.storagePath=q;x.storagePathConfidence='user_confirmed_rename';for(const k of ['fileName','name','title'])if(x[k]===p.split('/').at(-1))x[k]=q.split('/').at(-1);}
+  };
+  out.archiveIndex=out.archiveIndex.filter(x=>!deleted.has(clean(x.storagePath)));
+  for(const x of [...out.laboratoryResults,...out.reports,...out.archiveIndex,...Object.values(out.sourceRegistry)])fixPath(x);
+  out.checkups=Array.isArray(out.checkups)?out.checkups:[];
+  for(const x of delta.checkups||[]){const i=out.checkups.findIndex(y=>y.date===x.date);if(i<0)out.checkups.push(x);else if(out.checkups[i].status!=='complete')out.checkups[i]={...out.checkups[i],...x};}
+
   out.dataFreshness={...out.dataFreshness};
   for(const [k,v] of Object.entries(delta.dataFreshness||{}))if(!out.dataFreshness[k]||out.dataFreshness[k]<v)out.dataFreshness[k]=v;
   return normalizeCanonical(out);
