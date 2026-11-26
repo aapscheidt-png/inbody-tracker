@@ -34,7 +34,11 @@ function mergeHistoricalDeltaV5(base,delta){
   for(const x of delta.reports){
     const old=out.reports.find(y=>y.id===x.id||(y.date===x.date&&y.title===x.title));
     if(!old)out.reports.push(x);
-    else if(['verified_zip_snapshot','user_confirmed_rename'].includes(x.storagePathConfidence))Object.assign(old,{storagePath:x.storagePath,storagePathConfidence:x.storagePathConfidence,fileName:x.fileName||old.fileName});
+    else if(['verified_zip_snapshot','user_confirmed_rename'].includes(x.storagePathConfidence)){
+      Object.assign(old,{storagePath:x.storagePath,storagePathConfidence:x.storagePathConfidence,fileName:x.fileName||old.fileName});
+      if(x.reviewedOriginal===true&&x.confidence==='original_document')Object.assign(old,{title:x.title,summary:x.summary,confidence:x.confidence,facility:x.facility,source:x.source,reviewedOriginal:true});
+      if(x.originalExcerpt){old.originalExcerpt=x.originalExcerpt;old.originalExcerptNote=x.originalExcerptNote;}
+    }
   }
   out.archiveIndex=Array.isArray(out.archiveIndex)?out.archiveIndex:[];
   for(const x of delta.archiveIndex||[]){const i=out.archiveIndex.findIndex(y=>y.id===x.id);if(i<0)out.archiveIndex.push(x);else out.archiveIndex[i]={...out.archiveIndex[i],...x};}
@@ -56,6 +60,7 @@ function mergeHistoricalDeltaV5(base,delta){
 
   out.dataFreshness={...out.dataFreshness};
   for(const [k,v] of Object.entries(delta.dataFreshness||{}))if(!out.dataFreshness[k]||out.dataFreshness[k]<v)out.dataFreshness[k]=v;
+  if(delta.auditStatus)out.auditStatus=delta.auditStatus;
   return normalizeCanonical(out);
 }
 async function syncEncryptedHealthV5(){
