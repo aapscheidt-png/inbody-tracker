@@ -41,7 +41,7 @@ function v51Source(item){return data.sourceRegistry?.[item?.source]||{};}
 function v51StripExt(name=''){return String(name).replace(/\.(pdf|json)$/i,'').replace(/_/g,' ').trim();}
 function v51TypeLabel(type){return({laboratory:'Laboratório',report:'Laudo / procedimento',pending:'Pendente',support:'Documento de apoio',order:'Pedido médico',visit:'Consulta / pasta',assessment:'Avaliação'})[type]||type;}
 function v51StatusLabel(status){
-  return({imported:'Resultado importado',report_imported:'Laudo importado',listed_in_icloud_source_not_imported:'Resultado não importado',legacy_summary_present_original_missing:'Resumo disponível · original pendente',supporting_document_located:'Documento localizado',folder_location:'Pasta localizada',order_document_imported:'Pedido importado'})[status]||status||'Localizado';
+  return({original_located_review_pending:'Original localizado · revisão pendente',image_pdf_review_pending:'PDF de imagem · revisão pendente',original_located_structured:'Original localizado · dados parciais estruturados',imported:'Resultado importado',report_imported:'Laudo importado',listed_in_icloud_source_not_imported:'Resultado não importado',legacy_summary_present_original_missing:'Resumo disponível · original pendente',supporting_document_located:'Documento localizado',folder_location:'Pasta localizada',order_document_imported:'Pedido importado'})[status]||status||'Localizado';
 }
 function v51StatusClass(status){return status==='imported'||status==='report_imported'||status==='order_document_imported'?'ok':status==='listed_in_icloud_source_not_imported'||status==='legacy_summary_present_original_missing'?'pending':'context';}
 
@@ -54,21 +54,22 @@ function examIndexRows(){
     if(!groups.has(k))groups.set(k,{id:`lab-${k}`,type:'laboratory',title:v51StripExt(file),date:x.date,physician:src.orderingPhysician||'',facility:src.facility||'',path,status:'imported',markers:[],values:[]});
     const g=groups.get(k);g.markers.push(x.label);g.values.push(`${x.label} ${fmtFlex(x.value)} ${x.unit||''}`.trim());
   });
-  groups.forEach(g=>{g.detail=`${g.markers.length} ${g.markers.length===1?'resultado':'resultados'} estruturados`;g.search=[g.title,g.date,g.physician,g.facility,g.path,...g.markers,...g.values].join(' ').toLowerCase();rows.push(g);});
+  groups.forEach(g=>{g.detail=`${g.markers.length} ${g.markers.length===1?'resultado':'resultados'} estruturados · ${g.values.join(' · ')}`;g.search=[g.title,g.date,g.physician,g.facility,g.path,...g.markers,...g.values].join(' ').toLowerCase();rows.push(g);});
   reports().forEach(r=>{
     const src=v51Source(r),path=r.storagePath||src.storagePath||'';
     rows.push({id:`rep-${r.id}`,type:'report',title:r.title,date:r.date||'',physician:r.orderingPhysician||src.orderingPhysician||'',facility:r.facility||src.facility||'',path,status:'report_imported',detail:r.summary||'',search:[r.title,r.date,r.orderingPhysician,src.orderingPhysician,r.facility,src.facility,path,r.summary].join(' ').toLowerCase()});
   });
   (data.archiveIndex||[]).forEach(a=>{
-    const type=a.status==='supporting_document_located'?'support':a.status==='order_document_imported'?'order':a.status==='folder_location'?'visit':a.category==='assessment'?'assessment':'pending';
-    rows.push({id:`arc-${a.id}`,type,title:a.title,date:a.dateHint||'',physician:a.orderingPhysician||'',facility:a.facility||'',path:a.storagePath||'',status:a.status,detail:a.note||'',search:[a.title,a.dateHint,a.category,a.storagePath,a.note].join(' ').toLowerCase()});
+    const type=a.status==='supporting_document_located'?'support':a.status==='order_document_imported'||a.type==='order'?'order':a.status==='folder_location'?'visit':a.category==='assessment'?'assessment':'pending';
+    if(a.status==='original_located_structured'&&rows.some(r=>r.path===a.storagePath))return;
+    rows.push({id:`arc-${a.id}`,type,title:a.title,date:a.date||a.dateHint||'',physician:a.orderingPhysician||'',facility:a.facility||'',path:a.storagePath||'',status:a.status,detail:a.note||'',search:[a.title,a.date,a.dateHint,a.category,a.storagePath,a.note].join(' ').toLowerCase()});
   });
   return rows.sort((a,b)=>(b.date||'0000').localeCompare(a.date||'0000')||a.title.localeCompare(b.title,'pt-BR'));
 }
 
 let examIndexFilter='all',examIndexQuery='',examIndexExpanded=false;
 function examIndexMatches(row){
-  const q=examIndexQuery.trim().toLowerCase();if(q&&!row.search.includes(q))return false;
+  const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();const q=norm(examIndexQuery).trim();if(q&&!q.split(/\s+/).every(word=>norm(row.search+' '+(row.date?brDate(row.date):'')).includes(word)))return false;
   if(examIndexFilter==='lab'&&row.type!=='laboratory')return false;
   if(examIndexFilter==='reports'&&row.type!=='report')return false;
   if(examIndexFilter==='pending'&&!['pending'].includes(row.type))return false;
@@ -81,7 +82,7 @@ function renderExamIndex(){
   count.textContent=`${filtered.length} ${filtered.length===1?'item':'itens'} encontrados`;
   list.innerHTML=shown.map(r=>{
     const statusClass=v51StatusClass(r.status),date=r.date?(/^\d{4}-\d{2}-\d{2}$/.test(r.date)?brDate(r.date):esc(r.date)):'Data clínica não confirmada';
-    return `<article class="exam-index-row"><div class="exam-index-main"><div class="exam-index-titleline"><span class="exam-type">${esc(v51TypeLabel(r.type))}</span><span class="exam-state ${statusClass}">${esc(v51StatusLabel(r.status))}</span></div><h3>${esc(r.title)}</h3><p class="exam-date">${date}</p>${r.physician?`<p><b>Médico:</b> ${esc(r.physician)}</p>`:''}${r.facility?`<p><b>Laboratório/local:</b> ${esc(r.facility)}</p>`:''}${r.detail?`<p class="exam-detail">${esc(r.detail)}</p>`:''}</div>${r.path?`<button class="exam-path" data-copy-path="${esc(r.path)}" aria-label="Copiar localização"><span>Onde encontrar</span><strong>${esc(r.path.replaceAll(' / ',' › '))}</strong><small>Toque para copiar</small></button>`:''}</article>`;
+    return `<article class="exam-index-row"><div class="exam-index-main"><div class="exam-index-titleline"><span class="exam-type">${esc(v51TypeLabel(r.type))}</span><span class="exam-state ${statusClass}">${esc(v51StatusLabel(r.status))}</span></div><h3>${esc(r.title)}</h3><p class="exam-date">${date}</p>${r.physician?`<p><b>Médico:</b> ${esc(r.physician)}</p>`:''}${r.facility?`<p><b>Laboratório/local:</b> ${esc(r.facility)}</p>`:''}${r.detail?`<p class="exam-detail">${esc(r.detail)}</p>`:''}</div>${r.path?`<button class="exam-path" data-copy-path="${esc(r.path)}" aria-label="Copiar localização"><span>Onde encontrar</span><strong>${esc(r.path.replace(/\s*\/\s*/g,' › '))}</strong><small>Toque para copiar</small></button>`:''}</article>`;
   }).join('')||'<p class="subtle">Nenhum item encontrado com esses filtros.</p>';
   if(more){more.hidden=filtered.length<=60;more.textContent=examIndexExpanded?'Mostrar menos':`Mostrar todos (${filtered.length})`;}
 }
