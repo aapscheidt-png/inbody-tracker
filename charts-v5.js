@@ -26,10 +26,24 @@ function renderBodyChart(svg,key){
   html+=`<path class="series" stroke="${color}" d="${svgPath(pts)}"/>`;pts.forEach((p,j)=>{const anchor=j===0?'start':j===pts.length-1?'end':'middle',dx=j===0?6:j===pts.length-1?-6:0,ly=clamp(p[1]+(j%2?-14:22),pad.t+13,h-pad.b+22);html+=`<circle class="point" fill="${color}" cx="${p[0]}" cy="${p[1]}" r="7"/><text class="point-label readable" fill="${color}" text-anchor="${anchor}" x="${p[0]+dx}" y="${ly}">${esc(fmt(valid[j].v,1))}</text>`;});html+=xLabelRows(rows,x,h);svg.innerHTML=html;
 }
 
+function comparableLabSeriesV5(series){
+  const ordered=series.filter(x=>x?.date&&x.value!==null&&x.value!==''&&Number.isFinite(Number(x.value))).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const last=ordered.at(-1);if(!last)return[];
+  const unit=String(last.unit||'');
+  const factor=(x)=>{
+    const from=String(x.unit||'');if(from===unit)return 1;
+    if(['platelets','wbc'].includes(x.key)){if(from==='/µL'&&unit==='x10^3/µL')return 0.001;if(from==='x10^3/µL'&&unit==='/µL')return 1000;}
+    if(['sodium','potassium'].includes(x.key)&&['mmol/L','mEq/L'].includes(from)&&['mmol/L','mEq/L'].includes(unit))return 1;
+    if(x.key==='magnesium'){if(from==='mg/dL'&&unit==='mEq/L')return 20/24.305;if(from==='mEq/L'&&unit==='mg/dL')return 24.305/20;}
+    return null;
+  };
+  return ordered.flatMap(x=>{const f=factor(x);if(f===null)return[];return [{...x,value:Number(x.value)*f,unit,originalValue:x.value,originalUnit:x.unit}];});
+}
+function labDateAxisV5(m){return String(m.date||'').split('-').reverse().join('/');}
 function renderLabChartV5(svg,series){
-  const valid=series.filter(x=>Number.isFinite(Number(x.value)));if(!valid.length){svg.innerHTML='<text class="axislabel" x="30" y="40">Sem série numérica para este marcador.</text>';return;}
-  const refItem=valid.at(-1),band=referenceNumericBand(refItem),target=referenceNumericTarget(refItem),extra=[...(band||[]),target?.value];const [lo,hi]=domain(valid.map(x=>Number(x.value)),extra);const pad={l:74,r:30,t:38,b:64},w=720,h=450,iw=w-pad.l-pad.r,ih=h-pad.t-pad.b;const x=i=>pad.l+(valid.length===1?iw/2:iw*i/(valid.length-1)),y=v=>pad.t+ih-(v-lo)/(hi-lo)*ih;let html=svgGrid(w,h,pad,5);html+=statusBand(band,y,w,pad);if(target)html+=targetLine(target.value,y,w,pad,`referência ${target.operator||''}`);
+  const valid=comparableLabSeriesV5(series);if(!valid.length){svg.innerHTML='<text class="axislabel" x="30" y="40">Sem série numérica para este marcador.</text>';return;}
+  const refItem=valid.at(-1),band=referenceNumericBand(refItem),target=referenceNumericTarget(refItem),extra=[...(band||[]),target?.value];const [lo,hi]=domain(valid.map(x=>Number(x.value)),extra);const pad={l:74,r:30,t:38,b:64},w=720,h=450,iw=w-pad.l-pad.r,ih=h-pad.t-pad.b;const x=i=>pad.l+(valid.length===1?iw/2:iw*i/(valid.length-1)),y=v=>pad.t+ih-(v-lo)/(hi-lo)*ih;let html=svgGrid(w,h,pad,5);if(valid.length===1){html+=statusBand(band,y,w,pad);if(target)html+=targetLine(target.value,y,w,pad,`referência ${target.operator||''}`);}
   for(let i=0;i<=4;i++){const v=hi-(hi-lo)*i/4;html+=`<text class="axislabel" x="4" y="${pad.t+ih*i/4+5}">${fmtFlex(v)}</text>`;}
   const pts=valid.map((m,i)=>[x(i),y(Number(m.value))]),color='#31d69a';if(pts.length>1){const area=`M ${pts[0][0]} ${pad.t+ih} `+pts.map(p=>`L ${p[0]} ${p[1]}`).join(' ')+` L ${pts.at(-1)[0]} ${pad.t+ih} Z`;html+=`<path class="area" fill="${color}" d="${area}"/>`;}
-  html+=`<path class="series" stroke="${color}" d="${svgPath(pts)}"/>`;pts.forEach((p,j)=>{const anchor=j===0?'start':j===pts.length-1?'end':'middle',dx=j===0?6:j===pts.length-1?-6:0,ly=clamp(p[1]+(j%2?-14:22),pad.t+13,h-pad.b+22);html+=`<circle class="point" fill="${color}" cx="${p[0]}" cy="${p[1]}" r="7"/><text class="point-label readable" fill="${color}" text-anchor="${anchor}" x="${p[0]+dx}" y="${ly}">${esc(fmtFlex(valid[j].value))}</text>`;});html+=valid.map((m,i)=>`<text class="axislabel" text-anchor="middle" x="${x(i)}" y="${h-13}">${shortDate(m.date)}</text>`).join('');svg.innerHTML=html;
+  html+=`<path class="series" stroke="${color}" d="${svgPath(pts)}"/>`;pts.forEach((p,j)=>{const anchor=j===0?'start':j===pts.length-1?'end':'middle',dx=j===0?6:j===pts.length-1?-6:0,ly=clamp(p[1]+(j%2?-14:22),pad.t+13,h-pad.b+22);html+=`<circle class="point" fill="${color}" cx="${p[0]}" cy="${p[1]}" r="7"/><text class="point-label readable" fill="${color}" text-anchor="${anchor}" x="${p[0]+dx}" y="${ly}">${esc(fmtFlex(valid[j].value))}</text>`;});html+=valid.map((m,i)=>`<text class="axislabel" text-anchor="middle" x="${x(i)}" y="${h-13}">${labDateAxisV5(m)}</text>`).join('');svg.innerHTML=html;
 }
