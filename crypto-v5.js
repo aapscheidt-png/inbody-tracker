@@ -32,6 +32,8 @@ function mergeHistoricalDeltaV5(base,delta){
   for(const x of delta.reports){
     if(!out.reports.some(y=>y.id===x.id||(y.date===x.date&&y.title===x.title)))out.reports.push(x);
   }
+  out.archiveIndex=Array.isArray(out.archiveIndex)?out.archiveIndex:[];
+  for(const x of delta.archiveIndex||[]){const i=out.archiveIndex.findIndex(y=>y.id===x.id);if(i<0)out.archiveIndex.push(x);else out.archiveIndex[i]={...out.archiveIndex[i],...x};}
   out.sourceRegistry={...delta.sourceRegistry,...out.sourceRegistry};
   out.dataFreshness={...out.dataFreshness};
   for(const [k,v] of Object.entries(delta.dataFreshness||{}))if(!out.dataFreshness[k]||out.dataFreshness[k]<v)out.dataFreshness[k]=v;
