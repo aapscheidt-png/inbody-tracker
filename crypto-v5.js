@@ -27,14 +27,18 @@ function mergeHistoricalDeltaV5(base,delta){
     else body.push(x);
   }
   for(const x of delta.laboratoryResults){
-    if(!out.laboratoryResults.some(y=>y.date===x.date&&y.key===x.key))out.laboratoryResults.push(x);
+    const old=out.laboratoryResults.find(y=>y.date===x.date&&y.key===x.key);
+    if(!old)out.laboratoryResults.push(x);
+    else if(x.storagePathConfidence==='verified_zip_snapshot'&&String(old.value).replace(',','.')===String(x.value).replace(',','.')&&old.unit===x.unit)Object.assign(old,x,{context:old.context||x.context});
   }
   for(const x of delta.reports){
-    if(!out.reports.some(y=>y.id===x.id||(y.date===x.date&&y.title===x.title)))out.reports.push(x);
+    const old=out.reports.find(y=>y.id===x.id||(y.date===x.date&&y.title===x.title));
+    if(!old)out.reports.push(x);
+    else if(x.storagePathConfidence==='verified_zip_snapshot')Object.assign(old,{storagePath:x.storagePath,storagePathConfidence:x.storagePathConfidence,fileName:x.fileName||old.fileName});
   }
   out.archiveIndex=Array.isArray(out.archiveIndex)?out.archiveIndex:[];
   for(const x of delta.archiveIndex||[]){const i=out.archiveIndex.findIndex(y=>y.id===x.id);if(i<0)out.archiveIndex.push(x);else out.archiveIndex[i]={...out.archiveIndex[i],...x};}
-  out.sourceRegistry={...delta.sourceRegistry,...out.sourceRegistry};
+  out.sourceRegistry={...out.sourceRegistry,...delta.sourceRegistry};
   out.dataFreshness={...out.dataFreshness};
   for(const [k,v] of Object.entries(delta.dataFreshness||{}))if(!out.dataFreshness[k]||out.dataFreshness[k]<v)out.dataFreshness[k]=v;
   return normalizeCanonical(out);
