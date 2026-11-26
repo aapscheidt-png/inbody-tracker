@@ -60,6 +60,12 @@ function mergeHistoricalDeltaV5(base,delta){
 
   out.dataFreshness={...out.dataFreshness};
   for(const [k,v] of Object.entries(delta.dataFreshness||{}))if(!out.dataFreshness[k]||out.dataFreshness[k]<v)out.dataFreshness[k]=v;
+  out.weightHistory=Array.isArray(out.weightHistory)?out.weightHistory:[];
+  for(const x of delta.weightHistory||[]){
+    if(!x.id||!/^\d{4}-\d{2}$/.test(x.period)||x.datePrecision!=='month'||x.sourceType!=='user_reported'||x.isBioimpedance!==false||!Number.isFinite(x.weightKg)||x.weightKg<=0)continue;
+    const i=out.weightHistory.findIndex(y=>y.id===x.id);if(i<0)out.weightHistory.push(x);else out.weightHistory[i]={...out.weightHistory[i],...x};
+  }
+  out.weightHistory.sort((a,b)=>a.period.localeCompare(b.period));
   if(delta.auditStatus)out.auditStatus=delta.auditStatus;
   return normalizeCanonical(out);
 }
