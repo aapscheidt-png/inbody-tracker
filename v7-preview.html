@@ -110,7 +110,10 @@ function countsOfV7(d){return [(d.laboratoryResults||[]).length,(d.reports||[]).
 function selectOfflineV7(current,candidate){
  const a=countsOfV7(current),b=countsOfV7(candidate);
  const last=d=>(d.bodyComposition?.confirmedMeasurements||[]).map(x=>x.date||'').sort().at(-1)||'';
- return b.every((n,i)=>n>=a[i])&&last(candidate)>=last(current);
+ if(!b.every((n,i)=>n>=a[i])||last(candidate)<last(current))return false;
+ const index=new Map();
+ for(const r of candidate.laboratoryResults||[]){const k=r.date+'|'+r.key;if(!index.has(k))index.set(k,[]);index.get(k).push(r)}
+ return (current.laboratoryResults||[]).every(r=>(index.get(r.date+'|'+r.key)||[]).some(x=>valueIdentityV7(r.value)===valueIdentityV7(x.value)&&unitIdentityV7(r.unit)===unitIdentityV7(x.unit)));
 }
 async function syncV7(){
  if(syncing)return;
