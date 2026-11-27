@@ -75,7 +75,8 @@ function hydrate(){
  const priority=['Cardiovascular','Metabólico','Ortopedia','Gastroenterologia','Sono','Hormonal'];clinicalAreas=[...new Set(EX.filter(e=>['lab','report'].includes(e.kind)).map(e=>e.cat))].sort((a,b)=>(priority.includes(a)?priority.indexOf(a):99)-(priority.includes(b)?priority.indexOf(b):99)||a.localeCompare(b,'pt-BR'));
 }
 function weightDelta(m){const r=m?.rows||[];if(r.length<2)return '';const change=r.at(-1).v-r[0].v;return (change>0?'+':change<0?'−':'')+nf(Math.abs(change),1)+' kg desde '+date(r[0].date);}
-let mergeDifferencesV7=null;
+let mergeDifferencesV7=null,offlineVerifiedV7=false;
+const V7_ENCRYPTED_CACHE='health-tracker-v7-encrypted-cache';
 function valueIdentityV7(v){if(typeof v==='number'&&Number.isFinite(v))return String(v);if(typeof v==='string'){const s=v.trim().replace(',','.');if(/^[+-]?\d+(?:\.\d+)?$/.test(s)&&Number.isFinite(Number(s)))return String(Number(s));return s.toLowerCase()}return String(v??'')}
 function unitIdentityV7(u){return String(u??'').trim().toLowerCase().replace(/[µμ]/g,'u').replace(/\s+/g,'')}
 function auditMergeV7(base,delta){
@@ -98,17 +99,43 @@ async function decryptVerifiedV7(payload,recovery){
  return normalizeCanonical(JSON.parse(new TextDecoder().decode(plain)));
 }
 function loadedCountsV7(){return {labs:(data.laboratoryResults||[]).length,reports:(data.reports||[]).length,bio:(data.bodyComposition?.confirmedMeasurements||[]).length,weights:(data.weightHistory||[]).length};}
-function dataReceiptV7(){const n=loadedCountsV7(),has=n.labs+n.reports+n.bio>0;const label=syncing?'Sincronizando…':syncFailed?'Sincronização pendente':syncVerifiedAt?'Dados sincronizados':has?'Cópia local · ainda não verificada':'Dados não carregados';return '<div class="data-receipt" role="status" aria-live="polite"><div><strong>'+esc(label)+'</strong>'+(has?'<span>'+n.labs+' resultados · '+n.reports+' laudos · '+n.bio+' bioimpedâncias</span>':'')+(syncVerifiedAt?'<span>Atualizado nesta sessão: '+esc(syncVerifiedAt.toLocaleString('pt-BR'))+'</span>':'')+(syncFailed?'<span>'+esc(syncInfo)+'</span>':'')+'</div><button class="link" data-action="'+(previewRecoveryV7()?'sync':'settings')+'" '+(syncing?'disabled':'')+'>'+(syncing?'Aguarde':previewRecoveryV7()?'Sincronizar':'Configurar')+'</button></div>';}
-async function syncV7(){if(syncing)return;const recovery=previewRecoveryV7();if(!recovery){syncInfo='Chave não instalada neste navegador. Importe o arquivo de recuperação original ou abra a prévia dentro do atalho habitual.';render(false);return;}syncing=true;syncFailed=false;syncInfo='Sincronizando base criptografada…';render(false);try{
- const fetchPayload=async url=>{const r=await fetch(url+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Arquivo de dados indisponível');const p=await r.json();return {payload:p,decoded:await decryptVerifiedV7(p,recovery)};};
- const [base,delta]=await Promise.all([fetchPayload('./health-data-v5.enc.json'),fetchPayload('./health-delta-2026-11-25.enc.json')]);
- const differences=auditMergeV7(base.decoded,delta.decoded);
- const merged=mergeHistoricalDeltaV5(base.decoded,delta.decoded);
- if(!merged.laboratoryResults?.length||!merged.bodyComposition?.confirmedMeasurements?.length)throw Error('Base incompleta');
- const previous=data;try{data=merged;hydrate();}catch(error){data=previous;hydrate();throw error;}
- mergeDifferencesV7=differences;remoteRevision=delta.payload.updatedAt||'';syncVerifiedAt=new Date();const persisted=recoverySession?persistPreviewRecoveryV7(recoverySession):true;syncInfo='Base verificada nesta sessão · '+syncVerifiedAt.toLocaleString('pt-BR')+(remoteRevision?' · revisão publicada em '+remoteRevision.slice(0,10).split('-').reverse().join('/'):'')+(!persisted?' · chave válida nesta sessão; o navegador não permitiu guardá-la.':'');
- }catch(e){syncFailed=true;syncInfo='Sincronização não concluída. '+e.message;}finally{syncing=false;render(false);}}
-
+function dataReceiptV7(){const n=loadedCountsV7(),has=n.labs+n.reports+n.bio>0;const label=syncing?'Sincronizando…':syncFailed?'Sincronização pendente':offlineVerifiedV7?'Cópia verificada · offline':syncVerifiedAt?'Dados sincronizados':has?'Cópia local · ainda não verificada':'Dados não carregados';return '<div class="data-receipt" role="status" aria-live="polite"><div><strong>'+esc(label)+'</strong>'+(has?'<span>'+n.labs+' resultados · '+n.reports+' laudos · '+n.bio+' bioimpedâncias</span>':'')+(syncVerifiedAt?'<span>Atualizado nesta sessão: '+esc(syncVerifiedAt.toLocaleString('pt-BR'))+'</span>':'')+(syncFailed?'<span>'+esc(syncInfo)+'</span>':'')+'</div><button class="link" data-action="'+(previewRecoveryV7()?'sync':'settings')+'" '+(syncing?'disabled':'')+'>'+(syncing?'Aguarde':previewRecoveryV7()?'Sincronizar':'Configurar')+'</button></div>';}
+function cacheEncryptedV7(base,delta){
+ try{localStorage.setItem(V7_ENCRYPTED_CACHE,JSON.stringify({base,delta}));return true}catch{return false}
+}
+function readEncryptedCacheV7(){
+ try{const p=JSON.parse(localStorage.getItem(V7_ENCRYPTED_CACHE)||'null');return p?.base&&p?.delta?p:null}catch{return null}
+}
+function countsOfV7(d){return [(d.laboratoryResults||[]).length,(d.reports||[]).length,(d.bodyComposition?.confirmedMeasurements||[]).length]}
+function selectOfflineV7(current,candidate){
+ const a=countsOfV7(current),b=countsOfV7(candidate);
+ const last=d=>(d.bodyComposition?.confirmedMeasurements||[]).map(x=>x.date||'').sort().at(-1)||'';
+ return b.every((n,i)=>n>=a[i])&&last(candidate)>=last(current);
+}
+async function syncV7(){
+ if(syncing)return;
+ const recovery=previewRecoveryV7();if(!recovery){syncInfo='Chave não instalada neste navegador. Abra pelo atalho habitual ou importe a chave de recuperação.';render(false);return;}
+ syncing=true;syncFailed=false;offlineVerifiedV7=false;syncInfo='Sincronizando base criptografada…';render(false);
+ try{
+  const fetchPayload=async url=>{
+   let r;try{r=await fetch(url+'?t='+Date.now(),{cache:'no-store'});}catch{const e=Error('Sem conexão com o servidor.');e.offline=true;throw e}
+   if(!r.ok){const e=Error('Arquivo de dados indisponível.');e.offline=r.status>=500;throw e}
+   return r.json();
+  };
+  let payloads,offline=false;
+  try{const [base,delta]=await Promise.all([fetchPayload('./health-data-v5.enc.json'),fetchPayload('./health-delta-2026-11-25.enc.json')]);payloads={base,delta};}
+  catch(e){if(!e.offline)throw e;payloads=readEncryptedCacheV7();if(!payloads)throw e;offline=true;}
+  const [base,delta]=await Promise.all([decryptVerifiedV7(payloads.base,recovery),decryptVerifiedV7(payloads.delta,recovery)]);
+  const differences=auditMergeV7(base,delta),merged=mergeHistoricalDeltaV5(base,delta);
+  if(!merged.laboratoryResults?.length||!merged.bodyComposition?.confirmedMeasurements?.length)throw Error('Base incompleta.');
+  if(offline&&!selectOfflineV7(data,merged))throw Error('Cópia offline anterior à base local; dados locais preservados.');
+  const previous=data;try{data=merged;hydrate();}catch(e){data=previous;hydrate();throw e;}
+  mergeDifferencesV7=differences;remoteRevision=payloads.delta.updatedAt||'';syncVerifiedAt=new Date();offlineVerifiedV7=offline;
+  const persisted=recoverySession?persistPreviewRecoveryV7(recoverySession):true;
+  const cached=offline||cacheEncryptedV7(payloads.base,payloads.delta);
+  syncInfo=(offline?'Cópia criptografada verificada sem conexão':'Base verificada nesta sessão')+' · '+syncVerifiedAt.toLocaleString('pt-BR')+(remoteRevision?' · revisão de '+remoteRevision.slice(0,10).split('-').reverse().join('/'):'')+(!persisted?' · chave válida nesta sessão; o navegador não permitiu guardá-la.':'')+(!cached?' · o navegador não permitiu guardar a cópia offline.':'');
+ }catch(e){syncFailed=true;syncInfo='Sincronização não concluída. '+e.message;}finally{syncing=false;render(false);}
+}
 let state={tab:'home',page:null,q:'',kind:'all',year:'',period:'all',bioMore:false};let stack=[];let theme='system';try{theme=localStorage.getItem('ht-v7-theme')||'system'}catch{};const mq=matchMedia('(prefers-color-scheme: dark)');
 function applyTheme(){document.documentElement.dataset.theme=(theme==='dark'||theme==='system'&&mq.matches)?'dark':'light';const t=$('#themeButton');t.innerHTML=icon(document.documentElement.dataset.theme==='dark'?'moon':'sun');t.setAttribute('aria-label','Alterar aparência');if(state.page==='settings')render(false)}
 function closeAppearance(){const m=$('#appearanceMenu');if(m)m.hidden=true;$('#themeButton')?.setAttribute('aria-expanded','false')}
@@ -298,14 +325,14 @@ function auditPageV7(){
  const discoverable=EX.filter(e=>rank(e,e.name)>=0).length;
  const missingDate=(data.laboratoryResults||[]).filter(r=>!Number.isFinite(calendarStampV7(dateOf(r)))).length;
  const missingSource=(data.laboratoryResults||[]).filter(r=>!pathFor(r)).length;
- const status=syncVerifiedAt&&!syncFailed?'Dois pacotes verificados nesta sessão (SHA-256 e AES-GCM).':'Sincronize para verificar os dois pacotes publicados.';
+ const status=syncVerifiedAt&&!syncFailed?(offlineVerifiedV7?'Cópia offline: dois pacotes verificados nesta sessão (SHA-256 e AES-GCM).':'Dois pacotes verificados nesta sessão (SHA-256 e AES-GCM).'):'Sincronize para verificar os dois pacotes publicados.';
  const stats=[['Resultados laboratoriais',n.labs],['Resultados no índice',indexed],['Laudos',n.reports],['Bioimpedâncias',n.bio],['Itens localizáveis pelo próprio nome',discoverable+' / '+EX.length],['Resultados sem data válida',missingDate],['Resultados sem localização',missingSource]];
  return panel('<h3>Verificação técnica</h3><p class="textblock">'+esc(status)+'</p><p class="small">Não equivale à conferência de cada resultado com o PDF original.</p>')+group('Conferência do índice',panel('<table class="table"><tbody>'+stats.map(([k,v])=>'<tr><td>'+esc(k)+'</td><td>'+esc(v)+'</td></tr>').join('')+'</tbody></table>','table-panel'))+group('Conciliação de resultados',panel(mergeDifferencesV7===null?'<p class="textblock">Ainda não comparado nesta sessão.</p>':('<p class="textblock">'+mergeDifferencesV7.length+' registros da atualização com valor ou unidade diferente do registro anterior de mesma data e exame.</p><p class="small">Não são necessariamente erros clínicos. A base anterior foi preservada; confira os documentos antes de alterar valores.</p>'+mergeDifferencesV7.map(({prior,incoming})=>'<details class="disclosure"><summary>'+esc(incoming.label||incoming.key)+' · '+esc(date(dateOf(incoming)))+'</summary><p class="small">Base anterior: '+esc(valueText(prior.value))+' '+esc(prior.unit)+'</p>'+sourceHTML({path:pathFor(prior),facility:facFor(prior)})+'<p class="small">Atualização: '+esc(valueText(incoming.value))+' '+esc(incoming.unit)+'</p>'+sourceHTML({path:pathFor(incoming),facility:facFor(incoming)})+'</details>').join(''))));
 }
 function extraPage(p){if(p==='audit')return auditPageV7();if(p.startsWith('rx:'))return prescriptionV7(Number(p.slice(3)));if(p==='vaccines'){pageHeader('Vacinas','Carteira de vacinação');return panel('<div class="empty-state">'+icon('vaccine')+'<h2>Seu histórico de vacinação</h2><p class="textblock">Aguardando a importação dos seus registros. Nenhuma dose foi cadastrada na base disponível.</p></div>')+group('Estrutura da carteira',panel('<table class="table"><thead><tr><th>Vacina</th><th>Dose</th><th>Data</th></tr></thead><tbody><tr><td colspan="3" class="empty">Sem registros importados</td></tr></tbody></table>','table-panel'))+panel('<p class="textblock">A estrutura permite apresentar doses, datas, comprovantes e reforços indicados pelo profissional de saúde.</p>')}
 if(p==='treatments'){pageHeader('Tratamentos','Prescrições e acompanhamento');const ts=(data.treatments||[]).map((t,i)=>({t,i})).sort((a,b)=>dateOf(b.t).localeCompare(dateOf(a.t)));return group('Histórico de prescrições',ts.length?'<div class="rows">'+ts.map(({t,i})=>row(t.title||'Prescrição',date(dateOf(t)),'',`data-open="rx:${i}"`)).join('')+'</div>':panel('<p class="empty">Nenhuma prescrição registrada.</p>'))+panel('<h3>Medicamentos em uso</h3><p class="textblock">Aguardando confirmação do tratamento atual. As receitas anteriores estão disponíveis no histórico.</p>','rx-summary')}
 if(p==='checkup'){pageHeader('Check-up');const cps=(data.checkups||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));return cps.map(cp=>panel('<h3>'+date(cp.date)+'</h3><p class="textblock">'+(cp.status==='partial'?'Resultados parciais.':'Registros disponíveis.')+'</p>'+EX.filter(e=>e.rows.some(r=>r.date===cp.date)).map(e=>row(e.name,date(cp.date),'',`data-open="exam:${e.id}"`)).join(''))).join('')||panel('<p>Sem check-up catalogado.</p>')}
-if(p==='settings'){pageHeader('Configurações');return group('Aparência',panel(`<div class="pills settings-pills">${[['light','Claro'],['dark','Escuro'],['system','Sistema']].map(([v,t])=>`<button class="pill ${theme===v?'active':''}" data-theme="${v}">${t}</button>`).join('')}</div>`))+group('Dados e privacidade',panel(`<div class="source-head">${icon('shield')}<div><strong>Prontuário privado</strong><span class="small">${esc(syncInfo)}</span></div></div><button class="btn secondary" data-action="sync" ${syncing?'disabled':''}>Sincronizar agora</button><label class="btn secondary" style="display:block;margin-top:10px">Importar chave neste navegador<input type="file" id="recoveryInputV7" accept="application/json" style="display:block;max-width:100%;margin-top:8px"></label><p class="small">A chave importada é guardada somente neste navegador após uma sincronização bem-sucedida. Não altera a chave nem os dados salvos pela versão anterior.</p>`))+group('Verificação técnica',panel('<button class="link" data-open="audit">Conferir integridade e registros ›</button>'))+group('Sobre',panel('<p>Health Tracker · V7.0.5 · candidata à versão oficial</p><p class="small">Auditoria clínica ainda parcial. Os PDFs originais permanecem no iCloud.</p>'))}
+if(p==='settings'){pageHeader('Configurações');return group('Aparência',panel(`<div class="pills settings-pills">${[['light','Claro'],['dark','Escuro'],['system','Sistema']].map(([v,t])=>`<button class="pill ${theme===v?'active':''}" data-theme="${v}">${t}</button>`).join('')}</div>`))+group('Dados e privacidade',panel(`<div class="source-head">${icon('shield')}<div><strong>Prontuário privado</strong><span class="small">${esc(syncInfo)}</span></div></div><button class="btn secondary" data-action="sync" ${syncing?'disabled':''}>Sincronizar agora</button><label class="btn secondary" style="display:block;margin-top:10px">Importar chave neste navegador<input type="file" id="recoveryInputV7" accept="application/json" style="display:block;max-width:100%;margin-top:8px"></label><p class="small">A chave importada é guardada somente neste navegador após uma sincronização bem-sucedida. Não altera a chave nem os dados salvos pela versão anterior.</p>`))+group('Verificação técnica',panel('<button class="link" data-open="audit">Conferir integridade e registros ›</button>'))+group('Sobre',panel('<p>Health Tracker · V7.0.5 · versão para homologação final</p><p class="small">Auditoria clínica ainda parcial. Os PDFs originais permanecem no iCloud.</p>'))}
 if(p.startsWith('area:')){let a=p.slice(5);pageHeader(a,'Exames e laudos');return `<div class="rows">${EX.filter(e=>e.cat===a).map(e=>{let r=e.rows.at(-1);return row(e.name,date(r.date),e.kind==='lab'?valueText(r.v)+' '+r.unit:e.kind==='report'?e.rows.length+' laudo(s)':'Arquivo',`data-open="exam:${e.id}"`)}).join('')}</div>`}
 if(p.startsWith('source:')){let [,id,dt]=p.split(':');const e=EX.find(x=>x.id===id),r=e?.rows.find(x=>x.rowId===dt);if(!r)return panel('<p>Documento não localizado.</p>');pageHeader(e.name,date(r.date));return panel(`<div class="resultmain">${esc(valueText(r.v))} <small>${esc(r.unit)}</small></div><p class="refline">${esc(r.ref)}</p>${sourceHTML(r)}`)}
 return panel('<p>Seção demonstrativa.</p>')}
